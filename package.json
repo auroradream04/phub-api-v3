@@ -9,10 +9,13 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "http-proxy-agent": "^7.0.2",
+    "https-proxy-agent": "^7.0.5",
     "next": "15.5.4",
-    "pornhub.js": "^1.14.0",
+    "pornhub.js": "file:./src/lib/pornhub.js",
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-dom": "19.1.0",
+    "socks-proxy-agent": "^8.0.4"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

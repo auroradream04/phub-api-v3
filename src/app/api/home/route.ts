@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PornHub } from 'pornhub.js';
+import { getRandomProxy } from '@/lib/proxy';
 
 export async function GET(request: NextRequest) {
   try {
@@ -31,12 +32,46 @@ export async function GET(request: NextRequest) {
     // Initialize PornHub instance
     const pornhub = new PornHub();
 
-    // Fetch video list from PornHub
-    const videoList = await pornhub.videoList(options);
+    let videoList;
+    let retries = 3;
+
+    // Try without proxy first
+    try {
+      console.log('[API] Attempting request without proxy...');
+      videoList = await pornhub.videoList(options);
+    } catch (error) {
+      console.error('[API] Request failed without proxy:', error instanceof Error ? error.message : 'Unknown error');
+    }
+
+    // If request failed, retry with random proxy (matching v2 logic)
+    while ((videoList === undefined || videoList === null || !videoList.data || videoList.data.length < 1) && retries > 0) {
+      const proxyAgent = getRandomProxy();
+
+      if (!proxyAgent) {
+        console.warn('[API] No proxies available. Cannot retry.');
+        break;
+      }
+
+      console.log(`[API] Retrying with proxy (${retries} retries remaining)...`);
+      pornhub.setAgent(proxyAgent);
+
+      try {
+        videoList = await pornhub.videoList(options);
+      } catch (error) {
+        console.error('[API] Request failed with proxy:', error instanceof Error ? error.message : 'Unknown error');
+      }
+
+      retries--;
+    }
+
+    // If still no valid data after all retries, throw error
+    if (!videoList || !videoList.data || videoList.data.length < 1) {
+      throw new Error('Failed to fetch video list after all retries');
+    }
 
     return NextResponse.json(videoList);
   } catch (error) {
-    console.error('Error fetching video list:', error);
+    console.error('[API] Error fetching video list:', error);
 
     return NextResponse.json(
       {
