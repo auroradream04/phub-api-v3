@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HLS Ad Injection Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        h1 {
+            text-align: center;
+        }
+        video {
+            width: 100%;
+            max-width: 800px;
+            display: block;
+            margin: 20px auto;
+            background: #000;
+        }
+        .info {
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            background: #2a2a2a;
+            border-radius: 8px;
+        }
+        .quality-buttons {
+            text-align: center;
+            margin: 20px 0;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button.active {
+            background: #2196F3;
+        }
+        .logs {
+            background: #000;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 3px solid #4CAF50;
+            padding-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎬 HLS Ad Injection Test Player</h1>
+
+    <div class="info">
+        <p><strong>Video ID:</strong> 65d79cbf015a1</p>
+        <p><strong>Expected behavior:</strong> 3-second ad → Original content</p>
+        <p><strong>Ad segment:</strong> https://storage.example.com/ads/ad-001-{quality}p-000.ts</p>
+        <p><em>Note: Ad segment URL is placeholder - will fail but shows injection works</em></p>
+    </div>
+
+    <div class="quality-buttons">
+        <button onclick="loadQuality(240)">240p</button>
+        <button onclick="loadQuality(480)">480p</button>
+        <button onclick="loadQuality(720)" class="active">720p (Default)</button>
+        <button onclick="loadQuality(1080)">1080p</button>
+    </div>
+
+    <video id="video" controls></video>
+
+    <div class="logs" id="logs">
+        <div class="log-entry">Ready to play...</div>
+    </div>
+
+    <script>
+        const video = document.getElementById('video');
+        const logsEl = document.getElementById('logs');
+        let hls;
+
+        function log(message) {
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logsEl.appendChild(entry);
+            logsEl.scrollTop = logsEl.scrollHeight;
+        }
+
+        function loadQuality(quality) {
+            document.querySelectorAll('.quality-buttons button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            const streamUrl = `http://localhost:4444/api/watch/65d79cbf015a1/stream?q=${quality}`;
+            log(`Loading ${quality}p stream: ${streamUrl}`);
+
+            if (hls) {
+                hls.destroy();
+            }
+
+            if (Hls.isSupported()) {
+                hls = new Hls({
+                    debug: true,
+                    enableWorker: true
+                });
+
+                hls.on(Hls.Events.ERROR, function(event, data) {
+                    log(`❌ Error: ${data.type} - ${data.details}`);
+                    if (data.details.includes('frag')) {
+                        log(`Fragment error (expected for ad placeholder): ${data.frag?.url || 'unknown'}`);
+                    }
+                });
+
+                hls.on(Hls.Events.MANIFEST_PARSED, function(event, data) {
+                    log(`✅ Manifest parsed! ${data.levels.length} quality levels found`);
+                    log(`Playing ${quality}p stream...`);
+                });
+
+                hls.on(Hls.Events.FRAG_LOADING, function(event, data) {
+                    log(`📥 Loading segment: ${data.frag.url.substring(0, 80)}...`);
+                });
+
+                hls.on(Hls.Events.FRAG_LOADED, function(event, data) {
+                    log(`✅ Segment loaded: ${data.frag.duration.toFixed(2)}s`);
+                });
+
+                hls.loadSource(streamUrl);
+                hls.attachMedia(video);
+
+                video.addEventListener('loadedmetadata', function() {
+                    log(`📹 Video metadata loaded - Duration: ${video.duration.toFixed(2)}s`);
+                });
+
+                video.addEventListener('play', function() {
+                    log(`▶️  Playback started`);
+                });
+
+                video.addEventListener('pause', function() {
+                    log(`⏸️  Playback paused`);
+                });
+
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = streamUrl;
+                log(`Using native HLS support`);
+            } else {
+                log(`❌ HLS not supported in this browser`);
+            }
+        }
+
+        // Auto-load 720p on page load
+        window.onload = function() {
+            loadQuality(720);
+        };
+    </script>
+</body>
+</html>

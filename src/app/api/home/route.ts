@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Build options object for pornhub.js
-    const options: any = {
+    const options: { page: number; order: string } = {
       page,
       order,
     };

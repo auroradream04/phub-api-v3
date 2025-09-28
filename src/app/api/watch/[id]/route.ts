@@ -57,8 +57,23 @@ export async function GET(
       throw new Error('Failed to fetch video information after all retries')
     }
 
-    // Return the video info as JSON
-    return NextResponse.json(videoInfo, { status: 200 })
+    // Get base URL for proxy URLs
+    const protocol = request.headers.get('x-forwarded-proto') || 'http'
+    const host = request.headers.get('host') || 'localhost:4444'
+    const baseUrl = `${protocol}://${host}`
+
+    // Transform mediaDefinitions to use proxy URLs
+    const transformedMediaDefinitions = videoInfo.mediaDefinitions.map((md) => ({
+      ...md,
+      originalUrl: md.videoUrl,
+      videoUrl: `${baseUrl}/api/watch/${id}/stream?q=${md.quality}`,
+    }))
+
+    // Return the video info with transformed URLs
+    return NextResponse.json({
+      ...videoInfo,
+      mediaDefinitions: transformedMediaDefinitions,
+    }, { status: 200 })
 
   } catch (error) {
     // Handle errors gracefully
