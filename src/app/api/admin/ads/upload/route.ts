@@ -76,13 +76,15 @@ export async function POST(request: NextRequest) {
       segments = await convertVideoToHLS(tempFilePath, uploadDir, adId)
       console.log(`Converted video to ${segments.length} qualities`)
     } catch (error) {
-      console.error('FFmpeg conversion failed:', error)
-      // If conversion fails, create a simple fallback segment
-      segments = [{
-        quality: 720,
+      console.error('FFmpeg conversion failed, using fallback:', error)
+      // If conversion fails, create fallback segments for all qualities using the original file
+      const qualities = [240, 480, 720, 1080]
+      segments = qualities.map(q => ({
+        quality: q,
         filepath: `/uploads/ads/${adId}/original.mp4`,
         filesize: buffer.length
-      }]
+      }))
+      console.log(`Created ${segments.length} fallback segments`)
     }
 
     // Create ad record in database with all segments
