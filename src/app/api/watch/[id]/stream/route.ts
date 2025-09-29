@@ -103,7 +103,7 @@ export async function GET(
       return new Response(modifiedM3u8, {
         headers: {
           'Content-Type': 'application/vnd.apple.mpegurl',
-          'Cache-Control': 'public, max-age=30',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
           'Access-Control-Allow-Origin': '*',
         },
       })
@@ -114,7 +114,7 @@ export async function GET(
     return new Response(modifiedM3u8, {
       headers: {
         'Content-Type': 'application/vnd.apple.mpegurl',
-        'Cache-Control': 'public, max-age=30',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
         'Access-Control-Allow-Origin': '*',
       },
     })
@@ -174,50 +174,89 @@ async function injectAds(m3u8Text: string, quality: string, baseUrl: string, vid
     ? activeAds[Math.floor(Math.random() * activeAds.length)]
     : null
 
+  let segmentCount = 0
+  let adInjected = false
+  let pendingExtInf = ''
+
   for (const line of lines) {
+    // Collect all header tags first
     if (line.startsWith('#EXTM3U') ||
         line.startsWith('#EXT-X-VERSION') ||
         line.startsWith('#EXT-X-TARGETDURATION') ||
         line.startsWith('#EXT-X-MEDIA-SEQUENCE') ||
-        line.startsWith('#EXT-X-PLAYLIST-TYPE')) {
+        line.startsWith('#EXT-X-PLAYLIST-TYPE') ||
+        line.startsWith('#EXT-X-ALLOW-CACHE')) {
       result.push(line)
+      continue
+    }
 
-      if (line.startsWith('#EXT-X-TARGETDURATION') && !headerComplete) {
-        headerComplete = true
+    // Store EXTINF tags temporarily
+    if (line.startsWith('#EXTINF:')) {
+      pendingExtInf = line
+      continue
+    }
 
-        if (selectedAd && selectedAd.segments.length > 0) {
-          console.log(`[Stream] Injecting ad "${selectedAd.title}" for quality ${quality}`)
+    // After all headers, inject ad before first segment
+    if (!headerComplete && !line.startsWith('#') && line.trim() !== '') {
+      headerComplete = true
 
-          // Select a random segment from the ad
-          const randomSegment = selectedAd.segments[Math.floor(Math.random() * selectedAd.segments.length)]
+      if (selectedAd && selectedAd.segments.length > 0 && !adInjected) {
+        console.log(`[Stream] Injecting ad "${selectedAd.title}" for quality ${quality}`)
 
-          // Calculate segment duration (3 seconds default)
-          const segmentDuration = 3
+        // Select a random segment from the ad
+        const randomSegment = selectedAd.segments[Math.floor(Math.random() * selectedAd.segments.length)]
 
-          // Add ad segment - serve through our API
-          result.push(`#EXTINF:${segmentDuration}.0,`)
-          // Create URL that will serve the specific segment
-          const adUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:4444'}/api/ads/serve/${selectedAd.id}/${randomSegment.quality}`
-          result.push(adUrl)
+        // Calculate segment duration (3 seconds default)
+        const segmentDuration = 3
 
-          // Record impression
-          try {
-            await prisma.adImpression.create({
-              data: {
-                adId: selectedAd.id,
-                videoId: videoId
-              }
-            })
-          } catch (error) {
-            console.error('Failed to record ad impression:', error)
-          }
-        } else {
-          console.log(`[Stream] No ads available for quality ${quality}`)
+        // Add ad segment - serve through our API
+        result.push(`#EXTINF:${segmentDuration}.0,`)
+        // Create URL that will serve the specific segment with .ts extension
+        const adUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:4444'}/api/ads/serve/${selectedAd.id}/${randomSegment.quality}.ts`
+        result.push(adUrl)
+
+        // Add discontinuity tag to signal timestamp reset after ad
+        result.push('#EXT-X-DISCONTINUITY')
+
+        adInjected = true
+
+        // Record impression
+        try {
+          await prisma.adImpression.create({
+            data: {
+              adId: selectedAd.id,
+              videoId: videoId
+            }
+          })
+        } catch (error) {
+          console.error('Failed to record ad impression:', error)
         }
+      } else if (!selectedAd || selectedAd.segments.length === 0) {
+        console.log(`[Stream] No ads available for quality ${quality}`)
       }
-    } else if (line.startsWith('#')) {
+
+      // Now add the pending EXTINF and segment
+      if (pendingExtInf) {
+        result.push(pendingExtInf)
+        pendingExtInf = ''
+      }
+    }
+
+    // Handle other comment lines (not EXTINF, those are handled separately)
+    if (line.startsWith('#') && !line.startsWith('#EXTINF:')) {
       result.push(line)
-    } else if (line.trim() !== '') {
+    } else if (line.trim() !== '' && !line.startsWith('#')) {
+      // This is a segment URL
+      segmentCount++
+      console.log(`[Stream] Adding video segment ${segmentCount}: ${line.substring(0, 50)}...`)
+
+      // Add the pending EXTINF before this segment
+      if (pendingExtInf) {
+        result.push(pendingExtInf)
+        pendingExtInf = ''
+      }
+
+      // Convert relative URLs to absolute - PornHub CDN has CORS enabled, no proxy needed
       if (line.startsWith('http')) {
         result.push(line)
       } else {
@@ -227,5 +266,6 @@ async function injectAds(m3u8Text: string, quality: string, baseUrl: string, vid
     }
   }
 
+  console.log(`[Stream] Final m3u8 has ${segmentCount} video segments`)
   return result.join('\n')
 }

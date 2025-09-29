@@ -52,8 +52,12 @@ export async function GET(
       headers: {
         'Content-Type': 'video/mp2t', // MPEG-TS content type
         'Content-Length': fileContent.length.toString(),
+        'Content-Disposition': 'inline', // Force inline display, not download
         'Cache-Control': 'public, max-age=3600',
         'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Range',
+        'Accept-Ranges': 'bytes',
       },
     })
 

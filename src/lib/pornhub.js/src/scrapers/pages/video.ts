@@ -121,14 +121,24 @@ export function parseByDom(html: string, $: CheerioAPI) {
 
 function parseByLdJson($: CheerioAPI) {
     try {
-        const ldPlusJson = JSON.parse($('head script[type="application/ld+json"]').first().text())
+        const ldJsonElement = $('head script[type="application/ld+json"]').first()
+        const ldJsonText = ldJsonElement.text().trim()
+
+        // Check if the element exists and has content
+        if (!ldJsonText) {
+            return {
+                uploadDate: new Date(0),
+            }
+        }
+
+        const ldPlusJson = JSON.parse(ldJsonText)
         const uploadDate = new Date(ldPlusJson.uploadDate)
         return {
             uploadDate,
         }
     }
     catch (error) {
-        console.error('Failed to parse ld+json', error)
+        // Silently handle the error - this is optional metadata
         return {
             uploadDate: new Date(0),
         }

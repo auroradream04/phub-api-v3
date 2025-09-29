@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple HLS Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.18/dist/hls.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #000;
+            color: #fff;
+            font-family: monospace;
+        }
+        .mode-selector {
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #222;
+            border: 1px solid #444;
+            border-radius: 4px;
+        }
+        .mode-selector label {
+            margin-right: 20px;
+            cursor: pointer;
+        }
+        .mode-selector input[type="radio"] {
+            margin-right: 5px;
+        }
+        video {
+            width: 100%;
+            max-width: 800px;
+            background: #111;
+        }
+        #error {
+            color: red;
+            white-space: pre-wrap;
+        }
+        #log {
+            margin-top: 20px;
+            padding: 10px;
+            background: #111;
+            border: 1px solid #333;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            margin: 2px 0;
+            font-size: 12px;
+        }
+        .success { color: #0f0; }
+        .error { color: #f00; }
+        .info { color: #0ff; }
+        .mode-indicator {
+            font-weight: bold;
+            color: #ff0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Simple HLS Test</h1>
+
+    <div class="mode-selector">
+        <strong>Loading Mode:</strong><br><br>
+        <label>
+            <input type="radio" name="mode" value="direct" checked>
+            Direct (No Proxy)
+        </label>
+        <label>
+            <input type="radio" name="mode" value="cors-proxy">
+            CORS Proxy (https://cors.freechatnow.net/)
+        </label>
+        <label>
+            <input type="radio" name="mode" value="original">
+            Original PornHub (No API)
+        </label>
+        <button id="reload-btn" style="margin-left: 20px; padding: 5px 15px; cursor: pointer;">Reload Video</button>
+    </div>
+
+    <div id="current-mode" class="mode-indicator"></div>
+
+    <video id="video" controls></video>
+    <div id="error"></div>
+    <div id="log"></div>
+
+    <script>
+        const video = document.getElementById('video');
+        const errorDiv = document.getElementById('error');
+        const logDiv = document.getElementById('log');
+        const currentModeDiv = document.getElementById('current-mode');
+        const reloadBtn = document.getElementById('reload-btn');
+
+        let hls = null;
+        const CORS_PROXY = 'https://cors.freechatnow.net/';
+
+        function log(msg, type = 'info') {
+            console.log(msg);
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            logDiv.insertBefore(entry, logDiv.firstChild);
+        }
+
+        function getSelectedMode() {
+            return document.querySelector('input[name="mode"]:checked').value;
+        }
+
+        function initVideo() {
+            // Clean up previous instance
+            if (hls) {
+                hls.destroy();
+                hls = null;
+            }
+
+            // Clear logs and errors
+            errorDiv.textContent = '';
+            logDiv.innerHTML = '';
+
+            const mode = getSelectedMode();
+            let videoUrl;
+
+            if (mode === 'original') {
+                // Fetch original URL from PornHub API
+                videoUrl = null; // Will be set after fetching
+                currentModeDiv.textContent = 'Current Mode: ORIGINAL PORNHUB (fetching...)';
+                log(`Mode: ${mode}`, 'info');
+                log('Fetching original PornHub m3u8...', 'info');
+            } else {
+                videoUrl = 'http://localhost:4444/api/watch/6478e679918bb/stream?q=720';
+                currentModeDiv.textContent = `Current Mode: ${mode === 'direct' ? 'DIRECT (No Proxy)' : 'CORS PROXY (cors.freechatnow.net)'}`;
+                log(`Mode: ${mode}`, 'info');
+                log(`Testing URL: ${videoUrl}`, 'info');
+            }
+
+            // For original mode, fetch the video info first
+            if (mode === 'original') {
+                fetch('http://localhost:4444/api/video/6478e679918bb')
+                    .then(res => res.json())
+                    .then(data => {
+                        const media720 = data.mediaDefinitions.find(m => m.quality === 720);
+                        if (media720) {
+                            videoUrl = media720.videoUrl;
+                            currentModeDiv.textContent = 'Current Mode: ORIGINAL PORNHUB (direct m3u8)';
+                            log(`Original m3u8 URL: ${videoUrl}`, 'success');
+                            loadVideo(videoUrl, mode);
+                        } else {
+                            log('720p quality not found', 'error');
+                        }
+                    })
+                    .catch(err => {
+                        log(`Failed to fetch video info: ${err.message}`, 'error');
+                    });
+                return; // Exit early, will load after fetch
+            }
+
+            loadVideo(videoUrl, mode);
+        }
+
+        function loadVideo(videoUrl, mode) {
+            if (Hls.isSupported()) {
+                log('HLS.js is supported', 'success');
+
+                hls = new Hls({
+                    debug: true,
+                    enableWorker: true,
+                    lowLatencyMode: false,
+                    backBufferLength: 90,
+                    xhrSetup: function(xhr, url) {
+                        // Apply CORS proxy if mode is set
+                        let finalUrl = url;
+                        if (mode === 'cors-proxy') {
+                            // Only proxy external URLs (not our API)
+                            if (url.startsWith('https://') && !url.includes('localhost')) {
+                                // CORS proxy expects direct URL append, not encoded
+                                finalUrl = CORS_PROXY + url;
+                                log(`Proxying: ${url.split('/').pop()} via CORS proxy`, 'info');
+                            } else {
+                                log(`Loading: ${url.split('/').pop()}`, 'info');
+                            }
+                        } else {
+                            log(`Loading: ${url.split('/').pop()}`, 'info');
+                        }
+
+                        xhr.open('GET', finalUrl, true);
+                    }
+                });
+
+                hls.on(Hls.Events.ERROR, function(event, data) {
+                    console.error('HLS Error:', data);
+                    const errorMsg = `ERROR: ${data.type} - ${data.details}\n${data.fatal ? 'FATAL' : 'NON-FATAL'}\nURL: ${data.url || data.frag?.url || 'unknown'}`;
+                    errorDiv.textContent = errorMsg;
+                    log(errorMsg, 'error');
+
+                    if (data.fatal) {
+                        switch(data.type) {
+                            case Hls.ErrorTypes.NETWORK_ERROR:
+                                log('Fatal network error, trying to recover...', 'error');
+                                hls.startLoad();
+                                break;
+                            case Hls.ErrorTypes.MEDIA_ERROR:
+                                log('Fatal media error, trying to recover...', 'error');
+                                hls.recoverMediaError();
+                                break;
+                            default:
+                                log('Fatal error, cannot recover', 'error');
+                                hls.destroy();
+                                break;
+                        }
+                    }
+                });
+
+                hls.on(Hls.Events.MANIFEST_PARSED, function(event, data) {
+                    log(`Manifest parsed, ${data.levels.length} quality levels found`, 'success');
+                    video.play().catch(e => {
+                        log('Click play to start (autoplay blocked)', 'info');
+                    });
+                });
+
+                hls.on(Hls.Events.FRAG_LOADED, function(event, data) {
+                    const url = data.frag.url;
+                    if (url.includes('/api/ads/serve/')) {
+                        log(`✅ AD SEGMENT LOADED: ${url.split('/').pop()}`, 'success');
+                    } else {
+                        log(`✅ VIDEO SEGMENT ${data.frag.sn} LOADED`, 'success');
+                    }
+                });
+
+                hls.on(Hls.Events.MEDIA_ATTACHED, function() {
+                    log('Media attached to video element', 'success');
+                });
+
+                log('Loading source...', 'info');
+                hls.loadSource(videoUrl);
+                hls.attachMedia(video);
+
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                log('Native HLS support detected (Safari)', 'success');
+                video.src = videoUrl;
+            } else {
+                const msg = 'HLS is not supported in this browser';
+                errorDiv.textContent = msg;
+                log(msg, 'error');
+            }
+        }
+
+        // Event listeners
+        reloadBtn.addEventListener('click', function() {
+            log('=== RELOADING VIDEO ===', 'info');
+            initVideo();
+        });
+
+        document.querySelectorAll('input[name="mode"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                log('=== MODE CHANGED - RELOADING ===', 'info');
+                initVideo();
+            });
+        });
+
+        // Initialize on page load
+        initVideo();
+    </script>
+</body>
+</html>

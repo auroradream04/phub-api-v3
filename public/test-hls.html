@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HLS Test Player</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        video {
+            width: 100%;
+            max-width: 800px;
+            background: #000;
+            border-radius: 8px;
+        }
+        .controls {
+            margin-top: 20px;
+            padding: 20px;
+            background: #2a2a2a;
+            border-radius: 8px;
+        }
+        input, button {
+            padding: 10px;
+            margin: 5px;
+            border-radius: 4px;
+            border: 1px solid #444;
+            background: #333;
+            color: #fff;
+        }
+        input {
+            width: 500px;
+        }
+        button:hover {
+            background: #444;
+            cursor: pointer;
+        }
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            background: #333;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .error {
+            color: #ff6b6b;
+        }
+        .success {
+            color: #51cf66;
+        }
+        .info {
+            color: #74c0fc;
+        }
+        .log-entry {
+            margin: 2px 0;
+            padding: 4px;
+            background: #2a2a2a;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>HLS Test Player with Ad Injection</h1>
+
+        <video id="video" controls></video>
+
+        <div class="controls">
+            <h3>Test Stream</h3>
+            <div>
+                <input type="text" id="videoId" placeholder="Enter video ID (e.g., 674e7d96cb0dc)" value="674e7d96cb0dc">
+                <select id="quality">
+                    <option value="240">240p</option>
+                    <option value="480">480p</option>
+                    <option value="720" selected>720p</option>
+                    <option value="1080">1080p</option>
+                </select>
+                <button onclick="loadVideo()">Load Video</button>
+            </div>
+
+            <div>
+                <h4>Or enter custom m3u8 URL:</h4>
+                <input type="text" id="customUrl" placeholder="http://localhost:4444/api/watch/[id]/stream?q=720" style="width: 600px;">
+                <button onclick="loadCustom()">Load Custom</button>
+            </div>
+        </div>
+
+        <div class="status" id="status">
+            <h3>Status Log:</h3>
+            <div id="log"></div>
+        </div>
+    </div>
+
+    <script>
+        const video = document.getElementById('video');
+        const logDiv = document.getElementById('log');
+        let hls;
+
+        function log(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            const time = new Date().toLocaleTimeString();
+            entry.textContent = `[${time}] ${message}`;
+            logDiv.insertBefore(entry, logDiv.firstChild);
+
+            // Keep only last 20 entries
+            while (logDiv.children.length > 20) {
+                logDiv.removeChild(logDiv.lastChild);
+            }
+        }
+
+        function loadVideo() {
+            const videoId = document.getElementById('videoId').value;
+            const quality = document.getElementById('quality').value;
+            const url = `http://localhost:4444/api/watch/${videoId}/stream?q=${quality}`;
+            log(`Loading video: ${url}`, 'info');
+            playHLS(url);
+        }
+
+        function loadCustom() {
+            const url = document.getElementById('customUrl').value;
+            log(`Loading custom URL: ${url}`, 'info');
+            playHLS(url);
+        }
+
+        function playHLS(url) {
+            if (hls) {
+                log('Destroying previous HLS instance', 'info');
+                hls.destroy();
+            }
+
+            if (Hls.isSupported()) {
+                hls = new Hls({
+                    debug: false,
+                    enableWorker: true,
+                    lowLatencyMode: false,
+                });
+
+                // Event listeners
+                hls.on(Hls.Events.MEDIA_ATTACHED, () => {
+                    log('Media attached successfully', 'success');
+                });
+
+                hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
+                    log(`Manifest parsed: ${data.levels.length} quality levels found`, 'success');
+                    video.play().catch(e => {
+                        log('Autoplay blocked - click play button', 'info');
+                    });
+                });
+
+                hls.on(Hls.Events.FRAG_LOADED, (event, data) => {
+                    const segmentUrl = data.frag.url;
+                    if (segmentUrl.includes('/api/ads/serve/')) {
+                        log(`📺 AD SEGMENT loaded: ${segmentUrl.split('/').pop()}`, 'success');
+                    } else {
+                        log(`Video segment ${data.frag.sn} loaded`, 'info');
+                    }
+                });
+
+                hls.on(Hls.Events.ERROR, (event, data) => {
+                    if (data.fatal) {
+                        switch(data.type) {
+                            case Hls.ErrorTypes.NETWORK_ERROR:
+                                log(`Fatal network error: ${data.details}`, 'error');
+                                hls.startLoad();
+                                break;
+                            case Hls.ErrorTypes.MEDIA_ERROR:
+                                log(`Fatal media error: ${data.details}`, 'error');
+                                hls.recoverMediaError();
+                                break;
+                            default:
+                                log(`Fatal error: ${data.type} - ${data.details}`, 'error');
+                                hls.destroy();
+                                break;
+                        }
+                    } else {
+                        log(`Non-fatal error: ${data.details}`, 'error');
+                    }
+                });
+
+                // Load the stream
+                hls.loadSource(url);
+                hls.attachMedia(video);
+
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                // Native HLS support (Safari)
+                log('Using native HLS support', 'info');
+                video.src = url;
+                video.addEventListener('loadedmetadata', () => {
+                    log('Video metadata loaded', 'success');
+                    video.play().catch(e => {
+                        log('Autoplay blocked - click play button', 'info');
+                    });
+                });
+            } else {
+                log('HLS not supported in this browser', 'error');
+            }
+        }
+
+        // Load default video on page load
+        window.addEventListener('load', () => {
+            log('HLS Test Player ready', 'success');
+            // Uncomment to auto-load:
+            // loadVideo();
+        });
+    </script>
+</body>
+</html>
