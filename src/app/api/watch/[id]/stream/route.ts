@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PornHub } from 'pornhub.js'
 import { getRandomProxy } from '@/lib/proxy'
+import { prisma } from '@/lib/prisma'
 
 export async function GET(
   request: NextRequest,
@@ -97,7 +98,7 @@ export async function GET(
       }
 
       const variantM3u8 = await variantResponse.text()
-      const modifiedM3u8 = injectAds(variantM3u8, quality, variantUrl)
+      const modifiedM3u8 = await injectAds(variantM3u8, quality, variantUrl, id)
 
       return new Response(modifiedM3u8, {
         headers: {
@@ -108,7 +109,7 @@ export async function GET(
       })
     }
 
-    const modifiedM3u8 = injectAds(originalM3u8, quality, originalM3u8Url)
+    const modifiedM3u8 = await injectAds(originalM3u8, quality, originalM3u8Url, id)
 
     return new Response(modifiedM3u8, {
       headers: {
@@ -152,13 +153,28 @@ function extractFirstVariantUrl(m3u8Text: string, baseUrl: string): string | nul
   return null
 }
 
-function injectAds(m3u8Text: string, quality: string, baseUrl: string): string {
+async function injectAds(m3u8Text: string, quality: string, baseUrl: string, videoId: string): Promise<string> {
   const lines = m3u8Text.split('\n')
   const result: string[] = []
 
   let headerComplete = false
   const baseUrlObj = new URL(baseUrl)
   const basePath = baseUrlObj.pathname.substring(0, baseUrlObj.pathname.lastIndexOf('/'))
+
+  // Get active ads from database
+  const activeAds = await prisma.ad.findMany({
+    where: { status: 'active' },
+    include: {
+      segments: {
+        where: { quality: parseInt(quality) }
+      }
+    }
+  })
+
+  // Select a random ad if available
+  const selectedAd = activeAds.length > 0
+    ? activeAds[Math.floor(Math.random() * activeAds.length)]
+    : null
 
   for (const line of lines) {
     if (line.startsWith('#EXTM3U') ||
@@ -170,10 +186,30 @@ function injectAds(m3u8Text: string, quality: string, baseUrl: string): string {
 
       if (line.startsWith('#EXT-X-TARGETDURATION') && !headerComplete) {
         headerComplete = true
-        console.log(`[Stream] Injecting pre-roll ad for quality ${quality}`)
 
-        result.push('#EXTINF:3.0,')
-        result.push(`https://storage.example.com/ads/ad-001-${quality}p-000.ts`)
+        if (selectedAd && selectedAd.segments.length > 0) {
+          console.log(`[Stream] Injecting ad "${selectedAd.title}" for quality ${quality}`)
+
+          // Add ad segment
+          result.push(`#EXTINF:${selectedAd.duration}.0,`)
+          const adSegment = selectedAd.segments[0]
+          const adUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:4444'}${adSegment.filepath}`
+          result.push(adUrl)
+
+          // Record impression
+          try {
+            await prisma.adImpression.create({
+              data: {
+                adId: selectedAd.id,
+                videoId: videoId
+              }
+            })
+          } catch (error) {
+            console.error('Failed to record ad impression:', error)
+          }
+        } else {
+          console.log(`[Stream] No ads available for quality ${quality}`)
+        }
       }
     } else if (line.startsWith('#')) {
       result.push(line)

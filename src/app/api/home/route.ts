@@ -24,7 +24,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Build options object for pornhub.js
-    const options: { page: number; order: string } = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const options: any = {
       page,
       order,
     };
