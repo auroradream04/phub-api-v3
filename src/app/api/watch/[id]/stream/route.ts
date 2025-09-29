@@ -161,13 +161,11 @@ async function injectAds(m3u8Text: string, quality: string, baseUrl: string, vid
   const baseUrlObj = new URL(baseUrl)
   const basePath = baseUrlObj.pathname.substring(0, baseUrlObj.pathname.lastIndexOf('/'))
 
-  // Get active ads from database (quality 0 means it works for any quality)
+  // Get active ads from database (get all segments)
   const activeAds = await prisma.ad.findMany({
     where: { status: 'active' },
     include: {
-      segments: {
-        where: { quality: 0 }
-      }
+      segments: true
     }
   })
 
@@ -190,10 +188,16 @@ async function injectAds(m3u8Text: string, quality: string, baseUrl: string, vid
         if (selectedAd && selectedAd.segments.length > 0) {
           console.log(`[Stream] Injecting ad "${selectedAd.title}" for quality ${quality}`)
 
-          // Add ad segment - we need to serve this through our API
-          result.push(`#EXTINF:${selectedAd.duration}.0,`)
-          // Create a route that will serve the ad file content
-          const adUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:4444'}/api/ads/serve/${selectedAd.id}`
+          // Select a random segment from the ad
+          const randomSegment = selectedAd.segments[Math.floor(Math.random() * selectedAd.segments.length)]
+
+          // Calculate segment duration (3 seconds default)
+          const segmentDuration = 3
+
+          // Add ad segment - serve through our API
+          result.push(`#EXTINF:${segmentDuration}.0,`)
+          // Create URL that will serve the specific segment
+          const adUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:4444'}/api/ads/serve/${selectedAd.id}/${randomSegment.quality}`
           result.push(adUrl)
 
           // Record impression

@@ -6,15 +6,11 @@ import { existsSync } from 'fs'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string; segment: string }> }
 ) {
   try {
-    const { id } = await params
-
-    // Check if there's a segment index in the URL
-    const url = new URL(request.url)
-    const pathParts = url.pathname.split('/')
-    const segmentIndex = pathParts[pathParts.length - 1] !== id ? parseInt(pathParts[pathParts.length - 1]) : 0
+    const { id, segment } = await params
+    const segmentIndex = parseInt(segment) || 0
 
     // Get the ad from database
     const ad = await prisma.ad.findUnique({
@@ -31,9 +27,9 @@ export async function GET(
       )
     }
 
-    // Get the specific segment or default to first
-    const segment = ad.segments.find(s => s.quality === segmentIndex) || ad.segments[0]
-    const filePath = join(process.cwd(), 'public', segment.filepath)
+    // Get the specific segment
+    const adSegment = ad.segments.find(s => s.quality === segmentIndex) || ad.segments[0]
+    const filePath = join(process.cwd(), 'public', adSegment.filepath)
 
     // Check if file exists
     if (!existsSync(filePath)) {
@@ -58,9 +54,9 @@ export async function GET(
     })
 
   } catch (error) {
-    console.error('Error serving ad:', error)
+    console.error('Error serving ad segment:', error)
     return NextResponse.json(
-      { error: 'Failed to serve ad' },
+      { error: 'Failed to serve ad segment' },
       { status: 500 }
     )
   }

@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../../../auth/[...nextauth]/route'
 import { prisma } from '@/lib/prisma'
-import { convertToTS, checkFFmpeg } from '@/lib/ffmpeg-simple'
-import { writeFile, mkdir, unlink } from 'fs/promises'
+import { convertToHLSSegments, getVideoDuration, checkFFmpeg } from '@/lib/ffmpeg-hls'
+import { writeFile, mkdir, stat } from 'fs/promises'
 import { join } from 'path'
 import { existsSync } from 'fs'
 import crypto from 'crypto'
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     const title = formData.get('title') as string
     const description = formData.get('description') as string
     const status = formData.get('status') as string
-    const duration = parseInt(formData.get('duration') as string) || 30
+    const segmentDuration = parseInt(formData.get('segmentDuration') as string) || 3 // Default 3 seconds per segment
 
     if (!file || !title) {
       return NextResponse.json(
@@ -73,48 +73,65 @@ export async function POST(request: NextRequest) {
     // Check if FFmpeg is available
     const hasFFmpeg = await checkFFmpeg()
 
-    let adFilePath: string
-    let filesize: number
+    let duration = 0
+    let segments: Array<{ quality: number, filepath: string, filesize: number }> = []
 
     if (hasFFmpeg) {
       try {
-        // Convert to .ts format for HLS compatibility
-        const tsPath = join(uploadDir, 'ad.ts')
-        await convertToTS(tempFilePath, tsPath)
+        // Get video duration first
+        duration = await getVideoDuration(tempFilePath)
+        console.log(`Video duration: ${duration} seconds`)
 
-        // Get file size of converted file
-        const { size } = await import('fs').then(fs => fs.promises.stat(tsPath))
-        filesize = size
-        adFilePath = `/uploads/ads/${adId}/ad.ts`
+        // Convert to HLS segments
+        const { segments: hlsSegments } = await convertToHLSSegments(
+          tempFilePath,
+          uploadDir,
+          segmentDuration
+        )
 
-        // Delete original after successful conversion
+        console.log(`Created ${hlsSegments.length} segments`)
+
+        // Create database segment records
+        for (const segment of hlsSegments) {
+          const segmentPath = join(uploadDir, segment.filename)
+          const stats = await stat(segmentPath)
+
+          segments.push({
+            quality: segment.index, // Use index as quality (0, 1, 2, etc.)
+            filepath: `/uploads/ads/${adId}/${segment.filename}`,
+            filesize: stats.size
+          })
+        }
+
+        // Delete original file after conversion
         await unlink(tempFilePath)
 
-        console.log(`Ad converted to .ts format: ${adFilePath}`)
       } catch (error) {
-        console.error('Failed to convert to .ts, using original:', error)
-        // Fallback: keep original MP4
-        const finalPath = join(uploadDir, 'ad.mp4')
-        await writeFile(finalPath, buffer)
+        console.error('Failed to convert to HLS segments:', error)
+        // Fallback: save as single file
+        const fallbackPath = join(uploadDir, 'ad.mp4')
+        await writeFile(fallbackPath, buffer)
+        duration = 3 // Default duration
+        segments = [{
+          quality: 0,
+          filepath: `/uploads/ads/${adId}/ad.mp4`,
+          filesize: buffer.length
+        }]
         await unlink(tempFilePath)
-        adFilePath = `/uploads/ads/${adId}/ad.mp4`
-        filesize = buffer.length
       }
     } else {
-      // No FFmpeg available, keep original
+      // No FFmpeg, keep original
       console.warn('FFmpeg not available, keeping original format')
-      const finalPath = join(uploadDir, 'ad.mp4')
-      await writeFile(finalPath, buffer)
+      const fallbackPath = join(uploadDir, 'ad.mp4')
+      await writeFile(fallbackPath, buffer)
+      duration = 3 // Default duration
+      segments = [{
+        quality: 0,
+        filepath: `/uploads/ads/${adId}/ad.mp4`,
+        filesize: buffer.length
+      }]
       await unlink(tempFilePath)
-      adFilePath = `/uploads/ads/${adId}/ad.mp4`
-      filesize = buffer.length
     }
-
-    const segments = [{
-      quality: 0, // 0 means "default" - works for any quality
-      filepath: adFilePath,
-      filesize
-    }]
 
     // Create ad record in database with all segments
     const ad = await prisma.ad.create({

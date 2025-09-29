@@ -55,7 +55,7 @@ export default function AdsManagement() {
     description: '',
     status: 'active',
     file: null,
-    duration: 30
+    duration: 3
   })
 
   // Fetch ads on mount
@@ -142,7 +142,7 @@ export default function AdsManagement() {
       formDataToSend.append('title', formData.title)
       formDataToSend.append('description', formData.description)
       formDataToSend.append('status', formData.status)
-      formDataToSend.append('duration', formData.duration.toString())
+      formDataToSend.append('segmentDuration', formData.duration.toString())
 
       const response = await fetch('/api/admin/ads/upload', {
         method: 'POST',
@@ -324,16 +324,20 @@ export default function AdsManagement() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Duration (seconds)
+                Segment Duration (seconds)
               </label>
-              <input
-                type="number"
+              <select
                 value={formData.duration}
-                onChange={(e) => setFormData(prev => ({ ...prev, duration: parseInt(e.target.value) || 30 }))}
+                onChange={(e) => setFormData(prev => ({ ...prev, duration: parseInt(e.target.value) }))}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-blue-500 focus:border-blue-500"
-                placeholder="30"
-                min="1"
-              />
+              >
+                <option value="3">3 seconds (recommended)</option>
+                <option value="5">5 seconds</option>
+                <option value="10">10 seconds</option>
+              </select>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Video will be split into segments of this duration
+              </p>
             </div>
           </div>
 
