@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../../../auth/[...nextauth]/route'
 import { prisma } from '@/lib/prisma'
+import { convertToTS, checkFFmpeg } from '@/lib/ffmpeg-simple'
 import { writeFile, mkdir, unlink } from 'fs/promises'
 import { join } from 'path'
 import { existsSync } from 'fs'
@@ -69,18 +70,51 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(bytes)
     await writeFile(tempFilePath, buffer)
 
-    // For ads, we just keep one quality (the original file)
-    // No need for multiple qualities since ads are short and should load quickly
-    const adFilePath = `/uploads/ads/${adId}/ad.mp4`
+    // Check if FFmpeg is available
+    const hasFFmpeg = await checkFFmpeg()
+
+    let adFilePath: string
+    let filesize: number
+
+    if (hasFFmpeg) {
+      try {
+        // Convert to .ts format for HLS compatibility
+        const tsPath = join(uploadDir, 'ad.ts')
+        await convertToTS(tempFilePath, tsPath)
+
+        // Get file size of converted file
+        const { size } = await import('fs').then(fs => fs.promises.stat(tsPath))
+        filesize = size
+        adFilePath = `/uploads/ads/${adId}/ad.ts`
+
+        // Delete original after successful conversion
+        await unlink(tempFilePath)
+
+        console.log(`Ad converted to .ts format: ${adFilePath}`)
+      } catch (error) {
+        console.error('Failed to convert to .ts, using original:', error)
+        // Fallback: keep original MP4
+        const finalPath = join(uploadDir, 'ad.mp4')
+        await writeFile(finalPath, buffer)
+        await unlink(tempFilePath)
+        adFilePath = `/uploads/ads/${adId}/ad.mp4`
+        filesize = buffer.length
+      }
+    } else {
+      // No FFmpeg available, keep original
+      console.warn('FFmpeg not available, keeping original format')
+      const finalPath = join(uploadDir, 'ad.mp4')
+      await writeFile(finalPath, buffer)
+      await unlink(tempFilePath)
+      adFilePath = `/uploads/ads/${adId}/ad.mp4`
+      filesize = buffer.length
+    }
+
     const segments = [{
       quality: 0, // 0 means "default" - works for any quality
       filepath: adFilePath,
-      filesize: buffer.length
+      filesize
     }]
-
-    // Rename the file to ad.mp4 for clarity
-    const finalPath = join(uploadDir, 'ad.mp4')
-    await writeFile(finalPath, buffer)
 
     // Create ad record in database with all segments
     const ad = await prisma.ad.create({
@@ -115,13 +149,6 @@ export async function POST(request: NextRequest) {
         }
       }
     })
-
-    // Clean up the temp file (we already saved it as ad.mp4)
-    try {
-      await unlink(tempFilePath)
-    } catch {
-      // Ignore cleanup errors
-    }
 
     return NextResponse.json(ad)
   } catch (error) {
