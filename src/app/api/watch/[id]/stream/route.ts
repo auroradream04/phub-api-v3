@@ -177,6 +177,8 @@ async function injectAds(m3u8Text: string, quality: string, baseUrl: string, vid
   let segmentCount = 0
   let adInjected = false
   let pendingExtInf = ''
+  const segmentsToSkip = 2 // Skip first 2 segments when ad is injected
+  let skippedSegments = 0
 
   for (const line of lines) {
     // Collect all header tags first
@@ -196,12 +198,12 @@ async function injectAds(m3u8Text: string, quality: string, baseUrl: string, vid
       continue
     }
 
-    // After all headers, inject ad before first segment
+    // After all headers, inject ad and skip first 2 segments
     if (!headerComplete && !line.startsWith('#') && line.trim() !== '') {
       headerComplete = true
 
       if (selectedAd && selectedAd.segments.length > 0 && !adInjected) {
-        console.log(`[Stream] Injecting ad "${selectedAd.title}" for quality ${quality}`)
+        console.log(`[Stream] Injecting ad "${selectedAd.title}" for quality ${quality}, replacing first ${segmentsToSkip} segments`)
 
         // Select a random segment from the ad
         const randomSegment = selectedAd.segments[Math.floor(Math.random() * selectedAd.segments.length)]
@@ -231,14 +233,19 @@ async function injectAds(m3u8Text: string, quality: string, baseUrl: string, vid
         } catch (error) {
           console.error('Failed to record ad impression:', error)
         }
+
+        // Skip the first segment (don't add it to result)
+        console.log(`[Stream] Skipping segment 1/${segmentsToSkip}`)
+        pendingExtInf = '' // Clear the pending EXTINF for first segment
+        skippedSegments = 1
+        continue
       } else if (!selectedAd || selectedAd.segments.length === 0) {
         console.log(`[Stream] No ads available for quality ${quality}`)
-      }
-
-      // Now add the pending EXTINF and segment
-      if (pendingExtInf) {
-        result.push(pendingExtInf)
-        pendingExtInf = ''
+        // No ad, so add the first segment normally
+        if (pendingExtInf) {
+          result.push(pendingExtInf)
+          pendingExtInf = ''
+        }
       }
     }
 
@@ -247,6 +254,15 @@ async function injectAds(m3u8Text: string, quality: string, baseUrl: string, vid
       result.push(line)
     } else if (line.trim() !== '' && !line.startsWith('#')) {
       // This is a segment URL
+
+      // Skip segments if we need to
+      if (adInjected && skippedSegments < segmentsToSkip) {
+        skippedSegments++
+        console.log(`[Stream] Skipping segment ${skippedSegments}/${segmentsToSkip}`)
+        pendingExtInf = '' // Clear the pending EXTINF
+        continue
+      }
+
       segmentCount++
       console.log(`[Stream] Adding video segment ${segmentCount}: ${line.substring(0, 50)}...`)
 
