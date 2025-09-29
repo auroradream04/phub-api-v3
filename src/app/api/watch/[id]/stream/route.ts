@@ -161,12 +161,12 @@ async function injectAds(m3u8Text: string, quality: string, baseUrl: string, vid
   const baseUrlObj = new URL(baseUrl)
   const basePath = baseUrlObj.pathname.substring(0, baseUrlObj.pathname.lastIndexOf('/'))
 
-  // Get active ads from database
+  // Get active ads from database (quality 0 means it works for any quality)
   const activeAds = await prisma.ad.findMany({
     where: { status: 'active' },
     include: {
       segments: {
-        where: { quality: parseInt(quality) }
+        where: { quality: 0 }
       }
     }
   })

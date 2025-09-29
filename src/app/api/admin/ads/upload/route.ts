@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../../../auth/[...nextauth]/route'
 import { prisma } from '@/lib/prisma'
-import { convertVideoToHLS } from '@/lib/ffmpeg'
 import { writeFile, mkdir, unlink } from 'fs/promises'
 import { join } from 'path'
 import { existsSync } from 'fs'
@@ -70,22 +69,18 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(bytes)
     await writeFile(tempFilePath, buffer)
 
-    // Convert video to HLS segments for different qualities
-    let segments = []
-    try {
-      segments = await convertVideoToHLS(tempFilePath, uploadDir, adId)
-      console.log(`Converted video to ${segments.length} qualities`)
-    } catch (error) {
-      console.error('FFmpeg conversion failed, using fallback:', error)
-      // If conversion fails, create fallback segments for all qualities using the original file
-      const qualities = [240, 480, 720, 1080]
-      segments = qualities.map(q => ({
-        quality: q,
-        filepath: `/uploads/ads/${adId}/original.mp4`,
-        filesize: buffer.length
-      }))
-      console.log(`Created ${segments.length} fallback segments`)
-    }
+    // For ads, we just keep one quality (the original file)
+    // No need for multiple qualities since ads are short and should load quickly
+    const adFilePath = `/uploads/ads/${adId}/ad.mp4`
+    const segments = [{
+      quality: 0, // 0 means "default" - works for any quality
+      filepath: adFilePath,
+      filesize: buffer.length
+    }]
+
+    // Rename the file to ad.mp4 for clarity
+    const finalPath = join(uploadDir, 'ad.mp4')
+    await writeFile(finalPath, buffer)
 
     // Create ad record in database with all segments
     const ad = await prisma.ad.create({
@@ -121,13 +116,11 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Clean up original file after conversion (keep it if conversion failed)
-    if (segments.length > 1) {
-      try {
-        await unlink(tempFilePath)
-      } catch {
-        // Ignore cleanup errors
-      }
+    // Clean up the temp file (we already saved it as ad.mp4)
+    try {
+      await unlink(tempFilePath)
+    } catch {
+      // Ignore cleanup errors
     }
 
     return NextResponse.json(ad)
