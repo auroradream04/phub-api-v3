@@ -58,10 +58,15 @@ export async function convertToTS(inputPath: string, outputPath: string): Promis
       .outputOptions([
         '-c:v libx264',     // Video codec
         '-c:a aac',         // Audio codec
+        '-b:v 1000k',       // Video bitrate (1Mbps for ads)
+        '-b:a 128k',        // Audio bitrate
+        '-s 1280x720',      // Scale to 720p
+        '-r 30',            // 30 fps
         '-f mpegts',        // MPEG-TS format for HLS
         '-muxdelay 0',      // No mux delay
         '-muxpreload 0',    // No preload
-        '-preset fast',     // Fast encoding for ads
+        '-preset veryfast', // Fast encoding
+        '-crf 23',          // Quality setting (lower = better quality, bigger file)
       ])
       .output(outputPath)
       .on('end', () => {
