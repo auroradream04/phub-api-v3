@@ -1,13 +1,57 @@
 import ffmpeg from 'fluent-ffmpeg'
-import ffmpegPath from 'ffmpeg-static'
 import path from 'path'
+import { existsSync } from 'fs'
 
-// Set the path to the portable ffmpeg binary
-if (ffmpegPath) {
-  ffmpeg.setFfmpegPath(ffmpegPath)
+// Dynamically resolve ffmpeg path to avoid build-time issues
+function getFFmpegPath(): string | null {
+  try {
+    // Try to require ffmpeg-static at runtime
+    const ffmpegStatic = require('ffmpeg-static')
+    const ffmpegPath = typeof ffmpegStatic === 'string' ? ffmpegStatic : ffmpegStatic.path || ffmpegStatic.default
+
+    if (ffmpegPath && existsSync(ffmpegPath)) {
+      console.log('FFmpeg found at:', ffmpegPath)
+      return ffmpegPath
+    }
+
+    // Fallback: try common locations
+    const possiblePaths = [
+      path.join(process.cwd(), 'node_modules', 'ffmpeg-static', 'ffmpeg'),
+      path.join(process.cwd(), 'node_modules', 'ffmpeg-static', 'ffmpeg.exe'),
+      path.join(__dirname, '..', '..', 'node_modules', 'ffmpeg-static', 'ffmpeg'),
+    ]
+
+    for (const p of possiblePaths) {
+      if (existsSync(p)) {
+        console.log('FFmpeg found at fallback path:', p)
+        return p
+      }
+    }
+
+    console.error('FFmpeg binary not found in any expected location')
+    return null
+  } catch (error) {
+    console.error('Error loading ffmpeg-static:', error)
+    return null
+  }
+}
+
+// Set the ffmpeg path when needed
+let ffmpegConfigured = false
+
+function ensureFFmpegConfigured() {
+  if (!ffmpegConfigured) {
+    const ffmpegPath = getFFmpegPath()
+    if (ffmpegPath) {
+      ffmpeg.setFfmpegPath(ffmpegPath)
+      ffmpegConfigured = true
+    }
+  }
 }
 
 export async function convertToTS(inputPath: string, outputPath: string): Promise<void> {
+  ensureFFmpegConfigured()
+
   return new Promise((resolve, reject) => {
     ffmpeg(inputPath)
       .outputOptions([
@@ -32,6 +76,6 @@ export async function convertToTS(inputPath: string, outputPath: string): Promis
 }
 
 export async function checkFFmpeg(): Promise<boolean> {
-  // ffmpeg-static always provides ffmpeg, so return true
+  const ffmpegPath = getFFmpegPath()
   return !!ffmpegPath
 }
