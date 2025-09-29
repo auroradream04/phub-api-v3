@@ -1,0 +1,64 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { readFile } from 'fs/promises'
+import { join } from 'path'
+import { existsSync } from 'fs'
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+
+    // Get the ad from database
+    const ad = await prisma.ad.findUnique({
+      where: { id },
+      include: {
+        segments: {
+          where: { quality: 0 }
+        }
+      }
+    })
+
+    if (!ad || ad.segments.length === 0) {
+      return NextResponse.json(
+        { error: 'Ad not found' },
+        { status: 404 }
+      )
+    }
+
+    // Get the file path
+    const segment = ad.segments[0]
+    const filePath = join(process.cwd(), 'public', segment.filepath)
+
+    // Check if file exists
+    if (!existsSync(filePath)) {
+      console.error(`Ad file not found: ${filePath}`)
+      return NextResponse.json(
+        { error: 'Ad file not found' },
+        { status: 404 }
+      )
+    }
+
+    // Read the file
+    const fileContent = await readFile(filePath)
+
+    // Return the file content with proper headers
+    return new Response(fileContent, {
+      headers: {
+        'Content-Type': 'video/mp2t', // MPEG-TS content type
+        'Content-Length': fileContent.length.toString(),
+        'Cache-Control': 'public, max-age=3600',
+        'Access-Control-Allow-Origin': '*',
+      },
+    })
+
+  } catch (error) {
+    console.error('Error serving ad:', error)
+    return NextResponse.json(
+      { error: 'Failed to serve ad' },
+      { status: 500 }
+    )
+  }
+}

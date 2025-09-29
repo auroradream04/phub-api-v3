@@ -21,6 +21,7 @@ const eslintConfig = [
       "src/lib/pornhub.js/**",
       "src/generated/**",
       "prisma/**",
+      "public/uploads/**",
     ],
   },
 ];

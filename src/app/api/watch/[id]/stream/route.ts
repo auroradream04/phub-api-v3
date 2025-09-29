@@ -190,10 +190,10 @@ async function injectAds(m3u8Text: string, quality: string, baseUrl: string, vid
         if (selectedAd && selectedAd.segments.length > 0) {
           console.log(`[Stream] Injecting ad "${selectedAd.title}" for quality ${quality}`)
 
-          // Add ad segment
+          // Add ad segment - we need to serve this through our API
           result.push(`#EXTINF:${selectedAd.duration}.0,`)
-          const adSegment = selectedAd.segments[0]
-          const adUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:4444'}${adSegment.filepath}`
+          // Create a route that will serve the ad file content
+          const adUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:4444'}/api/ads/serve/${selectedAd.id}`
           result.push(adUrl)
 
           // Record impression

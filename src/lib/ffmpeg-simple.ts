@@ -6,6 +6,7 @@ import { existsSync } from 'fs'
 function getFFmpegPath(): string | null {
   try {
     // Try to require ffmpeg-static at runtime
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const ffmpegStatic = require('ffmpeg-static')
     const ffmpegPath = typeof ffmpegStatic === 'string' ? ffmpegStatic : ffmpegStatic.path || ffmpegStatic.default
 
