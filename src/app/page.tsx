@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Search, Eye, Star } from 'lucide-react'
+import HorizontalAds from '@/components/HorizontalAds'
 
 interface Video {
   id: string
@@ -151,6 +152,13 @@ export default function Home() {
               </button>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Horizontal Ads */}
+      <section className="py-6">
+        <div className="px-4 sm:px-6 lg:px-8">
+          <HorizontalAds />
         </div>
       </section>
 

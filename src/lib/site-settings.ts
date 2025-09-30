@@ -58,4 +58,5 @@ export const SETTING_KEYS = {
   CORS_PROXY_URL: 'cors_proxy_url',
   CORS_PROXY_ENABLED: 'cors_proxy_enabled',
   SEGMENTS_TO_SKIP: 'segments_to_skip',
+  ADS_SCRIPT_URL: 'ads_script_url',
 } as const
