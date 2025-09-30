@@ -38,12 +38,12 @@ export default function HorizontalAds() {
   if (ads.length === 0) return null
 
   return (
-    <div className="space-y-4 my-6">
+    <div className="flex flex-col items-center gap-1">
       {ads.map((ad, index) => (
         <button
           key={index}
           onClick={() => handleAdClick(ad)}
-          className="w-full block border border-gray-200 rounded-lg overflow-hidden hover:border-blue-400 transition-colors"
+          className="w-3/5 block border border-gray-200 rounded-lg overflow-hidden hover:border-blue-400 transition-colors"
         >
           <img
             src={ad.image}
