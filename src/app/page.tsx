@@ -17,22 +17,55 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('')
   const [featuredVideos, setFeaturedVideos] = useState<Video[]>([])
   const [loading, setLoading] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [hasMore, setHasMore] = useState(true)
 
   useEffect(() => {
-    // Fetch featured videos on load
-    fetchFeaturedVideos()
-  }, [])
+    // Fetch featured videos when page changes
+    fetchFeaturedVideos(currentPage)
+  }, [currentPage])
 
-  const fetchFeaturedVideos = async () => {
+  const fetchFeaturedVideos = async (page: number) => {
     try {
       setLoading(true)
-      const response = await fetch('/api/search/hot?page=1')
-      const data = await response.json()
-      setFeaturedVideos(data.data || [])
+
+      // Fetch 2 pages worth of videos (24 total)
+      const apiPage1 = (page - 1) * 2 + 1
+      const apiPage2 = apiPage1 + 1
+
+      const [response1, response2] = await Promise.all([
+        fetch(`/api/search/hot?page=${apiPage1}`),
+        fetch(`/api/search/hot?page=${apiPage2}`)
+      ])
+
+      const [data1, data2] = await Promise.all([
+        response1.json(),
+        response2.json()
+      ])
+
+      const allVideos = [...(data1.data || []), ...(data2.data || [])]
+      setFeaturedVideos(allVideos)
+
+      // Check if there are more videos (if second page has results)
+      setHasMore(data2.data && data2.data.length > 0)
     } catch (error) {
       console.error('Failed to fetch videos:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const goToNextPage = () => {
+    if (hasMore) {
+      setCurrentPage(prev => prev + 1)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
+
+  const goToPrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(prev => prev - 1)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     }
   }
 
@@ -130,8 +163,8 @@ export default function Home() {
           </div>
 
           {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {[...Array(8)].map((_, i) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {[...Array(24)].map((_, i) => (
                 <div key={i} className="bg-white rounded-xl overflow-hidden shadow-md animate-pulse">
                   <div className="w-full h-48 bg-gray-200"></div>
                   <div className="p-4 space-y-3">
@@ -142,8 +175,8 @@ export default function Home() {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {featuredVideos.slice(0, 12).map((video) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {featuredVideos.map((video) => (
                 <Link
                   key={video.id}
                   href={`/watch/${video.id}`}
@@ -178,6 +211,41 @@ export default function Home() {
                   </div>
                 </Link>
               ))}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {!loading && featuredVideos.length > 0 && (
+            <div className="flex items-center justify-center gap-4 mt-12">
+              <button
+                onClick={goToPrevPage}
+                disabled={currentPage === 1}
+                className={`px-6 py-3 rounded-lg font-medium transition-all ${
+                  currentPage === 1
+                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    : 'bg-white text-orange-500 border-2 border-orange-500 hover:bg-orange-500 hover:text-white shadow-sm'
+                }`}
+              >
+                上一页
+              </button>
+
+              <div className="flex items-center gap-2 px-6 py-3 bg-white rounded-lg shadow-sm border border-gray-200">
+                <span className="text-gray-600">第</span>
+                <span className="text-orange-500 font-bold text-lg">{currentPage}</span>
+                <span className="text-gray-600">页</span>
+              </div>
+
+              <button
+                onClick={goToNextPage}
+                disabled={!hasMore}
+                className={`px-6 py-3 rounded-lg font-medium transition-all ${
+                  !hasMore
+                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    : 'bg-orange-500 text-white hover:bg-orange-600 shadow-sm'
+                }`}
+              >
+                下一页
+              </button>
             </div>
           )}
         </div>
