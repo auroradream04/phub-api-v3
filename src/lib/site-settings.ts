@@ -1,4 +1,6 @@
-import { prisma } from '@/lib/prisma'
+import { PrismaClient } from '@/generated/prisma'
+
+const prisma = new PrismaClient()
 
 // Cache for site settings to avoid database hits on every request
 const settingsCache = new Map<string, { value: string, timestamp: number }>()

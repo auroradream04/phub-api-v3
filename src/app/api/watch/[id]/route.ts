@@ -63,21 +63,13 @@ export async function GET(
     const host = request.headers.get('host') || 'localhost:4444'
     const baseUrl = `${protocol}://${host}`
 
-    // Get CORS proxy settings
-    const corsProxyEnabled = (await getSiteSetting(SETTING_KEYS.CORS_PROXY_ENABLED, 'true')) === 'true'
-    const corsProxyUrl = await getSiteSetting(SETTING_KEYS.CORS_PROXY_URL, 'https://cors.freechatnow.net/')
-
-    // Transform mediaDefinitions to use proxy URLs
-    const transformedMediaDefinitions = videoInfo.mediaDefinitions.map((md) => {
-      const streamUrl = `${baseUrl}/api/watch/${id}/stream?q=${md.quality}`
-
-      return {
-        ...md,
-        originalUrl: md.videoUrl,
-        // Prepend CORS proxy if enabled
-        videoUrl: corsProxyEnabled ? `${corsProxyUrl}${streamUrl}` : streamUrl,
-      }
-    })
+    // Transform mediaDefinitions to use our stream endpoint
+    // CORS proxy will be applied to the actual PornHub segment URLs in the stream route
+    const transformedMediaDefinitions = videoInfo.mediaDefinitions.map((md) => ({
+      ...md,
+      originalUrl: md.videoUrl,
+      videoUrl: `${baseUrl}/api/watch/${id}/stream?q=${md.quality}`,
+    }))
 
     // Return the video info with transformed URLs
     return NextResponse.json({

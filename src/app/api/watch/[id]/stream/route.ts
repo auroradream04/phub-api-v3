@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { PornHub } from 'pornhub.js'
 import { getRandomProxy } from '@/lib/proxy'
 import { prisma } from '@/lib/prisma'
+import { getSiteSetting, SETTING_KEYS } from '@/lib/site-settings'
 
 export async function GET(
   request: NextRequest,
@@ -161,6 +162,10 @@ async function injectAds(m3u8Text: string, quality: string, baseUrl: string, vid
   const baseUrlObj = new URL(baseUrl)
   const basePath = baseUrlObj.pathname.substring(0, baseUrlObj.pathname.lastIndexOf('/'))
 
+  // Get CORS proxy settings
+  const corsProxyEnabled = (await getSiteSetting(SETTING_KEYS.CORS_PROXY_ENABLED, 'true')) === 'true'
+  const corsProxyUrl = await getSiteSetting(SETTING_KEYS.CORS_PROXY_URL, 'https://cors.freechatnow.net/')
+
   // Get active ads from database (get all segments)
   const activeAds = await prisma.ad.findMany({
     where: { status: 'active' },
@@ -272,13 +277,20 @@ async function injectAds(m3u8Text: string, quality: string, baseUrl: string, vid
         pendingExtInf = ''
       }
 
-      // Convert relative URLs to absolute - PornHub CDN has CORS enabled, no proxy needed
+      // Convert relative URLs to absolute and apply CORS proxy if enabled
+      let segmentUrl: string
       if (line.startsWith('http')) {
-        result.push(line)
+        segmentUrl = line
       } else {
-        const absoluteUrl = `${baseUrlObj.origin}${basePath}/${line.trim()}`
-        result.push(absoluteUrl)
+        segmentUrl = `${baseUrlObj.origin}${basePath}/${line.trim()}`
       }
+
+      // Prepend CORS proxy if enabled (only for PornHub CDN URLs, not our API)
+      if (corsProxyEnabled && segmentUrl.includes('phncdn.com')) {
+        segmentUrl = `${corsProxyUrl}${segmentUrl}`
+      }
+
+      result.push(segmentUrl)
     }
   }
 
