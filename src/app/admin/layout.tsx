@@ -2,19 +2,46 @@
 
 import { signOut, useSession } from 'next-auth/react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 
 export default function AdminLayout({
   children
 }: {
   children: React.ReactNode
 }) {
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const pathname = usePathname()
+  const router = useRouter()
+
+  // Check if user is admin
+  useEffect(() => {
+    if (status === 'loading') return
+
+    if (!session) {
+      router.push('/login')
+      return
+    }
+
+    if (session.user?.role !== 'admin') {
+      router.push('/')
+      return
+    }
+  }, [session, status, router])
+
+  // Show loading while checking auth
+  if (status === 'loading' || !session || session.user?.role !== 'admin') {
+    return (
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-gray-600 dark:text-gray-400">Loading...</div>
+      </div>
+    )
+  }
 
   const navigation = [
     { name: 'Dashboard', href: '/admin' },
-    { name: 'Ads', href: '/admin/ads' }
+    { name: 'Ads', href: '/admin/ads' },
+    { name: 'Settings', href: '/admin/settings' }
   ]
 
   return (
