@@ -12,6 +12,7 @@ interface Video {
   duration: string
   views: string
   rating?: string
+  provider?: string
 }
 
 export default function Home() {
@@ -187,7 +188,7 @@ export default function Home() {
               {featuredVideos.map((video) => (
                 <Link
                   key={video.id}
-                  href={`/watch/${video.id}`}
+                  href={`/watch/${video.id}${video.provider ? `?provider=${encodeURIComponent(video.provider)}` : ''}`}
                   className="bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-blue-400 transition-all group"
                 >
                   <div className="relative w-full h-48 bg-gray-100 overflow-hidden">

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Eye, Star, Clock, ChevronLeft } from 'lucide-react'
 import Hls from 'hls.js'
@@ -24,11 +24,23 @@ interface VideoInfo {
   pornstars?: string[]
 }
 
+interface RecommendedVideo {
+  id: string
+  title: string
+  preview: string
+  duration: string
+  views: string
+  provider?: string
+}
+
 export default function WatchPage() {
   const params = useParams()
+  const searchParams = useSearchParams()
   const videoId = params.id as string
+  const provider = searchParams.get('provider')
 
   const [videoInfo, setVideoInfo] = useState<VideoInfo | null>(null)
+  const [recommendedVideos, setRecommendedVideos] = useState<RecommendedVideo[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedQuality, setSelectedQuality] = useState<number | null>(null)
@@ -37,18 +49,35 @@ export default function WatchPage() {
   const hlsRef = useRef<Hls | null>(null)
 
   useEffect(() => {
-    // Fetch video info
-    fetch(`/api/watch/${videoId}`)
-      .then(res => {
-        if (!res.ok) throw new Error('Failed to fetch video')
-        return res.json()
-      })
-      .then(data => {
-        setVideoInfo(data)
+    // Fetch video info and provider videos in parallel
+    const fetchData = async () => {
+      try {
+        const promises = [
+          fetch(`/api/watch/${videoId}`).then(res => res.json())
+        ]
+
+        // If provider is available, fetch provider's videos
+        if (provider) {
+          promises.push(
+            fetch(`/api/search/${encodeURIComponent(provider)}?page=1`).then(res => res.json())
+          )
+        }
+
+        const results = await Promise.all(promises)
+        const videoData = results[0]
+        const providerData = results[1]
+
+        setVideoInfo(videoData)
+
+        // Set recommended videos (filter out current video)
+        if (providerData?.data) {
+          const filtered = providerData.data.filter((v: RecommendedVideo) => v.id !== videoId)
+          setRecommendedVideos(filtered.slice(0, 6))
+        }
 
         // Select highest quality by default
-        if (data.mediaDefinitions && data.mediaDefinitions.length > 0) {
-          const qualities = data.mediaDefinitions
+        if (videoData.mediaDefinitions && videoData.mediaDefinitions.length > 0) {
+          const qualities = videoData.mediaDefinitions
             .filter((md: MediaDefinition) => md.format === 'hls')
             .sort((a: MediaDefinition, b: MediaDefinition) => b.quality - a.quality)
 
@@ -58,13 +87,15 @@ export default function WatchPage() {
         }
 
         setLoading(false)
-      })
-      .catch(err => {
-        console.error('Failed to fetch video:', err)
+      } catch (err) {
+        console.error('Failed to fetch data:', err)
         setError('无法加载视频信息')
         setLoading(false)
-      })
-  }, [videoId])
+      }
+    }
+
+    fetchData()
+  }, [videoId, provider])
 
   useEffect(() => {
     if (!videoInfo || selectedQuality === null || !videoRef.current) return
@@ -287,6 +318,49 @@ export default function WatchPage() {
           </div>
         </div>
       </div>
+
+      {/* Recommended Videos */}
+      {recommendedVideos.length > 0 && (
+        <section className="py-12 px-4 sm:px-6 lg:px-8">
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              {provider ? `更多来自 ${provider} 的视频` : '推荐视频'}
+            </h2>
+            <div className="h-1 w-20 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full"></div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {recommendedVideos.map((video) => (
+              <Link
+                key={video.id}
+                href={`/watch/${video.id}${video.provider ? `?provider=${encodeURIComponent(video.provider)}` : ''}`}
+                className="bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-blue-400 transition-all group"
+              >
+                <div className="relative w-full h-48 bg-gray-100 overflow-hidden">
+                  <img
+                    src={video.preview}
+                    alt={video.title}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                  />
+                  <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded">
+                    {video.duration}
+                  </div>
+                </div>
+                <div className="p-4">
+                  <h3 className="font-medium text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                    {video.title}
+                  </h3>
+                  <div className="flex items-center justify-between text-sm text-gray-500">
+                    <span className="flex items-center gap-1">
+                      <Eye className="w-4 h-4" />
+                      {video.views}
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Footer */}
       <footer className="bg-white border-t border-gray-200 py-8 mt-12">

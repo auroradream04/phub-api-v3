@@ -21,6 +21,7 @@ export interface VideoListResult {
     premium: boolean
     freePremium: boolean
     preview: string
+    provider?: string
 }
 
 export type VideoSearchResult = VideoListResult
@@ -58,6 +59,10 @@ export function parseVideoResult($: CheerioAPI, container: string | Cheerio<Elem
         const img = item.find('img')
         const preview = getAttribute<string>(img, 'src', '')
 
+        // Extract provider information
+        const providerLink = item.find('.usernameWrap a, .usernameBadgesWrapper a, a.bolded')
+        const provider = providerLink.text().trim() || undefined
+
         return {
             title,
             id,
@@ -68,6 +73,7 @@ export function parseVideoResult($: CheerioAPI, container: string | Cheerio<Elem
             premium: !!item.find('.premiumIcon').length,
             freePremium: !!item.find('.marker-overlays .phpFreeBlock').length,
             preview,
+            provider,
         }
     }).get().filter(nonNullable)
 
