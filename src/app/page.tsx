@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Search } from 'lucide-react'
+import { Search, Eye, Star } from 'lucide-react'
 
 interface Video {
   id: string
@@ -83,24 +83,24 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-8">
-              <Link href="/" className="text-2xl font-bold text-orange-500">
+              <Link href="/" className="text-2xl font-bold text-blue-600">
                 视频中心
               </Link>
               <nav className="hidden md:flex space-x-6">
-                <Link href="/" className="text-gray-700 hover:text-orange-500 transition-colors">
+                <Link href="/" className="text-gray-700 hover:text-blue-600 transition-colors">
                   首页
                 </Link>
-                <Link href="/trending" className="text-gray-700 hover:text-orange-500 transition-colors">
+                <Link href="/trending" className="text-gray-700 hover:text-blue-600 transition-colors">
                   热门
                 </Link>
-                <Link href="/categories" className="text-gray-700 hover:text-orange-500 transition-colors">
+                <Link href="/categories" className="text-gray-700 hover:text-blue-600 transition-colors">
                   分类
                 </Link>
               </nav>
             </div>
             <Link
               href="/admin"
-              className="text-sm text-gray-600 hover:text-orange-500 transition-colors"
+              className="text-sm text-gray-600 hover:text-blue-600 transition-colors"
             >
               管理后台
             </Link>
@@ -109,7 +109,7 @@ export default function Home() {
       </header>
 
       {/* Hero Section with Search */}
-      <section className="bg-gradient-to-br from-orange-50 to-red-50 py-16">
+      <section className="bg-gradient-to-br from-blue-50 to-indigo-50 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold text-gray-900 mb-4">
@@ -128,11 +128,11 @@ export default function Home() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="搜索您想看的内容..."
-                className="w-full px-6 py-4 pr-14 rounded-full border-2 border-orange-200 focus:border-orange-400 focus:outline-none bg-white shadow-lg text-gray-900 placeholder-gray-400 transition-all"
+                className="w-full px-6 py-4 pr-14 rounded-full border-2 border-blue-200 focus:border-blue-400 focus:outline-none bg-white shadow-lg text-gray-900 placeholder-gray-400 transition-all"
               />
               <button
                 type="submit"
-                className="absolute right-2 top-1/2 -translate-y-1/2 bg-orange-500 hover:bg-orange-600 text-white p-3 rounded-full transition-colors"
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full transition-colors"
               >
                 <Search className="w-5 h-5" />
               </button>
@@ -145,7 +145,7 @@ export default function Home() {
               <button
                 key={tag}
                 onClick={() => setSearchQuery(tag)}
-                className="px-4 py-2 bg-white text-gray-700 rounded-full hover:bg-orange-500 hover:text-white transition-colors shadow-sm border border-gray-200"
+                className="px-4 py-2 bg-white text-gray-700 rounded-full hover:bg-blue-600 hover:text-white transition-colors shadow-sm border border-gray-200"
               >
                 {tag}
               </button>
@@ -159,7 +159,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-8">
             <h2 className="text-3xl font-bold text-gray-900 mb-2">热门推荐</h2>
-            <div className="h-1 w-20 bg-gradient-to-r from-orange-500 to-red-500 rounded-full"></div>
+            <div className="h-1 w-20 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full"></div>
           </div>
 
           {loading ? (
@@ -193,17 +193,17 @@ export default function Home() {
                     </div>
                   </div>
                   <div className="p-4">
-                    <h3 className="font-medium text-gray-900 mb-2 line-clamp-2 group-hover:text-orange-500 transition-colors">
+                    <h3 className="font-medium text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
                       {video.title}
                     </h3>
                     <div className="flex items-center justify-between text-sm text-gray-500">
-                      <span className="flex items-center">
-                        <span className="mr-1">👁️</span>
+                      <span className="flex items-center gap-1">
+                        <Eye className="w-4 h-4" />
                         {video.views}
                       </span>
                       {video.rating && (
-                        <span className="flex items-center">
-                          <span className="mr-1">⭐</span>
+                        <span className="flex items-center gap-1">
+                          <Star className="w-4 h-4" />
                           {video.rating}%
                         </span>
                       )}
@@ -223,7 +223,7 @@ export default function Home() {
                 className={`px-6 py-3 rounded-lg font-medium transition-all ${
                   currentPage === 1
                     ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    : 'bg-white text-orange-500 border-2 border-orange-500 hover:bg-orange-500 hover:text-white shadow-sm'
+                    : 'bg-white text-blue-600 border-2 border-blue-600 hover:bg-blue-600 hover:text-white shadow-sm'
                 }`}
               >
                 上一页
@@ -231,7 +231,7 @@ export default function Home() {
 
               <div className="flex items-center gap-2 px-6 py-3 bg-white rounded-lg shadow-sm border border-gray-200">
                 <span className="text-gray-600">第</span>
-                <span className="text-orange-500 font-bold text-lg">{currentPage}</span>
+                <span className="text-blue-600 font-bold text-lg">{currentPage}</span>
                 <span className="text-gray-600">页</span>
               </div>
 
@@ -241,7 +241,7 @@ export default function Home() {
                 className={`px-6 py-3 rounded-lg font-medium transition-all ${
                   !hasMore
                     ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    : 'bg-orange-500 text-white hover:bg-orange-600 shadow-sm'
+                    : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
                 }`}
               >
                 下一页
