@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Search, Eye, Star } from 'lucide-react'
+import { Search, Eye, Star, User } from 'lucide-react'
 import HorizontalAds from '@/components/HorizontalAds'
 
 interface Video {
@@ -206,14 +206,22 @@ export default function Home() {
                       {video.title}
                     </h3>
                     <div className="flex items-center justify-between text-sm text-gray-500">
-                      <span className="flex items-center gap-1">
-                        <Eye className="w-4 h-4" />
-                        {video.views}
-                      </span>
+                      <div className="flex items-center gap-3">
+                        <span className="flex items-center gap-1 leading-none">
+                          <Eye className="w-4 h-4" />
+                          <span className="leading-none">{video.views}</span>
+                        </span>
+                        {video.provider && (
+                          <span className="flex items-center gap-1 max-w-[120px] leading-none">
+                            <User className="w-4 h-4 flex-shrink-0" />
+                            <span className="truncate leading-none">{video.provider}</span>
+                          </span>
+                        )}
+                      </div>
                       {video.rating && (
-                        <span className="flex items-center gap-1">
+                        <span className="flex items-center gap-1 leading-none">
                           <Star className="w-4 h-4" />
-                          {video.rating}%
+                          <span className="leading-none">{video.rating}%</span>
                         </span>
                       )}
                     </div>

@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Eye, Star, Clock, ChevronLeft } from 'lucide-react'
+import { Eye, Star, Clock, ChevronLeft, User } from 'lucide-react'
 import Hls from 'hls.js'
 import HorizontalAdsSlider from '@/components/HorizontalAdsSlider'
 
@@ -349,11 +349,17 @@ export default function WatchPage() {
                   <h3 className="font-medium text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
                     {video.title}
                   </h3>
-                  <div className="flex items-center justify-between text-sm text-gray-500">
-                    <span className="flex items-center gap-1">
+                  <div className="flex items-center gap-3 text-sm text-gray-500">
+                    <span className="flex items-center gap-1 leading-none">
                       <Eye className="w-4 h-4" />
-                      {video.views}
+                      <span className="leading-none">{video.views}</span>
                     </span>
+                    {video.provider && (
+                      <span className="flex items-center gap-1 max-w-[120px] leading-none">
+                        <User className="w-4 h-4 flex-shrink-0" />
+                        <span className="truncate leading-none">{video.provider}</span>
+                      </span>
+                    )}
                   </div>
                 </div>
               </Link>
