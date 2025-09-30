@@ -6,6 +6,28 @@ const prisma = new PrismaClient()
 async function main() {
   console.log('Starting database seed...')
 
+  // Seed Site Settings
+  console.log('Creating site settings...')
+  const defaultSettings = [
+    { key: 'cors_proxy_url', value: 'https://cors.freechatnow.net/' },
+    { key: 'cors_proxy_enabled', value: 'true' },
+    { key: 'segments_to_skip', value: '2' },
+    { key: 'ads_script_url', value: 'https://hcdream.com/berlin/ads/scripts/heiliao.js' }
+  ]
+
+  for (const setting of defaultSettings) {
+    const existing = await prisma.siteSetting.findUnique({
+      where: { key: setting.key }
+    })
+
+    if (!existing) {
+      await prisma.siteSetting.create({ data: setting })
+      console.log(`Created setting: ${setting.key}`)
+    } else {
+      console.log(`Setting already exists: ${setting.key}`)
+    }
+  }
+
   const adminEmail = 'admin@example.com'
   const adminPassword = 'admin123'
 
