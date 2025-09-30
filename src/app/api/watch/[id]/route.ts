@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PornHub } from 'pornhub.js'
 import { getRandomProxy } from '@/lib/proxy'
+import { getSiteSetting, SETTING_KEYS } from '@/lib/site-settings'
 
 export async function GET(
   request: NextRequest,
@@ -62,12 +63,21 @@ export async function GET(
     const host = request.headers.get('host') || 'localhost:4444'
     const baseUrl = `${protocol}://${host}`
 
+    // Get CORS proxy settings
+    const corsProxyEnabled = (await getSiteSetting(SETTING_KEYS.CORS_PROXY_ENABLED, 'true')) === 'true'
+    const corsProxyUrl = await getSiteSetting(SETTING_KEYS.CORS_PROXY_URL, 'https://cors.freechatnow.net/')
+
     // Transform mediaDefinitions to use proxy URLs
-    const transformedMediaDefinitions = videoInfo.mediaDefinitions.map((md) => ({
-      ...md,
-      originalUrl: md.videoUrl,
-      videoUrl: `${baseUrl}/api/watch/${id}/stream?q=${md.quality}`,
-    }))
+    const transformedMediaDefinitions = videoInfo.mediaDefinitions.map((md) => {
+      const streamUrl = `${baseUrl}/api/watch/${id}/stream?q=${md.quality}`
+
+      return {
+        ...md,
+        originalUrl: md.videoUrl,
+        // Prepend CORS proxy if enabled
+        videoUrl: corsProxyEnabled ? `${corsProxyUrl}${streamUrl}` : streamUrl,
+      }
+    })
 
     // Return the video info with transformed URLs
     return NextResponse.json({

@@ -99,3 +99,11 @@ model AdImpression {
 
   ad Ad @relation(fields: [adId], references: [id], onDelete: Cascade)
 }
+
+model SiteSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
