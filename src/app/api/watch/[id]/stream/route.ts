@@ -179,10 +179,13 @@ async function injectAds(m3u8Text: string, quality: string, baseUrl: string, vid
     ? activeAds[Math.floor(Math.random() * activeAds.length)]
     : null
 
+  // Get segments to skip from settings
+  const segmentsToSkipSetting = await getSiteSetting(SETTING_KEYS.SEGMENTS_TO_SKIP, '2')
+  const segmentsToSkip = parseInt(segmentsToSkipSetting, 10) || 2
+
   let segmentCount = 0
   let adInjected = false
   let pendingExtInf = ''
-  const segmentsToSkip = 2 // Skip first 2 segments when ad is injected
   let skippedSegments = 0
 
   for (const line of lines) {
