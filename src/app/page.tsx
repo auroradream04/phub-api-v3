@@ -5,12 +5,12 @@ import Link from 'next/link'
 import { Search } from 'lucide-react'
 
 interface Video {
-  key: string
+  id: string
   title: string
-  thumb: string
+  preview: string
   duration: string
   views: string
-  rating: string
+  rating?: string
 }
 
 export default function Home() {
@@ -145,13 +145,13 @@ export default function Home() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {featuredVideos.slice(0, 12).map((video) => (
                 <Link
-                  key={video.key}
-                  href={`/watch/${video.key}`}
+                  key={video.id}
+                  href={`/watch/${video.id}`}
                   className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all transform hover:-translate-y-1 group"
                 >
                   <div className="relative w-full h-48 bg-gray-100 overflow-hidden">
                     <img
-                      src={video.thumb}
+                      src={video.preview}
                       alt={video.title}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                     />
