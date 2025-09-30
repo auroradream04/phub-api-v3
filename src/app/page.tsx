@@ -85,24 +85,24 @@ export default function Home() {
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-8">
-              <Link href="/" className="text-2xl font-bold text-blue-600">
+              <Link href="/" className="text-2xl font-bold text-blue-300">
                 视频中心
               </Link>
               <nav className="hidden md:flex space-x-6">
-                <Link href="/" className="text-gray-700 hover:text-blue-600 transition-colors">
+                <Link href="/" className="text-gray-700 hover:text-blue-300 transition-colors">
                   首页
                 </Link>
-                <Link href="/trending" className="text-gray-700 hover:text-blue-600 transition-colors">
+                <Link href="/trending" className="text-gray-700 hover:text-blue-300 transition-colors">
                   热门
                 </Link>
-                <Link href="/categories" className="text-gray-700 hover:text-blue-600 transition-colors">
+                <Link href="/categories" className="text-gray-700 hover:text-blue-300 transition-colors">
                   分类
                 </Link>
               </nav>
             </div>
             <Link
               href="/admin"
-              className="text-sm text-gray-600 hover:text-blue-600 transition-colors"
+              className="text-sm text-gray-600 hover:text-blue-300 transition-colors"
             >
               管理后台
             </Link>
@@ -130,11 +130,11 @@ export default function Home() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="搜索您想看的内容..."
-                className="w-full px-6 py-4 pr-14 rounded-full border-2 border-blue-200 focus:border-blue-400 focus:outline-none bg-white text-gray-900 placeholder-gray-400 transition-all"
+                className="w-full px-6 py-4 pr-14 rounded-full border-2 border-blue-100 focus:border-blue-300 focus:outline-none bg-white text-gray-900 placeholder-gray-400 transition-all"
               />
               <button
                 type="submit"
-                className="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full transition-colors"
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-300 hover:bg-blue-400 text-white p-3 rounded-full transition-colors"
               >
                 <Search className="w-5 h-5" />
               </button>
@@ -147,7 +147,7 @@ export default function Home() {
               <button
                 key={tag}
                 onClick={() => setSearchQuery(tag)}
-                className="px-4 py-2 bg-white text-gray-700 rounded-full hover:bg-blue-600 hover:text-white transition-colors border border-gray-200"
+                className="px-4 py-2 bg-white text-gray-700 rounded-full hover:bg-blue-300 hover:text-white transition-colors border border-gray-200"
               >
                 {tag}
               </button>
@@ -168,7 +168,7 @@ export default function Home() {
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="mb-8">
             <h2 className="text-3xl font-bold text-gray-900 mb-2">热门推荐</h2>
-            <div className="h-1 w-20 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full"></div>
+            <div className="h-1 w-20 bg-gradient-to-r from-blue-300 to-indigo-300 rounded-full"></div>
           </div>
 
           {loading ? (
@@ -189,7 +189,7 @@ export default function Home() {
                 <Link
                   key={video.id}
                   href={`/watch/${video.id}${video.provider ? `?provider=${encodeURIComponent(video.provider)}` : ''}`}
-                  className="bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-blue-400 transition-all group"
+                  className="bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-blue-300 transition-all group"
                 >
                   <div className="relative w-full h-48 bg-gray-100 overflow-hidden">
                     <img
@@ -202,7 +202,7 @@ export default function Home() {
                     </div>
                   </div>
                   <div className="p-4">
-                    <h3 className="font-medium text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                    <h3 className="font-medium text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-300 transition-colors">
                       {video.title}
                     </h3>
                     <div className="flex items-center justify-between text-sm text-gray-500">
@@ -240,7 +240,7 @@ export default function Home() {
                 className={`px-6 py-3 rounded-lg font-medium transition-all ${
                   currentPage === 1
                     ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    : 'bg-white text-blue-600 border-2 border-blue-600 hover:bg-blue-600 hover:text-white'
+                    : 'bg-white text-blue-300 border-2 border-blue-300 hover:bg-blue-300 hover:text-white'
                 }`}
               >
                 上一页
@@ -248,7 +248,7 @@ export default function Home() {
 
               <div className="flex items-center gap-2 px-6 py-3 bg-white rounded-lg border border-gray-200">
                 <span className="text-gray-600">第</span>
-                <span className="text-blue-600 font-bold text-lg">{currentPage}</span>
+                <span className="text-blue-300 font-bold text-lg">{currentPage}</span>
                 <span className="text-gray-600">页</span>
               </div>
 
@@ -258,7 +258,7 @@ export default function Home() {
                 className={`px-6 py-3 rounded-lg font-medium transition-all ${
                   !hasMore
                     ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'bg-blue-300 text-white hover:bg-blue-400'
                 }`}
               >
                 下一页

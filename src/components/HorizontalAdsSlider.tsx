@@ -36,10 +36,11 @@ export default function HorizontalAdsSlider() {
     return () => clearInterval(interval)
   }, [ads.length])
 
-  const handleAdClick = (ad: HorizontalAd) => {
+  const handleAdClick = () => {
+    const currentAd = ads[currentIndex]
     // If ad has urlArray, pick a random one, otherwise use default
-    if (ad.urlArray && ad.urlArray.length > 0) {
-      const randomUrl = ad.urlArray[Math.floor(Math.random() * ad.urlArray.length)]
+    if (currentAd.urlArray && currentAd.urlArray.length > 0) {
+      const randomUrl = currentAd.urlArray[Math.floor(Math.random() * currentAd.urlArray.length)]
       window.open(`https://${randomUrl}`, '_blank', 'noopener,noreferrer')
     } else if (defaultUrl) {
       window.open(defaultUrl, '_blank', 'noopener,noreferrer')
@@ -57,8 +58,8 @@ export default function HorizontalAdsSlider() {
         {ads.map((ad, index) => (
           <button
             key={index}
-            onClick={() => handleAdClick(ad)}
-            className="w-full flex-shrink-0 border border-gray-200 rounded-lg overflow-hidden hover:border-blue-400 transition-colors"
+            onClick={handleAdClick}
+            className="w-full flex-shrink-0 border border-gray-200 rounded-lg overflow-hidden hover:border-blue-300 transition-colors"
           >
             <img
               src={ad.image}
@@ -77,7 +78,7 @@ export default function HorizontalAdsSlider() {
             key={index}
             onClick={() => setCurrentIndex(index)}
             className={`w-2 h-2 rounded-full transition-colors ${
-              index === currentIndex ? 'bg-blue-600' : 'bg-gray-300'
+              index === currentIndex ? 'bg-blue-300' : 'bg-gray-300'
             }`}
             aria-label={`Go to ad ${index + 1}`}
           />

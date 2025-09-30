@@ -158,7 +158,7 @@ export default function WatchPage() {
         <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
           <div className="px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
-              <Link href="/" className="text-2xl font-bold text-blue-600">
+              <Link href="/" className="text-2xl font-bold text-blue-300">
                 视频中心
               </Link>
             </div>
@@ -182,7 +182,7 @@ export default function WatchPage() {
         <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
           <div className="px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
-              <Link href="/" className="text-2xl font-bold text-blue-600">
+              <Link href="/" className="text-2xl font-bold text-blue-300">
                 视频中心
               </Link>
             </div>
@@ -194,7 +194,7 @@ export default function WatchPage() {
             <p className="text-red-600 text-lg mb-4">{error || '视频未找到'}</p>
             <Link
               href="/"
-              className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700"
+              className="inline-flex items-center gap-2 text-blue-300 hover:text-blue-400"
             >
               <ChevronLeft className="w-5 h-5" />
               返回首页
@@ -215,12 +215,12 @@ export default function WatchPage() {
       <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <Link href="/" className="text-2xl font-bold text-blue-600">
+            <Link href="/" className="text-2xl font-bold text-blue-300">
               视频中心
             </Link>
             <Link
               href="/"
-              className="text-gray-600 hover:text-blue-600 transition-colors flex items-center gap-2"
+              className="text-gray-600 hover:text-blue-300 transition-colors flex items-center gap-2"
             >
               <ChevronLeft className="w-5 h-5" />
               返回首页
@@ -279,7 +279,7 @@ export default function WatchPage() {
                   {videoInfo.tags.map((tag, index) => (
                     <span
                       key={index}
-                      className="px-3 py-1 bg-white text-gray-700 text-sm rounded-full border border-gray-200 hover:border-blue-400 transition-colors"
+                      className="px-3 py-1 bg-white text-gray-700 text-sm rounded-full border border-gray-200 hover:border-blue-300 transition-colors"
                     >
                       {tag}
                     </span>
@@ -296,7 +296,7 @@ export default function WatchPage() {
                   {videoInfo.pornstars.map((star, index) => (
                     <span
                       key={index}
-                      className="px-3 py-1 bg-blue-50 text-blue-700 text-sm rounded-full border border-blue-200"
+                      className="px-3 py-1 bg-blue-50 text-blue-400 text-sm rounded-full border border-blue-100"
                     >
                       {star}
                     </span>
@@ -315,14 +315,14 @@ export default function WatchPage() {
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
               {provider ? `更多来自 ${provider} 的视频` : '推荐视频'}
             </h2>
-            <div className="h-1 w-20 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full"></div>
+            <div className="h-1 w-20 bg-gradient-to-r from-blue-300 to-indigo-300 rounded-full"></div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {recommendedVideos.map((video) => (
               <Link
                 key={video.id}
                 href={`/watch/${video.id}${video.provider ? `?provider=${encodeURIComponent(video.provider)}` : ''}`}
-                className="bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-blue-400 transition-all group"
+                className="bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-blue-300 transition-all group"
               >
                 <div className="relative w-full h-48 bg-gray-100 overflow-hidden">
                   <img
@@ -335,7 +335,7 @@ export default function WatchPage() {
                   </div>
                 </div>
                 <div className="p-4">
-                  <h3 className="font-medium text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                  <h3 className="font-medium text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-300 transition-colors">
                     {video.title}
                   </h3>
                   <div className="flex items-center gap-3 text-sm text-gray-500">

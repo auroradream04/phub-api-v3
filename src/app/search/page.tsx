@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Search, Eye, Star, User, ChevronLeft } from 'lucide-react'
+import HorizontalAds from '@/components/HorizontalAds'
 
 interface Video {
   id: string
@@ -69,12 +70,12 @@ export default function SearchPage() {
       <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <Link href="/" className="text-2xl font-bold text-blue-600">
+            <Link href="/" className="text-2xl font-bold text-blue-300">
               视频中心
             </Link>
             <Link
               href="/"
-              className="text-gray-600 hover:text-blue-600 transition-colors flex items-center gap-2"
+              className="text-gray-600 hover:text-blue-300 transition-colors flex items-center gap-2"
             >
               <ChevronLeft className="w-5 h-5" />
               返回首页
@@ -83,13 +84,20 @@ export default function SearchPage() {
         </div>
       </header>
 
+      {/* Horizontal Ads */}
+      <section className="py-6">
+        <div className="px-4 sm:px-6 lg:px-8">
+          <HorizontalAds />
+        </div>
+      </section>
+
       {/* Search Results Section */}
       <section className="py-12 px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             搜索结果: {query}
           </h1>
-          <div className="h-1 w-20 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full"></div>
+          <div className="h-1 w-20 bg-gradient-to-r from-blue-300 to-indigo-300 rounded-full"></div>
         </div>
 
         {loading ? (
@@ -110,7 +118,7 @@ export default function SearchPage() {
             <p className="text-gray-500 text-lg">没有找到相关视频</p>
             <Link
               href="/"
-              className="inline-flex items-center gap-2 mt-4 text-blue-600 hover:text-blue-700"
+              className="inline-flex items-center gap-2 mt-4 text-blue-300 hover:text-blue-400"
             >
               <ChevronLeft className="w-5 h-5" />
               返回首页
@@ -123,7 +131,7 @@ export default function SearchPage() {
                 <Link
                   key={video.id}
                   href={`/watch/${video.id}${video.provider ? `?provider=${encodeURIComponent(video.provider)}` : ''}`}
-                  className="bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-blue-400 transition-all group"
+                  className="bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-blue-300 transition-all group"
                 >
                   <div className="relative w-full h-48 bg-gray-100 overflow-hidden">
                     <img
@@ -136,7 +144,7 @@ export default function SearchPage() {
                     </div>
                   </div>
                   <div className="p-4">
-                    <h3 className="font-medium text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                    <h3 className="font-medium text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-300 transition-colors">
                       {video.title}
                     </h3>
                     <div className="flex items-center justify-between text-sm text-gray-500">
@@ -173,7 +181,7 @@ export default function SearchPage() {
                   className={`px-6 py-3 rounded-lg font-medium transition-all ${
                     currentPage === 1
                       ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                      : 'bg-white text-blue-600 border-2 border-blue-600 hover:bg-blue-600 hover:text-white'
+                      : 'bg-white text-blue-300 border-2 border-blue-300 hover:bg-blue-300 hover:text-white'
                   }`}
                 >
                   上一页
@@ -181,7 +189,7 @@ export default function SearchPage() {
 
                 <div className="flex items-center gap-2 px-6 py-3 bg-white rounded-lg border border-gray-200">
                   <span className="text-gray-600">第</span>
-                  <span className="text-blue-600 font-bold text-lg">{currentPage}</span>
+                  <span className="text-blue-300 font-bold text-lg">{currentPage}</span>
                   <span className="text-gray-600">页</span>
                 </div>
 
@@ -191,7 +199,7 @@ export default function SearchPage() {
                   className={`px-6 py-3 rounded-lg font-medium transition-all ${
                     !hasMore
                       ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                      : 'bg-blue-300 text-white hover:bg-blue-400'
                   }`}
                 >
                   下一页
