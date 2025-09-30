@@ -1,18 +1,16 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  webpack: (config, { isServer }) => {
+  webpack: (config) => {
     // Ignore files in public/uploads directory during build
     config.module.rules.push({
-      test: /public\/uploads\//,
+      test: /public[\/\\]uploads[\/\\]/,
       loader: 'ignore-loader'
     });
     return config;
   },
-  // Also exclude from static file copying
-  experimental: {
-    outputFileTracingIgnores: ['public/uploads/**/*']
-  }
+  // Exclude uploads from being copied to .next
+  outputFileTracing: true
 };
 
 export default nextConfig;
