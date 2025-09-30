@@ -77,9 +77,9 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-8">
@@ -128,7 +128,7 @@ export default function Home() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="搜索您想看的内容..."
-                className="w-full px-6 py-4 pr-14 rounded-full border-2 border-blue-200 focus:border-blue-400 focus:outline-none bg-white shadow-lg text-gray-900 placeholder-gray-400 transition-all"
+                className="w-full px-6 py-4 pr-14 rounded-full border-2 border-blue-200 focus:border-blue-400 focus:outline-none bg-white text-gray-900 placeholder-gray-400 transition-all"
               />
               <button
                 type="submit"
@@ -145,7 +145,7 @@ export default function Home() {
               <button
                 key={tag}
                 onClick={() => setSearchQuery(tag)}
-                className="px-4 py-2 bg-white text-gray-700 rounded-full hover:bg-blue-600 hover:text-white transition-colors shadow-sm border border-gray-200"
+                className="px-4 py-2 bg-white text-gray-700 rounded-full hover:bg-blue-600 hover:text-white transition-colors border border-gray-200"
               >
                 {tag}
               </button>
@@ -165,7 +165,7 @@ export default function Home() {
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {[...Array(24)].map((_, i) => (
-                <div key={i} className="bg-white rounded-xl overflow-hidden shadow-md animate-pulse">
+                <div key={i} className="bg-white rounded-xl overflow-hidden border border-gray-200 animate-pulse">
                   <div className="w-full h-48 bg-gray-200"></div>
                   <div className="p-4 space-y-3">
                     <div className="h-4 bg-gray-200 rounded w-3/4"></div>
@@ -180,7 +180,7 @@ export default function Home() {
                 <Link
                   key={video.id}
                   href={`/watch/${video.id}`}
-                  className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all transform hover:-translate-y-1 group"
+                  className="bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-blue-400 transition-all group"
                 >
                   <div className="relative w-full h-48 bg-gray-100 overflow-hidden">
                     <img
@@ -223,13 +223,13 @@ export default function Home() {
                 className={`px-6 py-3 rounded-lg font-medium transition-all ${
                   currentPage === 1
                     ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    : 'bg-white text-blue-600 border-2 border-blue-600 hover:bg-blue-600 hover:text-white shadow-sm'
+                    : 'bg-white text-blue-600 border-2 border-blue-600 hover:bg-blue-600 hover:text-white'
                 }`}
               >
                 上一页
               </button>
 
-              <div className="flex items-center gap-2 px-6 py-3 bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="flex items-center gap-2 px-6 py-3 bg-white rounded-lg border border-gray-200">
                 <span className="text-gray-600">第</span>
                 <span className="text-blue-600 font-bold text-lg">{currentPage}</span>
                 <span className="text-gray-600">页</span>
@@ -241,7 +241,7 @@ export default function Home() {
                 className={`px-6 py-3 rounded-lg font-medium transition-all ${
                   !hasMore
                     ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
                 }`}
               >
                 下一页
