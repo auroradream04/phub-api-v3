@@ -57,20 +57,9 @@ export async function GET(
       throw new Error('Failed to fetch video information after all retries')
     }
 
-    // Get base URL for proxy URLs
-    // Check multiple headers for HTTPS detection (production deployment compatibility)
-    const host = request.headers.get('host') || 'localhost:4444'
-    const xForwardedProto = request.headers.get('x-forwarded-proto')
-    const xForwardedScheme = request.headers.get('x-forwarded-scheme')
-
-    // Determine protocol: prefer forwarded headers, then check if host suggests HTTPS
-    let protocol = xForwardedProto || xForwardedScheme
-    if (!protocol) {
-      // If no forwarded header, assume HTTPS for production domains
-      protocol = host.includes('localhost') || host.includes('127.0.0.1') ? 'http' : 'https'
-    }
-
-    const baseUrl = `${protocol}://${host}`
+    // Get base URL from environment variable (NEXTAUTH_URL)
+    // This ensures correct protocol (http/https) for all environments
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:4444'
 
     // Transform mediaDefinitions to use our stream endpoint
     // CORS proxy will be applied to the actual PornHub segment URLs in the stream route
