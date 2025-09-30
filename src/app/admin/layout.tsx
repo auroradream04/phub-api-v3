@@ -23,14 +23,16 @@ export default function AdminLayout({
       return
     }
 
-    if (session.user?.role !== 'admin') {
+    const userRole = (session.user as { role?: string })?.role
+    if (userRole !== 'admin') {
       router.push('/')
       return
     }
   }, [session, status, router])
 
   // Show loading while checking auth
-  if (status === 'loading' || !session || session.user?.role !== 'admin') {
+  const userRole = (session?.user as { role?: string })?.role
+  if (status === 'loading' || !session || userRole !== 'admin') {
     return (
       <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-gray-600 dark:text-gray-400">Loading...</div>

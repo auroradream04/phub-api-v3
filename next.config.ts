@@ -8,9 +8,7 @@ const nextConfig: NextConfig = {
       loader: 'ignore-loader'
     });
     return config;
-  },
-  // Exclude uploads from being copied to .next
-  outputFileTracing: true
+  }
 };
 
 export default nextConfig;
