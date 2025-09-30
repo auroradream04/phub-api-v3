@@ -13,22 +13,12 @@ export default function HorizontalAds() {
   const [defaultUrl, setDefaultUrl] = useState<string>('')
 
   useEffect(() => {
-    // Fetch ads script
-    fetch('https://hcdream.com/berlin/ads/scripts/heiliao.js')
-      .then(res => res.text())
-      .then(scriptText => {
-        // Extract JSON from the script
-        // The script should contain a JSON object
-        try {
-          const jsonMatch = scriptText.match(/\{[\s\S]*\}/)
-          if (jsonMatch) {
-            const adsData = JSON.parse(jsonMatch[0])
-            setDefaultUrl(adsData.url || '')
-            setAds(adsData.horizontalAds?.slice(0, 3) || [])
-          }
-        } catch (error) {
-          console.error('Failed to parse ads script:', error)
-        }
+    // Fetch ads from our API endpoint (proxied)
+    fetch('/api/ads/script')
+      .then(res => res.json())
+      .then(adsData => {
+        setDefaultUrl(adsData.url || '')
+        setAds(adsData.horizontalAds?.slice(0, 3) || [])
       })
       .catch(error => {
         console.error('Failed to fetch ads:', error)
