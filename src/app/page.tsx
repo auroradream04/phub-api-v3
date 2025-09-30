@@ -80,7 +80,7 @@ export default function Home() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-8">
               <Link href="/" className="text-2xl font-bold text-blue-600">
@@ -109,8 +109,8 @@ export default function Home() {
       </header>
 
       {/* Hero Section with Search */}
-      <section className="bg-gradient-to-br from-blue-50 to-indigo-50 py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="bg-white py-16">
+        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold text-gray-900 mb-4">
               探索精彩视频内容
@@ -156,14 +156,14 @@ export default function Home() {
 
       {/* Featured Videos Section */}
       <section className="py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-8">
             <h2 className="text-3xl font-bold text-gray-900 mb-2">热门推荐</h2>
             <div className="h-1 w-20 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full"></div>
           </div>
 
           {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {[...Array(24)].map((_, i) => (
                 <div key={i} className="bg-white rounded-xl overflow-hidden shadow-md animate-pulse">
                   <div className="w-full h-48 bg-gray-200"></div>
@@ -175,7 +175,7 @@ export default function Home() {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {featuredVideos.map((video) => (
                 <Link
                   key={video.id}
@@ -253,7 +253,7 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="bg-white border-t border-gray-200 py-8 mt-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center text-gray-500 text-sm">
             <p>© 2024 视频中心. 保留所有权利.</p>
           </div>
