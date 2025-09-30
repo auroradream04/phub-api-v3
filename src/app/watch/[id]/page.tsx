@@ -124,24 +124,16 @@ export default function WatchPage() {
       hls.loadSource(videoSrc)
       hls.attachMedia(video)
 
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        video.play().catch(e => console.error('Playback failed:', e))
-      })
-
       hls.on(Hls.Events.ERROR, (event, data) => {
-        console.error('HLS error:', data)
         if (data.fatal) {
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
-              console.error('Network error')
               hls.startLoad()
               break
             case Hls.ErrorTypes.MEDIA_ERROR:
-              console.error('Media error')
               hls.recoverMediaError()
               break
             default:
-              console.error('Fatal error')
               break
           }
         }
@@ -151,9 +143,6 @@ export default function WatchPage() {
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
       // Native HLS support (Safari)
       video.src = videoSrc
-      video.addEventListener('loadedmetadata', () => {
-        video.play().catch(e => console.error('Playback failed:', e))
-      })
     }
 
     return () => {
