@@ -34,8 +34,8 @@ export default function AdminLayout({
   const userRole = (session?.user as { role?: string })?.role
   if (status === 'loading' || !session || userRole !== 'admin') {
     return (
-      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-gray-600 dark:text-gray-400">Loading...</div>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-gray-600">Loading...</div>
       </div>
     )
   }
@@ -47,13 +47,13 @@ export default function AdminLayout({
   ]
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
-      <nav className="bg-white dark:bg-gray-800 shadow-sm">
+    <div className="min-h-screen bg-white">
+      <nav className="bg-white border-b border-gray-200">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 justify-between">
             <div className="flex">
               <div className="flex flex-shrink-0 items-center">
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+                <h1 className="text-xl font-bold text-gray-900">
                   Admin Panel
                 </h1>
               </div>
@@ -64,8 +64,8 @@ export default function AdminLayout({
                     href={item.href}
                     className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium ${
                       pathname === item.href
-                        ? 'border-blue-500 text-gray-900 dark:text-white'
-                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                        ? 'border-blue-300 text-gray-900'
+                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
                     }`}
                   >
                     {item.name}
@@ -74,12 +74,12 @@ export default function AdminLayout({
               </div>
             </div>
             <div className="flex items-center">
-              <span className="text-sm text-gray-700 dark:text-gray-300 mr-4">
+              <span className="text-sm text-gray-700 mr-4">
                 {session?.user?.email}
               </span>
               <button
                 onClick={() => signOut({ callbackUrl: '/login' })}
-                className="rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500"
+                className="rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-500"
               >
                 Sign out
               </button>

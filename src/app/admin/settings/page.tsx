@@ -69,16 +69,16 @@ export default function AdminSettingsPage() {
     <div className="px-4 sm:px-6 lg:px-8">
       <div className="sm:flex sm:items-center">
         <div className="sm:flex-auto">
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Site Settings</h1>
-          <p className="mt-2 text-sm text-gray-700 dark:text-gray-400">
+          <h1 className="text-2xl font-semibold text-gray-900">Site Settings</h1>
+          <p className="mt-2 text-sm text-gray-700">
             Configure global site settings for CORS proxy, ads, and video streaming.
           </p>
         </div>
       </div>
 
       {message && (
-        <div className={`mt-4 p-4 rounded-md ${
-          message.type === 'success' ? 'bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-400' : 'bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+        <div className={`mt-4 p-4 rounded-md border ${
+          message.type === 'success' ? 'bg-green-50 text-green-800 border-green-200' : 'bg-red-50 text-red-800 border-red-200'
         }`}>
           {message.text}
         </div>
@@ -86,9 +86,9 @@ export default function AdminSettingsPage() {
 
       <div className="mt-8 space-y-6">
         {settings.map((setting) => (
-          <div key={setting.id} className="bg-white dark:bg-gray-800 shadow sm:rounded-lg">
+          <div key={setting.id} className="bg-white border border-gray-200 rounded-lg">
             <div className="px-4 py-5 sm:p-6">
-              <label htmlFor={setting.key} className="block text-sm font-medium text-gray-900 dark:text-white">
+              <label htmlFor={setting.key} className="block text-sm font-medium text-gray-900">
                 {setting.key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
               </label>
               <div className="mt-2">
@@ -97,10 +97,10 @@ export default function AdminSettingsPage() {
                   id={setting.key}
                   value={setting.value}
                   onChange={(e) => updateSetting(setting.key, e.target.value)}
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  className="block w-full rounded-md border-gray-300 focus:border-blue-300 focus:ring-blue-300 sm:text-sm"
                 />
               </div>
-              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+              <p className="mt-2 text-sm text-gray-500">
                 {getSettingDescription(setting.key)}
               </p>
             </div>
@@ -112,7 +112,7 @@ export default function AdminSettingsPage() {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="rounded-md bg-blue-300 px-4 py-2 text-sm font-semibold text-gray-900 hover:bg-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {saving ? 'Saving...' : 'Save Settings'}
         </button>
