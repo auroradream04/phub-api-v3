@@ -21,7 +21,7 @@ export async function GET(
 
     // Parse search options from query parameters
     const searchParams = request.nextUrl.searchParams
-    const options: any = {}
+    const options: Record<string, string | number> = {}
 
     // Page number
     const page = searchParams.get('page')
@@ -99,13 +99,16 @@ export async function GET(
     // Transform video URLs to use our API
     const transformedVideoList = {
       ...videoList,
-      data: videoList.data.map((video: any) => ({
-        ...video,
-        // Keep original URL for reference
-        originalUrl: video.url,
-        // Transform to use our watch endpoint
-        url: video.key ? `${baseUrl}/api/watch/${video.key}` : video.url,
-      }))
+      data: videoList.data.map((video) => {
+        const videoKey = (video as { id?: string }).id
+        return {
+          ...video,
+          // Keep original URL for reference
+          originalUrl: video.url,
+          // Transform to use our watch endpoint
+          url: videoKey ? `${baseUrl}/api/watch/${videoKey}` : video.url,
+        }
+      })
     }
 
     console.log(`[Search] Returning ${transformedVideoList.data.length} results for "${decodedQuery}"`)

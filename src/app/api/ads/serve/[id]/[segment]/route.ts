@@ -46,7 +46,7 @@ export async function GET(
     const fileContent = await readFile(filePath)
 
     // Return the file content with proper headers
-    return new Response(fileContent, {
+    return new Response(new Uint8Array(fileContent), {
       headers: {
         'Content-Type': 'video/mp2t', // MPEG-TS content type
         'Content-Length': fileContent.length.toString(),

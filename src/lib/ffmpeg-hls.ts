@@ -105,7 +105,7 @@ export async function getVideoDuration(inputPath: string): Promise<number> {
 
 // Alternative method to get duration using ffmpeg
 function getVideoDurationWithFFmpeg(inputPath: string): Promise<number> {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     let duration = 0
 
     ffmpeg(inputPath)

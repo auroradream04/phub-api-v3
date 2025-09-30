@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Search, Eye, Star, User, ChevronLeft } from 'lucide-react'
@@ -16,7 +16,7 @@ interface Video {
   provider?: string
 }
 
-export default function SearchPage() {
+function SearchResults() {
   const searchParams = useSearchParams()
   const query = searchParams.get('q') || ''
 
@@ -25,20 +25,11 @@ export default function SearchPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
 
-  useEffect(() => {
-    if (!query) {
-      setLoading(false)
-      return
-    }
-
-    fetchSearchResults(currentPage)
-  }, [query, currentPage])
-
-  const fetchSearchResults = async (page: number) => {
+  const fetchSearchResults = async (page: number, searchQuery: string) => {
     try {
       setLoading(true)
 
-      const response = await fetch(`/api/search/${encodeURIComponent(query)}?page=${page}`)
+      const response = await fetch(`/api/search/${encodeURIComponent(searchQuery)}?page=${page}`)
       const data = await response.json()
 
       setSearchResults(data.data || [])
@@ -49,6 +40,15 @@ export default function SearchPage() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (!query) {
+      setLoading(false)
+      return
+    }
+
+    fetchSearchResults(currentPage, query)
+  }, [query, currentPage])
 
   const goToNextPage = () => {
     if (hasMore) {
@@ -219,5 +219,17 @@ export default function SearchPage() {
         </div>
       </footer>
     </div>
+  )
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-gray-500">加载中...</div>
+      </div>
+    }>
+      <SearchResults />
+    </Suspense>
   )
 }

@@ -205,10 +205,6 @@ export default function WatchPage() {
     )
   }
 
-  const hlsQualities = videoInfo.mediaDefinitions
-    .filter(md => md.format === 'hls')
-    .sort((a, b) => b.quality - a.quality)
-
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}

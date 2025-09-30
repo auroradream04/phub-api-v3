@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PornHub } from 'pornhub.js'
 import { getRandomProxy } from '@/lib/proxy'
-import { getSiteSetting, SETTING_KEYS } from '@/lib/site-settings'
 
 export async function GET(
   request: NextRequest,
