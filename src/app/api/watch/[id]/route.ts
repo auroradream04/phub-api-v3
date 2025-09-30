@@ -58,7 +58,10 @@ export async function GET(
     }
 
     // Get base URL for proxy URLs
-    const protocol = request.headers.get('x-forwarded-proto') || 'http'
+    // Check multiple headers for HTTPS detection (production deployment compatibility)
+    const xForwardedProto = request.headers.get('x-forwarded-proto')
+    const xForwardedScheme = request.headers.get('x-forwarded-scheme')
+    const protocol = xForwardedProto || xForwardedScheme || (request.url.startsWith('https') ? 'https' : 'http')
     const host = request.headers.get('host') || 'localhost:4444'
     const baseUrl = `${protocol}://${host}`
 
