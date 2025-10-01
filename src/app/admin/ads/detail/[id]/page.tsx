@@ -184,10 +184,6 @@ export default function AdDetailPage() {
 
   const maxCount = Math.max(...data.chartData.map(d => d.count), 1)
 
-  // Calculate additional metrics for Plausible-style display
-  const bounceRate = 65 // Placeholder - you'd calculate this from your data
-  const avgDuration = data.ad.duration || 30 // Use ad duration as placeholder
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -352,93 +348,84 @@ export default function AdDetailPage() {
 
             {/* Stats Cards - Plausible Style */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
-              {/* Unique Visitors */}
-              <div className="bg-white border-l-4 border-blue-500 px-4 py-3">
-                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                  Unique Visitors
+              {/* Total Impressions (Period) */}
+              <div className="bg-white border-l-4 border-blue-500 px-3 py-2">
+                <div className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">
+                  Total Impressions
                 </div>
-                <div className="mt-1 flex items-baseline gap-2">
-                  <div className="text-2xl font-bold text-gray-900">
-                    {Math.round(data.stats.impressionsInPeriod * 0.7).toLocaleString()}
-                  </div>
-                  <span className="text-xs text-green-600 flex items-center">
-                    ↑ 12%
-                  </span>
-                </div>
-              </div>
-
-              {/* Total Visits */}
-              <div className="bg-white border-l-4 border-blue-500 px-4 py-3">
-                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                  Total Visits
-                </div>
-                <div className="mt-1 flex items-baseline gap-2">
-                  <div className="text-2xl font-bold text-gray-900">
+                <div className="mt-0.5 flex items-baseline gap-1.5">
+                  <div className="text-xl font-bold text-gray-900">
                     {data.stats.impressionsInPeriod.toLocaleString()}
                   </div>
-                  <span className="text-xs text-green-600 flex items-center">
+                  <span className="text-[10px] text-green-600">
                     ↑ {data.stats.growth}%
                   </span>
                 </div>
               </div>
 
-              {/* Total Pageviews */}
-              <div className="bg-white border-l-4 border-blue-500 px-4 py-3">
-                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                  Total Pageviews
+              {/* Total All Time */}
+              <div className="bg-white border-l-4 border-blue-500 px-3 py-2">
+                <div className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">
+                  Total (All Time)
                 </div>
-                <div className="mt-1 flex items-baseline gap-2">
-                  <div className="text-2xl font-bold text-gray-900">
-                    {(data.stats.impressionsInPeriod * 2.3).toFixed(0).toLocaleString()}
+                <div className="mt-0.5 flex items-baseline gap-1.5">
+                  <div className="text-xl font-bold text-gray-900">
+                    {data.stats.totalImpressions.toLocaleString()}
                   </div>
-                  <span className="text-xs text-green-600 flex items-center">
-                    ↑ 8%
-                  </span>
                 </div>
               </div>
 
-              {/* Views Per Visit */}
-              <div className="bg-white border-l-4 border-blue-500 px-4 py-3">
-                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                  Views Per Visit
+              {/* Unique Videos */}
+              <div className="bg-white border-l-4 border-blue-500 px-3 py-2">
+                <div className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">
+                  Unique Videos
                 </div>
-                <div className="mt-1 flex items-baseline gap-2">
-                  <div className="text-2xl font-bold text-gray-900">
-                    2.3
+                <div className="mt-0.5 flex items-baseline gap-1.5">
+                  <div className="text-xl font-bold text-gray-900">
+                    {data.topVideos.length}
                   </div>
-                  <span className="text-xs text-red-600 flex items-center">
-                    ↓ 4%
-                  </span>
                 </div>
               </div>
 
-              {/* Bounce Rate */}
-              <div className="bg-white border-l-4 border-blue-500 px-4 py-3">
-                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                  Bounce Rate
+              {/* Top Source */}
+              <div className="bg-white border-l-4 border-blue-500 px-3 py-2">
+                <div className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">
+                  Top Source
                 </div>
-                <div className="mt-1 flex items-baseline gap-2">
-                  <div className="text-2xl font-bold text-gray-900">
-                    {bounceRate}%
+                <div className="mt-0.5">
+                  <div className="text-sm font-semibold text-gray-900 truncate">
+                    {data.topSources[0]?.source || 'N/A'}
                   </div>
-                  <span className="text-xs text-gray-500">
-                    0%
-                  </span>
+                  <div className="text-[10px] text-gray-500">
+                    {data.topSources[0]?.count || 0} views
+                  </div>
                 </div>
               </div>
 
-              {/* Visit Duration */}
-              <div className="bg-white border-l-4 border-blue-500 px-4 py-3">
-                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                  Visit Duration
+              {/* Top Video */}
+              <div className="bg-white border-l-4 border-blue-500 px-3 py-2">
+                <div className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">
+                  Top Video
                 </div>
-                <div className="mt-1 flex items-baseline gap-2">
-                  <div className="text-2xl font-bold text-gray-900">
-                    {avgDuration}s
+                <div className="mt-0.5">
+                  <div className="text-sm font-semibold text-gray-900 truncate">
+                    {data.topVideos[0]?.videoId.slice(0, 8) || 'N/A'}
                   </div>
-                  <span className="text-xs text-green-600 flex items-center">
-                    ↑ 10%
-                  </span>
+                  <div className="text-[10px] text-gray-500">
+                    {data.topVideos[0]?.count || 0} views
+                  </div>
+                </div>
+              </div>
+
+              {/* Ad Duration */}
+              <div className="bg-white border-l-4 border-blue-500 px-3 py-2">
+                <div className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">
+                  Ad Duration
+                </div>
+                <div className="mt-0.5 flex items-baseline gap-1.5">
+                  <div className="text-xl font-bold text-gray-900">
+                    {data.ad.duration}s
+                  </div>
                 </div>
               </div>
             </div>
