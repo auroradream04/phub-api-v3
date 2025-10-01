@@ -36,6 +36,18 @@ interface Browser {
   percentage: string
 }
 
+interface Device {
+  device: string
+  count: number
+  percentage: string
+}
+
+interface OS {
+  os: string
+  count: number
+  percentage: string
+}
+
 interface ChartDataPoint {
   date: string
   count: number
@@ -47,6 +59,8 @@ interface AnalyticsData {
   topSources: Source[]
   topVideos: Video[]
   browsers: Browser[]
+  devices: Device[]
+  operatingSystems: OS[]
   chartData: ChartDataPoint[]
   period: {
     days: number
@@ -477,7 +491,7 @@ export default function AdDetailPage() {
             </div>
 
             {/* Bottom Grid Layout - Light Theme */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
               {/* Top Sources */}
               <div className="bg-white rounded-lg border border-gray-200 p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Top Sources</h2>
@@ -538,6 +552,53 @@ export default function AdDetailPage() {
                   </div>
                 ) : (
                   <p className="text-gray-500 text-sm">No videos data</p>
+                )}
+              </div>
+            </div>
+
+            {/* Second Row - Devices, OS, Browsers */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Devices */}
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Devices</h2>
+                {data.devices.length > 0 ? (
+                  <div className="space-y-3">
+                    {data.devices.map((device, index) => (
+                      <div key={index} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-700">{device.device}</span>
+                          <span className="text-xs text-gray-500">({device.percentage}%)</span>
+                        </div>
+                        <span className="text-sm font-semibold text-gray-900">
+                          {device.count.toLocaleString()}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-sm">No device data</p>
+                )}
+              </div>
+
+              {/* Operating Systems */}
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Operating Systems</h2>
+                {data.operatingSystems.length > 0 ? (
+                  <div className="space-y-3">
+                    {data.operatingSystems.map((os, index) => (
+                      <div key={index} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-700">{os.os}</span>
+                          <span className="text-xs text-gray-500">({os.percentage}%)</span>
+                        </div>
+                        <span className="text-sm font-semibold text-gray-900">
+                          {os.count.toLocaleString()}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-sm">No OS data</p>
                 )}
               </div>
 

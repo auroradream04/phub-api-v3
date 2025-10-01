@@ -85,21 +85,59 @@ export async function GET(
 
     // Group by user agent for devices/browsers
     const browserMap = new Map<string, number>()
+    const deviceMap = new Map<string, number>()
+    const osMap = new Map<string, number>()
+
     impressions.forEach(imp => {
       const ua = imp.userAgent || 'unknown'
-      // Simple browser detection
+
+      // Browser detection (order matters - check Edge before Chrome!)
       let browser = 'Other'
-      if (ua.includes('Edg')) browser = 'Microsoft Edge'
-      else if (ua.includes('Chrome')) browser = 'Chrome'
-      else if (ua.includes('Safari')) browser = 'Safari'
-      else if (ua.includes('Firefox')) browser = 'Firefox'
+      if (ua.includes('Edg/') || ua.includes('Edge/')) browser = 'Microsoft Edge'
+      else if (ua.includes('Chrome/') && !ua.includes('Edg')) browser = 'Chrome'
+      else if (ua.includes('Safari/') && !ua.includes('Chrome')) browser = 'Safari'
+      else if (ua.includes('Firefox/')) browser = 'Firefox'
+      else if (ua.includes('Opera/') || ua.includes('OPR/')) browser = 'Opera'
 
       browserMap.set(browser, (browserMap.get(browser) || 0) + 1)
+
+      // Device type detection
+      let device = 'Desktop'
+      if (ua.includes('Mobile') || ua.includes('Android')) device = 'Mobile'
+      else if (ua.includes('Tablet') || ua.includes('iPad')) device = 'Tablet'
+
+      deviceMap.set(device, (deviceMap.get(device) || 0) + 1)
+
+      // OS detection
+      let os = 'Other'
+      if (ua.includes('Windows')) os = 'Windows'
+      else if (ua.includes('Mac OS')) os = 'macOS'
+      else if (ua.includes('Linux')) os = 'Linux'
+      else if (ua.includes('Android')) os = 'Android'
+      else if (ua.includes('iOS') || ua.includes('iPhone') || ua.includes('iPad')) os = 'iOS'
+
+      osMap.set(os, (osMap.get(os) || 0) + 1)
     })
 
     const browsers = Array.from(browserMap.entries())
       .map(([browser, count]) => ({
         browser,
+        count,
+        percentage: ((count / impressions.length) * 100).toFixed(1)
+      }))
+      .sort((a, b) => b.count - a.count)
+
+    const devices = Array.from(deviceMap.entries())
+      .map(([device, count]) => ({
+        device,
+        count,
+        percentage: ((count / impressions.length) * 100).toFixed(1)
+      }))
+      .sort((a, b) => b.count - a.count)
+
+    const operatingSystems = Array.from(osMap.entries())
+      .map(([os, count]) => ({
+        os,
         count,
         percentage: ((count / impressions.length) * 100).toFixed(1)
       }))
@@ -136,6 +174,8 @@ export async function GET(
       topSources,
       topVideos,
       browsers,
+      devices,
+      operatingSystems,
       chartData,
       period: {
         days,
