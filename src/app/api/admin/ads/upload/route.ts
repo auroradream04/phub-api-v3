@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
           })
         }
 
-        // Delete original file after conversion
+        // Delete temp file after conversion
         await unlink(tempFilePath)
 
       } catch (error) {

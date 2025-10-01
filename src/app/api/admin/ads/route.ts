@@ -93,7 +93,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { id, status, title, description } = body
+    const { id, status, title, description, weight, forceDisplay } = body
 
     if (!id) {
       return NextResponse.json(
@@ -102,10 +102,12 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
-    const updateData: Record<string, string | number> = {}
+    const updateData: Record<string, string | number | boolean> = {}
     if (status !== undefined) updateData.status = status
     if (title !== undefined) updateData.title = title
     if (description !== undefined) updateData.description = description
+    if (weight !== undefined) updateData.weight = weight
+    if (forceDisplay !== undefined) updateData.forceDisplay = forceDisplay
 
     const updatedAd = await prisma.ad.update({
       where: { id },

@@ -29,10 +29,6 @@ export async function GET(
       include: {
         _count: {
           select: { impressions: true }
-        },
-        segments: {
-          orderBy: { quality: 'desc' },
-          take: 1
         }
       }
     })
@@ -124,11 +120,11 @@ export async function GET(
       ad: {
         id: ad.id,
         title: ad.title,
+        description: ad.description,
         status: ad.status,
         weight: ad.weight,
         forceDisplay: ad.forceDisplay,
-        duration: ad.duration,
-        previewUrl: ad.segments[0]?.filepath || null
+        duration: ad.duration
       },
       stats: {
         totalImpressions,
