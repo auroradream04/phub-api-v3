@@ -4,6 +4,13 @@ import { getRandomProxy } from '@/lib/proxy'
 import { prisma } from '@/lib/prisma'
 import { getSiteSetting, SETTING_KEYS } from '@/lib/site-settings'
 
+interface AdWithSegments {
+  id: string
+  title: string
+  weight: number
+  segments: Array<{ quality: number }>
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -99,7 +106,7 @@ export async function GET(
       }
 
       const variantM3u8 = await variantResponse.text()
-      const modifiedM3u8 = await injectAds(variantM3u8, quality, variantUrl, id)
+      const modifiedM3u8 = await injectAds(variantM3u8, quality, variantUrl, id, request.headers)
 
       return new Response(modifiedM3u8, {
         headers: {
@@ -110,7 +117,7 @@ export async function GET(
       })
     }
 
-    const modifiedM3u8 = await injectAds(originalM3u8, quality, originalM3u8Url, id)
+    const modifiedM3u8 = await injectAds(originalM3u8, quality, originalM3u8Url, id, request.headers)
 
     return new Response(modifiedM3u8, {
       headers: {
@@ -133,7 +140,7 @@ function isMasterPlaylist(m3u8Text: string): boolean {
   return m3u8Text.includes('#EXT-X-STREAM-INF')
 }
 
-function selectAdByWeight(ads: any[]): any {
+function selectAdByWeight(ads: AdWithSegments[]): AdWithSegments | null {
   // Calculate total weight
   const totalWeight = ads.reduce((sum, ad) => sum + ad.weight, 0)
 
@@ -173,7 +180,7 @@ function extractFirstVariantUrl(m3u8Text: string, baseUrl: string): string | nul
   return null
 }
 
-async function injectAds(m3u8Text: string, quality: string, baseUrl: string, videoId: string): Promise<string> {
+async function injectAds(m3u8Text: string, quality: string, baseUrl: string, videoId: string, headers: Headers): Promise<string> {
   const lines = m3u8Text.split('\n')
   const result: string[] = []
 
@@ -264,8 +271,8 @@ async function injectAds(m3u8Text: string, quality: string, baseUrl: string, vid
             data: {
               adId: selectedAd.id,
               videoId: videoId,
-              referrer: request.headers.get('referer') || request.headers.get('origin') || 'direct',
-              userAgent: request.headers.get('user-agent') || 'unknown'
+              referrer: headers.get('referer') || headers.get('origin') || 'direct',
+              userAgent: headers.get('user-agent') || 'unknown'
             }
           })
         } catch (error) {

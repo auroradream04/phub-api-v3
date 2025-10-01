@@ -185,8 +185,6 @@ export default function AdDetailPage() {
   const maxCount = Math.max(...data.chartData.map(d => d.count), 1)
 
   // Calculate additional metrics for Plausible-style display
-  const totalViews = data.stats.impressionsInPeriod
-  const avgViewsPerDay = Math.round(totalViews / (timeRange || 1))
   const bounceRate = 65 // Placeholder - you'd calculate this from your data
   const avgDuration = data.ad.duration || 30 // Use ad duration as placeholder
 
@@ -450,7 +448,7 @@ export default function AdDetailPage() {
               <h2 className="text-lg font-semibold text-gray-900 mb-6">Views Over Time</h2>
               <div className="h-64 flex items-end gap-1">
                 {data.chartData.length > 0 ? (
-                  data.chartData.map((point, index) => {
+                  data.chartData.map((point) => {
                     const height = (point.count / maxCount) * 100
                     return (
                       <div
