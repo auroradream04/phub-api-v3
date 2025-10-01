@@ -39,6 +39,8 @@ export async function POST(request: NextRequest) {
     const title = formData.get('title') as string
     const description = formData.get('description') as string
     const status = formData.get('status') as string
+    const weight = parseInt(formData.get('weight') as string) || 1
+    const forceDisplay = formData.get('forceDisplay') === 'true'
     const segmentDuration = parseInt(formData.get('segmentDuration') as string) || 3 // Default 3 seconds per segment
 
     if (!file || !title) {
@@ -140,6 +142,8 @@ export async function POST(request: NextRequest) {
         description: description || '',
         duration,
         status: status || 'active',
+        weight,
+        forceDisplay,
         userId: user.id,
         segments: {
           create: segments

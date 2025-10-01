@@ -133,6 +133,25 @@ function isMasterPlaylist(m3u8Text: string): boolean {
   return m3u8Text.includes('#EXT-X-STREAM-INF')
 }
 
+function selectAdByWeight(ads: any[]): any {
+  // Calculate total weight
+  const totalWeight = ads.reduce((sum, ad) => sum + ad.weight, 0)
+
+  // Generate random number between 0 and totalWeight
+  let random = Math.random() * totalWeight
+
+  // Select ad based on weight
+  for (const ad of ads) {
+    random -= ad.weight
+    if (random <= 0) {
+      return ad
+    }
+  }
+
+  // Fallback to first ad (shouldn't happen)
+  return ads[0]
+}
+
 function extractFirstVariantUrl(m3u8Text: string, baseUrl: string): string | null {
   const lines = m3u8Text.split('\n')
 
@@ -174,10 +193,19 @@ async function injectAds(m3u8Text: string, quality: string, baseUrl: string, vid
     }
   })
 
-  // Select a random ad if available
-  const selectedAd = activeAds.length > 0
-    ? activeAds[Math.floor(Math.random() * activeAds.length)]
-    : null
+  // Check if any ad is forced to display
+  const forcedAd = activeAds.find(ad => ad.forceDisplay)
+
+  // Select ad based on strategy
+  let selectedAd = null
+
+  if (forcedAd) {
+    // If there's a forced ad, always use it
+    selectedAd = forcedAd
+  } else if (activeAds.length > 0) {
+    // Use weighted random selection
+    selectedAd = selectAdByWeight(activeAds)
+  }
 
   // Get segments to skip from settings
   const segmentsToSkipSetting = await getSiteSetting(SETTING_KEYS.SEGMENTS_TO_SKIP, '2')
@@ -230,12 +258,14 @@ async function injectAds(m3u8Text: string, quality: string, baseUrl: string, vid
 
         adInjected = true
 
-        // Record impression
+        // Record impression with referrer and user agent
         try {
           await prisma.adImpression.create({
             data: {
               adId: selectedAd.id,
-              videoId: videoId
+              videoId: videoId,
+              referrer: request.headers.get('referer') || request.headers.get('origin') || 'direct',
+              userAgent: request.headers.get('user-agent') || 'unknown'
             }
           })
         } catch (error) {

@@ -69,6 +69,8 @@ model Ad {
   description String?  @db.Text
   duration    Int
   status      String   @default("active")
+  weight      Int      @default(1) // Higher weight = higher probability
+  forceDisplay Boolean @default(false) // If true, this ad always shows
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   userId      String
@@ -95,6 +97,8 @@ model AdImpression {
   id        String   @id @default(cuid())
   adId      String
   videoId   String
+  referrer  String?  @db.Text // The page/site where the ad was shown
+  userAgent String?  @db.Text // Browser/device info
   timestamp DateTime @default(now())
 
   ad Ad @relation(fields: [adId], references: [id], onDelete: Cascade)

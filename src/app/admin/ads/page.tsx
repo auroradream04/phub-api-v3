@@ -20,6 +20,8 @@ interface Ad {
   description: string | null
   duration: number
   status: string
+  weight: number
+  forceDisplay: boolean
   createdAt: string
   updatedAt: string
   userId: string
@@ -34,6 +36,8 @@ interface UploadFormData {
   title: string
   description: string
   status: 'active' | 'inactive'
+  weight: number
+  forceDisplay: boolean
   file: File | null
   duration: number
 }
@@ -54,6 +58,8 @@ export default function AdsManagement() {
     title: '',
     description: '',
     status: 'active',
+    weight: 1,
+    forceDisplay: false,
     file: null,
     duration: 3
   })
@@ -142,6 +148,8 @@ export default function AdsManagement() {
       formDataToSend.append('title', formData.title)
       formDataToSend.append('description', formData.description)
       formDataToSend.append('status', formData.status)
+      formDataToSend.append('weight', formData.weight.toString())
+      formDataToSend.append('forceDisplay', formData.forceDisplay.toString())
       formDataToSend.append('segmentDuration', formData.duration.toString())
 
       const response = await fetch('/api/admin/ads/upload', {
@@ -167,8 +175,10 @@ export default function AdsManagement() {
           title: '',
           description: '',
           status: 'active',
+          weight: 1,
+          forceDisplay: false,
           file: null,
-          duration: 30
+          duration: 3
         })
         setUploadProgress(0)
         setUploadSuccess(false)
@@ -245,13 +255,13 @@ export default function AdsManagement() {
 
   return (
     <div className="px-4 sm:px-0">
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+      <h2 className="text-2xl font-bold text-gray-900 mb-6">
         Ads Management
       </h2>
 
       {/* Upload Section */}
-      <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+      <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+        <h3 className="text-lg font-semibold text-gray-900  mb-4">
           Upload New Ad
         </h3>
 
@@ -260,8 +270,8 @@ export default function AdsManagement() {
           <div
             className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
               dragActive
-                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+                ? 'border-blue-500 bg-blue-50'
+                : 'border-gray-300 hover:border-gray-400'
             }`}
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
@@ -293,15 +303,15 @@ export default function AdsManagement() {
                   strokeLinejoin="round"
                 />
               </svg>
-              <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+              <p className="mt-2 text-sm text-gray-600 ">
                 <span className="font-semibold">Click to upload</span> or drag and drop
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-500">
+              <p className="text-xs text-gray-500 ">
                 MP4, WebM, or Ogg video files
               </p>
             </label>
             {formData.file && (
-              <p className="mt-4 text-sm text-green-600 dark:text-green-400">
+              <p className="mt-4 text-sm text-green-600 ">
                 Selected: {formData.file.name} ({formatFileSize(formData.file.size)})
               </p>
             )}
@@ -310,53 +320,88 @@ export default function AdsManagement() {
           {/* Form Fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Title *
               </label>
               <input
                 type="text"
                 value={formData.title}
                 onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Ad title"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Segment Duration (seconds)
               </label>
               <select
                 value={formData.duration}
                 onChange={(e) => setFormData(prev => ({ ...prev, duration: parseInt(e.target.value) }))}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="3">3 seconds (recommended)</option>
                 <option value="5">5 seconds</option>
                 <option value="10">10 seconds</option>
               </select>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              <p className="text-xs text-gray-500 mt-1">
                 Video will be split into segments of this duration
               </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Weight (Probability)
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="100"
+                value={formData.weight}
+                onChange={(e) => setFormData(prev => ({ ...prev, weight: parseInt(e.target.value) || 1 }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="1"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Higher weight = higher chance of appearing (1-100)
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Force Display
+              </label>
+              <div className="flex items-center h-10">
+                <input
+                  type="checkbox"
+                  checked={formData.forceDisplay}
+                  onChange={(e) => setFormData(prev => ({ ...prev, forceDisplay: e.target.checked }))}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <span className="ml-2 text-sm text-gray-600">
+                  Always show this ad (ignores weight)
+                </span>
+              </div>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="block text-sm font-medium text-gray-700  mb-1">
               Description
             </label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gray-300  rounded-md bg-white  text-gray-900  focus:ring-blue-500 focus:border-blue-500"
               placeholder="Ad description (optional)"
             />
           </div>
 
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mr-4">
+              <label className="block text-sm font-medium text-gray-700  mr-4">
                 Status
               </label>
               <button
@@ -367,7 +412,7 @@ export default function AdsManagement() {
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                   formData.status === 'active'
                     ? 'bg-green-600'
-                    : 'bg-gray-300 dark:bg-gray-600'
+                    : 'bg-gray-300 '
                 }`}
               >
                 <span
@@ -376,7 +421,7 @@ export default function AdsManagement() {
                   }`}
                 />
               </button>
-              <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
+              <span className="ml-2 text-sm text-gray-600 ">
                 {formData.status === 'active' ? 'Active' : 'Inactive'}
               </span>
             </div>
@@ -392,7 +437,7 @@ export default function AdsManagement() {
 
           {/* Upload Progress */}
           {uploading && (
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+            <div className="w-full bg-gray-200  rounded-full h-2">
               <div
                 className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${uploadProgress}%` }}
@@ -402,35 +447,35 @@ export default function AdsManagement() {
 
           {/* Upload Messages */}
           {uploadError && (
-            <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-              <p className="text-sm text-red-600 dark:text-red-400">{uploadError}</p>
+            <div className="p-4 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-sm text-red-600">{uploadError}</p>
             </div>
           )}
 
           {uploadSuccess && (
-            <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
-              <p className="text-sm text-green-600 dark:text-green-400">Ad uploaded successfully!</p>
+            <div className="p-4 bg-green-50 border border-green-200 rounded-md">
+              <p className="text-sm text-green-600">Ad uploaded successfully!</p>
             </div>
           )}
         </div>
       </div>
 
       {/* Ads Table */}
-      <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+      <div className="bg-white  border border-gray-200 rounded-lg overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 ">
+          <h3 className="text-lg font-semibold text-gray-900 ">
             Existing Ads ({ads.length})
           </h3>
         </div>
 
         {loading ? (
           <div className="p-8 text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"></div>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">Loading ads...</p>
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+            <p className="mt-2 text-gray-600 ">Loading ads...</p>
           </div>
         ) : error ? (
           <div className="p-8 text-center">
-            <p className="text-red-600 dark:text-red-400">{error}</p>
+            <p className="text-red-600 ">{error}</p>
             <button
               onClick={fetchAds}
               className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
@@ -453,108 +498,136 @@ export default function AdsManagement() {
                 d="M7 4v16M17 4v16M3 8h4m10 0h4M5 12h14M3 16h4m10 0h4"
               />
             </svg>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">No ads found</p>
-            <p className="text-sm text-gray-500 dark:text-gray-500">Upload your first ad to get started</p>
+            <p className="mt-2 text-gray-600 ">No ads found</p>
+            <p className="text-sm text-gray-500 ">Upload your first ad to get started</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-900">
+            <table className="min-w-full divide-y divide-gray-200 ">
+              <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Title
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Description
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Duration
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Impressions
+                  <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Weight
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Force
+                  </th>
+                  <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Duration
+                  </th>
+                  <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Views
+                  </th>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Created
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+              <tbody className="bg-white  divide-y divide-gray-200 ">
                 {ads.map((ad) => (
-                  <tr key={ad.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900 dark:text-white">
+                  <tr key={ad.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3">
+                      <div className="text-sm font-medium text-gray-900 truncate max-w-xs">
                         {ad.title}
                       </div>
                       {ad.segments[0] && (
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                        <div className="text-xs text-gray-500">
                           {formatFileSize(ad.segments[0].filesize)}
                         </div>
                       )}
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-600 dark:text-gray-300 max-w-xs truncate">
-                        {ad.description || '-'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                      {ad.duration}s
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 py-3 whitespace-nowrap">
                       <button
                         onClick={() => handleStatusToggle(ad)}
                         className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                           ad.status === 'active'
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                            : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-gray-100 text-gray-800'
                         }`}
                       >
                         {ad.status}
                       </button>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                      {ad._count.impressions}
+                    <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-600 text-center">
+                      {ad.weight}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                      {formatDate(ad.createdAt)}
+                    <td className="px-3 py-3 whitespace-nowrap text-center">
+                      {ad.forceDisplay ? (
+                        <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 text-blue-600">
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </span>
+                      ) : (
+                        <span className="text-sm text-gray-300">-</span>
+                      )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2">
+                    <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-600 text-center">
+                      {ad.duration}s
+                    </td>
+                    <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-600 text-center">
+                      {ad._count.impressions.toLocaleString()}
+                    </td>
+                    <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-500">
+                      {new Date(ad.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </td>
+                    <td className="px-3 py-3 whitespace-nowrap">
+                      <div className="flex items-center justify-center space-x-2">
+                        <button
+                          onClick={() => window.location.href = `/admin/ads/analytics/${ad.id}`}
+                          className="text-gray-400 hover:text-green-600"
+                          title="View Analytics"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                          </svg>
+                        </button>
                         <button
                           onClick={() => {
-                            // In a real app, this would open an edit modal
                             alert('Edit functionality would be implemented here')
                           }}
-                          className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                          className="text-gray-400 hover:text-blue-600"
+                          title="Edit"
                         >
-                          Edit
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
                         </button>
                         {deleteConfirm === ad.id ? (
                           <>
                             <button
                               onClick={() => handleDelete(ad.id)}
-                              className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                              className="text-red-600 hover:text-red-700 font-medium text-xs"
+                              title="Confirm delete"
                             >
-                              Confirm
+                              ✓
                             </button>
                             <button
                               onClick={() => setDeleteConfirm(null)}
-                              className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300"
+                              className="text-gray-600 hover:text-gray-700 font-medium text-xs"
+                              title="Cancel"
                             >
-                              Cancel
+                              ✕
                             </button>
                           </>
                         ) : (
                           <button
                             onClick={() => setDeleteConfirm(ad.id)}
-                            className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                            className="text-gray-400 hover:text-red-600"
+                            title="Delete"
                           >
-                            Delete
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
                           </button>
                         )}
                       </div>
