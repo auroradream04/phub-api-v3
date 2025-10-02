@@ -49,6 +49,7 @@ export async function GET(
       select: {
         referrer: true,
         userAgent: true,
+        country: true,
         videoId: true,
         timestamp: true
       }
@@ -143,6 +144,22 @@ export async function GET(
       }))
       .sort((a, b) => b.count - a.count)
 
+    // Group by country
+    const countryMap = new Map<string, number>()
+    impressions.forEach(imp => {
+      const country = imp.country || 'Unknown'
+      countryMap.set(country, (countryMap.get(country) || 0) + 1)
+    })
+
+    const countries = Array.from(countryMap.entries())
+      .map(([country, count]) => ({
+        country,
+        count,
+        percentage: ((count / impressions.length) * 100).toFixed(1)
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10) // Top 10 countries
+
     // Group by day for chart
     const dailyMap = new Map<string, number>()
     impressions.forEach(imp => {
@@ -176,6 +193,7 @@ export async function GET(
       browsers,
       devices,
       operatingSystems,
+      countries,
       chartData,
       period: {
         days,

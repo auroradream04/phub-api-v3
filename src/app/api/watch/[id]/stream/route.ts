@@ -3,6 +3,7 @@ import { PornHub } from 'pornhub.js'
 import { getRandomProxy } from '@/lib/proxy'
 import { prisma } from '@/lib/prisma'
 import { getSiteSetting, SETTING_KEYS } from '@/lib/site-settings'
+import { getClientIP, getCountryFromIP } from '@/lib/geo'
 
 interface AdWithSegments {
   id: string
@@ -265,14 +266,19 @@ async function injectAds(m3u8Text: string, quality: string, baseUrl: string, vid
 
         adInjected = true
 
-        // Record impression with referrer and user agent
+        // Record impression with referrer, user agent, IP, and country
         try {
+          const clientIP = getClientIP(headers)
+          const country = await getCountryFromIP(clientIP)
+
           await prisma.adImpression.create({
             data: {
               adId: selectedAd.id,
               videoId: videoId,
               referrer: headers.get('referer') || headers.get('origin') || 'direct',
-              userAgent: headers.get('user-agent') || 'unknown'
+              userAgent: headers.get('user-agent') || 'unknown',
+              ipAddress: clientIP,
+              country: country
             }
           })
         } catch (error) {

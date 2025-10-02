@@ -48,6 +48,12 @@ interface OS {
   percentage: string
 }
 
+interface Country {
+  country: string
+  count: number
+  percentage: string
+}
+
 interface ChartDataPoint {
   date: string
   count: number
@@ -61,6 +67,7 @@ interface AnalyticsData {
   browsers: Browser[]
   devices: Device[]
   operatingSystems: OS[]
+  countries: Country[]
   chartData: ChartDataPoint[]
   period: {
     days: number
@@ -556,8 +563,8 @@ export default function AdDetailPage() {
               </div>
             </div>
 
-            {/* Second Row - Devices, OS, Browsers */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Second Row - Devices, OS, Browsers, Countries */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
               {/* Devices */}
               <div className="bg-white rounded-lg border border-gray-200 p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Devices</h2>
@@ -621,6 +628,28 @@ export default function AdDetailPage() {
                   </div>
                 ) : (
                   <p className="text-gray-500 text-sm">No browser data</p>
+                )}
+              </div>
+
+              {/* Countries */}
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Countries</h2>
+                {data.countries.length > 0 ? (
+                  <div className="space-y-3">
+                    {data.countries.map((country, index) => (
+                      <div key={index} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-700">{country.country}</span>
+                          <span className="text-xs text-gray-500">({country.percentage}%)</span>
+                        </div>
+                        <span className="text-sm font-semibold text-gray-900">
+                          {country.count.toLocaleString()}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-sm">No country data</p>
                 )}
               </div>
             </div>
