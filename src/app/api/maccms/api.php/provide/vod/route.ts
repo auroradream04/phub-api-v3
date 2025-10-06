@@ -332,19 +332,18 @@ export async function GET(request: NextRequest) {
         page: params.pg,
       }
 
-      // Apply filters
+      // Apply filters - Use search by category name instead of filterCategory
+      // because we don't know PornHub's internal category IDs
+      let categorySearchTerm: string | undefined
       if (params.t) {
         // Convert type_id to category name if numeric, otherwise use as-is
         const typeId = parseInt(params.t)
-        let categoryName: string
         if (!isNaN(typeId) && typeIdToCategory[typeId]) {
-          categoryName = typeIdToCategory[typeId]
+          categorySearchTerm = typeIdToCategory[typeId]
         } else {
           // Assume it's a category name, convert to lowercase
-          categoryName = params.t.toLowerCase().replace(/\s+/g, '-')
+          categorySearchTerm = params.t.toLowerCase().replace(/\s+/g, ' ')
         }
-        // PornHub.js expects category as string array
-        options.category = [categoryName]
       }
 
       if (params.h) {
@@ -359,11 +358,14 @@ export async function GET(request: NextRequest) {
       }
 
       try {
-        if (params.wd) {
-          // Search videos
+        // If we have a category filter OR keyword search, use searchVideo
+        // Otherwise use videoList
+        if (params.wd || categorySearchTerm) {
+          const searchQuery = params.wd || categorySearchTerm!
+          // Search videos by keyword or category name
           const searchResult = await fetchVideosWithRetry(
             pornhub,
-            () => pornhub.searchVideo(params.wd!, options)
+            () => pornhub.searchVideo(searchQuery, options)
           )
 
           if (searchResult) {
@@ -371,7 +373,7 @@ export async function GET(request: NextRequest) {
             totalCount = searchResult.total || videos.length
           }
         } else {
-          // Get video list
+          // Get video list (no filters)
           const videoList = await fetchVideosWithRetry(
             pornhub,
             () => pornhub.videoList(options)
