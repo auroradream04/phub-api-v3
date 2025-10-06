@@ -105,6 +105,9 @@ function jsonToXml(response: MaccmsJsonResponse): string {
     xml += `      <name>${wrapCDATA(video.vod_name)}</name>\n`
     xml += `      <type>${escapeXml(video.type_name)}</type>\n`
     xml += `      <pic>${wrapCDATA(video.vod_pic)}</pic>\n`
+    xml += `      <pic_thumb>${wrapCDATA(video.vod_pic)}</pic_thumb>\n`
+    xml += `      <pic_slide>${wrapCDATA(video.vod_pic)}</pic_slide>\n`
+    xml += `      <pic_screenshot>${wrapCDATA(video.vod_pic)}</pic_screenshot>\n`
     xml += `      <lang>${escapeXml(video.vod_lang)}</lang>\n`
     xml += `      <area>${escapeXml(video.vod_area)}</area>\n`
     xml += `      <year>${escapeXml(video.vod_year)}</year>\n`

@@ -39,6 +39,13 @@ const CATEGORIES = [
 //   return CATEGORIES[0]!
 // }
 
+// Helper to strip emojis and special unicode characters
+function stripEmojis(str: string): string {
+  // Remove emojis and other problematic unicode characters
+  return str.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{FE00}-\u{FE0F}\u{1F000}-\u{1F02F}\u{1F0A0}-\u{1F0FF}]/gu, '')
+    .trim()
+}
+
 // Helper to format duration from "MM:SS" to seconds
 function parseDuration(duration: string): number {
   const parts = duration.split(':').map(Number)
@@ -103,13 +110,16 @@ export async function POST(request: NextRequest) {
         const publishDate = new Date()
         const year = publishDate.getFullYear().toString()
 
+        // Clean title to remove emojis
+        const cleanTitle = stripEmojis(video.title)
+
         // Upsert video to database
         await prisma.video.upsert({
           where: {
             vodId: video.id,
           },
           update: {
-            vodName: video.title,
+            vodName: cleanTitle,
             vodPic: video.preview,
             vodTime: publishDate,
             duration: durationSeconds,
@@ -121,10 +131,10 @@ export async function POST(request: NextRequest) {
           },
           create: {
             vodId: video.id,
-            vodName: video.title,
+            vodName: cleanTitle,
             typeId: category.id,
             typeName: category.name,
-            vodEn: video.title
+            vodEn: cleanTitle
               .toLowerCase()
               .replace(/[^a-z0-9]+/g, '-')
               .replace(/^-|-$/g, '')
@@ -138,7 +148,7 @@ export async function POST(request: NextRequest) {
             vodYear: year,
             vodActor: video.provider || '',
             vodDirector: '',
-            vodContent: video.title,
+            vodContent: cleanTitle,
             vodPlayUrl: `Full Video$${baseUrl}/api/watch/${video.id}/stream?q=720`,
             views: views,
             duration: durationSeconds,
@@ -146,7 +156,7 @@ export async function POST(request: NextRequest) {
         })
 
         scrapedCount++
-        console.log(`[Scraper] ✓ Saved: ${video.id} - ${video.title} [${category.name}]`)
+        console.log(`[Scraper] ✓ Saved: ${video.id} - ${cleanTitle} [${category.name}]`)
       } catch (error) {
         errorCount++
         console.error(`[Scraper] ✗ Failed to save video ${video.id}:`, error)
