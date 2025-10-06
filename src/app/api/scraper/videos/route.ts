@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
               .substring(0, 50),
             vodTime: publishDate,
             vodRemarks: `HD ${video.duration}`,
-            vodPlayFrom: 'YourAPI',
+            vodPlayFrom: 'dplayer',
             vodPic: video.preview,
             vodArea: 'US',
             vodLang: 'en',

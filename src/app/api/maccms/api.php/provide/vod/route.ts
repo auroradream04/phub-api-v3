@@ -13,6 +13,9 @@ interface MaccmsVideo {
   vod_remarks: string
   vod_play_from: string
   vod_pic: string
+  vod_pic_thumb: string
+  vod_pic_slide: string
+  vod_pic_screenshot: string
   vod_area: string
   vod_lang: string
   vod_year: string
@@ -178,6 +181,9 @@ export async function GET(request: NextRequest) {
         vod_remarks: v.vodRemarks || '',
         vod_play_from: v.vodPlayFrom,
         vod_pic: v.vodPic || '',
+        vod_pic_thumb: v.vodPic || '',
+        vod_pic_slide: v.vodPic || '',
+        vod_pic_screenshot: v.vodPic || '',
         vod_area: v.vodArea || '',
         vod_lang: v.vodLang || '',
         vod_year: v.vodYear || '',
@@ -247,6 +253,9 @@ export async function GET(request: NextRequest) {
         vod_remarks: v.vodRemarks || '',
         vod_play_from: v.vodPlayFrom,
         vod_pic: v.vodPic || '',
+        vod_pic_thumb: v.vodPic || '',
+        vod_pic_slide: v.vodPic || '',
+        vod_pic_screenshot: v.vodPic || '',
         vod_area: v.vodArea || '',
         vod_lang: v.vodLang || '',
         vod_year: v.vodYear || '',
