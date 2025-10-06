@@ -113,3 +113,31 @@ model SiteSetting {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model Video {
+  id            String   @id @default(cuid())
+  vodId         String   @unique // External video ID (e.g., ph123456)
+  vodName       String   @db.VarChar(255)
+  typeId        Int      // Category type_id
+  typeName      String   @db.VarChar(100)
+  vodEn         String?  @db.VarChar(255) // URL-friendly slug
+  vodTime       DateTime @default(now())
+  vodRemarks    String?  @db.VarChar(100) // HD, duration, etc.
+  vodPlayFrom   String   @default("YourAPI") @db.VarChar(100)
+  vodPic        String?  @db.Text // Thumbnail URL
+  vodArea       String?  @db.VarChar(100)
+  vodLang       String?  @db.VarChar(50)
+  vodYear       String?  @db.VarChar(10)
+  vodActor      String?  @db.Text // Comma-separated
+  vodDirector   String?  @db.Text
+  vodContent    String?  @db.Text // Description
+  vodPlayUrl    String   @db.Text // Episode$URL format
+  views         Int      @default(0)
+  duration      Int?     // Duration in seconds
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([typeId])
+  @@index([vodTime])
+  @@index([views])
+}

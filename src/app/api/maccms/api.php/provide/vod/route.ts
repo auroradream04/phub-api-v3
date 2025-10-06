@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PornHub } from 'pornhub.js'
-import { getRandomProxy } from '@/lib/proxy'
 import { z } from 'zod'
+import { prisma } from '@/lib/prisma'
 
 // Type definitions for Maccms response format
 interface MaccmsVideo {
@@ -50,130 +49,34 @@ const querySchema = z.object({
   at: z.enum(['xml', '']).optional().default(''),
 })
 
-// Helper function to format duration
-function formatDuration(seconds?: number): string {
-  if (!seconds) return 'HD'
-  const minutes = Math.floor(seconds / 60)
-  const remainingSeconds = seconds % 60
-  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
-}
-
 // Helper function to format date
-function formatDate(dateStr?: string): string {
-  if (!dateStr) return new Date().toISOString().replace('T', ' ').split('.')[0]
-  try {
-    const date = new Date(dateStr)
-    return date.toISOString().replace('T', ' ').split('.')[0]
-  } catch {
-    return new Date().toISOString().replace('T', ' ').split('.')[0]
-  }
+function formatDate(date: Date): string {
+  return date.toISOString().replace('T', ' ').split('.')[0]
 }
 
-// Helper function to extract year from date
-function extractYear(dateStr?: string): string {
-  if (!dateStr) return new Date().getFullYear().toString()
-  try {
-    const date = new Date(dateStr)
-    return date.getFullYear().toString()
-  } catch {
-    return new Date().getFullYear().toString()
-  }
-}
-
-// Helper function to create slug from title
-function createSlug(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
-    .substring(0, 50)
-}
-
-// Category mapping for PornHub categories to type_id
-const categoryMap: Record<string, number> = {
-  'amateur': 1,
-  'anal': 2,
-  'asian': 3,
-  'bbw': 4,
-  'big ass': 5,
-  'big tits': 6,
-  'blonde': 7,
-  'blowjob': 8,
-  'brunette': 9,
-  'creampie': 10,
-  'cumshot': 11,
-  'ebony': 12,
-  'hardcore': 13,
-  'hentai': 14,
-  'latina': 15,
-  'lesbian': 16,
-  'milf': 17,
-  'pov': 18,
-  'teen': 19,
-  'threesome': 20,
-}
-
-// Reverse mapping: type_id to PornHub category name
-const typeIdToCategory: Record<number, string> = {
-  1: 'amateur',
-  2: 'anal',
-  3: 'asian',
-  4: 'bbw',
-  5: 'big-ass',
-  6: 'big-tits',
-  7: 'blonde',
-  8: 'blowjob',
-  9: 'brunette',
-  10: 'creampie',
-  11: 'cumshot',
-  12: 'ebony',
-  13: 'hardcore',
-  14: 'hentai',
-  15: 'latina',
-  16: 'lesbian',
-  17: 'milf',
-  18: 'pov',
-  19: 'teen',
-  20: 'threesome',
-}
-
-// Helper function to map PornHub video to Maccms format
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapToMaccmsVideo(video: any, baseUrl: string): MaccmsVideo {
-  const vodId = video.video_id || video.key || video.id || 'unknown'
-  const vodName = video.title || 'Untitled'
-  const vodPic = video.thumb || video.default_thumb || video.preview || ''
-  const vodTime = formatDate(video.publish_date || video.added || video.uploadDate)
-  const vodYear = extractYear(video.publish_date || video.added || video.uploadDate)
-  const vodRemarks = video.duration ? formatDuration(video.duration) : 'HD'
-  const vodActor = video.pornstars?.join(',') || video.actors?.join(',') || ''
-  const vodContent = video.tags?.join(', ') || video.categories?.join(', ') || ''
-  const vodPlayUrl = `Full Video$${baseUrl}/api/watch/${vodId}/stream?q=720`
-
-  // Map category to type_id
-  const firstCategory = video.categories?.[0]?.toLowerCase() || 'amateur'
-  const typeId = categoryMap[firstCategory] || 1
-  const typeName = video.categories?.[0] || 'Amateur'
-
-  return {
-    vod_id: vodId,
-    vod_name: vodName,
-    type_id: typeId,
-    type_name: typeName,
-    vod_en: createSlug(vodName),
-    vod_time: vodTime,
-    vod_remarks: vodRemarks,
-    vod_play_from: 'YourAPI',
-    vod_pic: vodPic,
-    vod_area: 'US',
-    vod_lang: 'en',
-    vod_year: vodYear,
-    vod_actor: vodActor,
-    vod_director: '',
-    vod_content: vodContent,
-    vod_play_url: vodPlayUrl,
-  }
-}
+// Define categories
+const categories: MaccmsClass[] = [
+  { type_id: 1, type_name: 'Amateur' },
+  { type_id: 2, type_name: 'Anal' },
+  { type_id: 3, type_name: 'Asian' },
+  { type_id: 4, type_name: 'BBW' },
+  { type_id: 5, type_name: 'Big Ass' },
+  { type_id: 6, type_name: 'Big Tits' },
+  { type_id: 7, type_name: 'Blonde' },
+  { type_id: 8, type_name: 'Blowjob' },
+  { type_id: 9, type_name: 'Brunette' },
+  { type_id: 10, type_name: 'Creampie' },
+  { type_id: 11, type_name: 'Cumshot' },
+  { type_id: 12, type_name: 'Ebony' },
+  { type_id: 13, type_name: 'Hardcore' },
+  { type_id: 14, type_name: 'Hentai' },
+  { type_id: 15, type_name: 'Latina' },
+  { type_id: 16, type_name: 'Lesbian' },
+  { type_id: 17, type_name: 'MILF' },
+  { type_id: 18, type_name: 'POV' },
+  { type_id: 19, type_name: 'Teen' },
+  { type_id: 20, type_name: 'Threesome' },
+]
 
 // Helper function to convert JSON response to XML
 function jsonToXml(response: MaccmsJsonResponse): string {
@@ -229,54 +132,6 @@ function jsonToXml(response: MaccmsJsonResponse): string {
   return xml
 }
 
-// Helper function to fetch videos with retry logic
-async function fetchVideosWithRetry(
-  pornhub: PornHub,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  fetchFunction: () => Promise<any>,
-  maxRetries = 3
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-): Promise<any> {
-  let result = null
-  let retries = maxRetries
-
-  // Try without proxy first
-  try {
-    result = await fetchFunction()
-    if (result && (Array.isArray(result) ? result.length > 0 : result.results?.length > 0)) {
-      return result
-    }
-  } catch (error) {
-    console.error('[Maccms API] Request failed without proxy:', error instanceof Error ? error.message : 'Unknown error')
-  }
-
-  // Retry with proxy if needed
-  while ((!result || (Array.isArray(result) ? result.length === 0 : result.results?.length === 0)) && retries > 0) {
-    const proxyAgent = getRandomProxy()
-
-    if (!proxyAgent) {
-      console.warn('[Maccms API] No proxies available. Cannot retry.')
-      break
-    }
-
-    console.log(`[Maccms API] Retrying with proxy (${retries} retries remaining)...`)
-    pornhub.setAgent(proxyAgent)
-
-    try {
-      result = await fetchFunction()
-      if (result && (Array.isArray(result) ? result.length > 0 : result.results?.length > 0)) {
-        return result
-      }
-    } catch (error) {
-      console.error('[Maccms API] Request failed with proxy:', error instanceof Error ? error.message : 'Unknown error')
-    }
-
-    retries--
-  }
-
-  return result
-}
-
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -292,134 +147,117 @@ export async function GET(request: NextRequest) {
       at: searchParams.get('at') || '',
     })
 
-    // Get base URL from environment
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:4444'
-
-    // Initialize PornHub client
-    const pornhub = new PornHub()
-
-    // Prepare response data
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let videos: any[] = []
-    let totalCount = 0
     const pageSize = 20
+    const skip = (params.pg - 1) * pageSize
+
+    let videos: MaccmsVideo[] = []
+    let totalCount = 0
 
     if (params.ac === 'detail' && params.ids) {
       // Fetch specific videos by IDs
       const videoIds = params.ids.split(',').filter(id => id.trim())
 
-      for (const videoId of videoIds) {
-        try {
-          const videoInfo = await fetchVideosWithRetry(
-            pornhub,
-            () => pornhub.video(videoId.trim())
-          )
+      const dbVideos = await prisma.video.findMany({
+        where: {
+          vodId: {
+            in: videoIds,
+          },
+        },
+      })
 
-          if (videoInfo) {
-            videos.push(videoInfo)
-          }
-        } catch (error) {
-          console.error(`[Maccms API] Failed to fetch video ${videoId}:`, error)
-        }
-      }
+      videos = dbVideos.map(v => ({
+        vod_id: v.vodId,
+        vod_name: v.vodName,
+        type_id: v.typeId,
+        type_name: v.typeName,
+        vod_en: v.vodEn || '',
+        vod_time: formatDate(v.vodTime),
+        vod_remarks: v.vodRemarks || '',
+        vod_play_from: v.vodPlayFrom,
+        vod_pic: v.vodPic || '',
+        vod_area: v.vodArea || '',
+        vod_lang: v.vodLang || '',
+        vod_year: v.vodYear || '',
+        vod_actor: v.vodActor || '',
+        vod_director: v.vodDirector || '',
+        vod_content: v.vodContent || '',
+        vod_play_url: v.vodPlayUrl,
+      }))
 
       totalCount = videos.length
 
     } else if (params.ac === 'list') {
-      // Fetch video list
+      // Build where clause
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const options: any = {
-        page: params.pg,
-      }
+      const where: any = {}
 
-      // Apply filters - Use search by category name instead of filterCategory
-      // because we don't know PornHub's internal category IDs
-      let categorySearchTerm: string | undefined
+      // Category filter
       if (params.t) {
-        // Convert type_id to category name if numeric, otherwise use as-is
         const typeId = parseInt(params.t)
-        if (!isNaN(typeId) && typeIdToCategory[typeId]) {
-          categorySearchTerm = typeIdToCategory[typeId]
+        if (!isNaN(typeId)) {
+          where.typeId = typeId
         } else {
-          // Assume it's a category name, convert to lowercase
-          categorySearchTerm = params.t.toLowerCase().replace(/\s+/g, ' ')
+          // Search by category name
+          where.typeName = {
+            contains: params.t,
+          }
         }
       }
 
+      // Keyword search
+      if (params.wd) {
+        where.OR = [
+          { vodName: { contains: params.wd } },
+          { vodContent: { contains: params.wd } },
+          { vodActor: { contains: params.wd } },
+        ]
+      }
+
+      // Recent hours filter
       if (params.h) {
-        // Filter by recent hours (not directly supported by PornHub.js, so we'll use period)
-        if (params.h <= 24) {
-          options.period = 'daily'
-        } else if (params.h <= 168) {
-          options.period = 'weekly'
-        } else if (params.h <= 720) {
-          options.period = 'monthly'
+        const hoursAgo = new Date(Date.now() - params.h * 60 * 60 * 1000)
+        where.vodTime = {
+          gte: hoursAgo,
         }
       }
 
-      try {
-        // If we have a category filter OR keyword search, use searchVideo
-        // Otherwise use videoList
-        if (params.wd || categorySearchTerm) {
-          const searchQuery = params.wd || categorySearchTerm!
-          // Search videos by keyword or category name
-          const searchResult = await fetchVideosWithRetry(
-            pornhub,
-            () => pornhub.searchVideo(searchQuery, options)
-          )
+      // Fetch videos from database
+      const [dbVideos, total] = await Promise.all([
+        prisma.video.findMany({
+          where,
+          orderBy: {
+            vodTime: 'desc',
+          },
+          skip,
+          take: pageSize,
+        }),
+        prisma.video.count({ where }),
+      ])
 
-          if (searchResult) {
-            videos = searchResult.results || []
-            totalCount = searchResult.total || videos.length
-          }
-        } else {
-          // Get video list (no filters)
-          const videoList = await fetchVideosWithRetry(
-            pornhub,
-            () => pornhub.videoList(options)
-          )
+      videos = dbVideos.map(v => ({
+        vod_id: v.vodId,
+        vod_name: v.vodName,
+        type_id: v.typeId,
+        type_name: v.typeName,
+        vod_en: v.vodEn || '',
+        vod_time: formatDate(v.vodTime),
+        vod_remarks: v.vodRemarks || '',
+        vod_play_from: v.vodPlayFrom,
+        vod_pic: v.vodPic || '',
+        vod_area: v.vodArea || '',
+        vod_lang: v.vodLang || '',
+        vod_year: v.vodYear || '',
+        vod_actor: v.vodActor || '',
+        vod_director: v.vodDirector || '',
+        vod_content: v.vodContent || '',
+        vod_play_url: v.vodPlayUrl,
+      }))
 
-          if (videoList) {
-            videos = Array.isArray(videoList) ? videoList : (videoList.results || [])
-            totalCount = videoList.total || videos.length * 10 // Estimate total
-          }
-        }
-      } catch (error) {
-        console.error('[Maccms API] Failed to fetch video list:', error)
-        videos = []
-        totalCount = 0
-      }
+      totalCount = total
     }
-
-    // Map videos to Maccms format
-    const mappedVideos = videos.map(video => mapToMaccmsVideo(video, baseUrl))
 
     // Calculate pagination
     const pageCount = Math.ceil(totalCount / pageSize)
-
-    // Define categories based on common PornHub categories
-    const categories: MaccmsClass[] = [
-      { type_id: 1, type_name: 'Amateur' },
-      { type_id: 2, type_name: 'Anal' },
-      { type_id: 3, type_name: 'Asian' },
-      { type_id: 4, type_name: 'BBW' },
-      { type_id: 5, type_name: 'Big Ass' },
-      { type_id: 6, type_name: 'Big Tits' },
-      { type_id: 7, type_name: 'Blonde' },
-      { type_id: 8, type_name: 'Blowjob' },
-      { type_id: 9, type_name: 'Brunette' },
-      { type_id: 10, type_name: 'Creampie' },
-      { type_id: 11, type_name: 'Cumshot' },
-      { type_id: 12, type_name: 'Ebony' },
-      { type_id: 13, type_name: 'Hardcore' },
-      { type_id: 14, type_name: 'Hentai' },
-      { type_id: 15, type_name: 'Latina' },
-      { type_id: 16, type_name: 'Lesbian' },
-      { type_id: 17, type_name: 'MILF' },
-      { type_id: 18, type_name: 'POV' },
-      { type_id: 19, type_name: 'Teen' },
-      { type_id: 20, type_name: 'Threesome' },
-    ]
 
     // Prepare response
     const response: MaccmsJsonResponse = {
@@ -429,7 +267,7 @@ export async function GET(request: NextRequest) {
       pagecount: pageCount,
       limit: pageSize.toString(),
       total: totalCount,
-      list: mappedVideos.slice(0, pageSize), // Ensure we don't exceed page size
+      list: videos,
       class: categories,
     }
 
