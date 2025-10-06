@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
             vodActor: video.provider || '',
             vodDirector: '',
             vodContent: cleanTitle,
-            vodPlayUrl: `Full Video$${baseUrl}/api/watch/${video.id}/stream?q=720`,
+            vodPlayUrl: `Full Video$${baseUrl}/api/watch/${video.id}/stream.m3u8?q=720`,
             views: views,
             duration: durationSeconds,
           },

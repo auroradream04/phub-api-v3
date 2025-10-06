@@ -8,7 +8,15 @@ const nextConfig: NextConfig = {
       loader: 'ignore-loader'
     });
     return config;
-  }
+  },
+  async rewrites() {
+    return [
+      {
+        source: '/api/watch/:id/stream.m3u8',
+        destination: '/api/watch/:id/stream',
+      },
+    ];
+  },
 };
 
 export default nextConfig;
