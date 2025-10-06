@@ -336,12 +336,15 @@ export async function GET(request: NextRequest) {
       if (params.t) {
         // Convert type_id to category name if numeric, otherwise use as-is
         const typeId = parseInt(params.t)
+        let categoryName: string
         if (!isNaN(typeId) && typeIdToCategory[typeId]) {
-          options.category = typeIdToCategory[typeId]
+          categoryName = typeIdToCategory[typeId]
         } else {
           // Assume it's a category name, convert to lowercase
-          options.category = params.t.toLowerCase().replace(/\s+/g, '-')
+          categoryName = params.t.toLowerCase().replace(/\s+/g, '-')
         }
+        // PornHub.js expects category as string array
+        options.category = [categoryName]
       }
 
       if (params.h) {
