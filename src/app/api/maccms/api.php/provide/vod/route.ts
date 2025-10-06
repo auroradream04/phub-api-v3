@@ -113,6 +113,30 @@ const categoryMap: Record<string, number> = {
   'threesome': 20,
 }
 
+// Reverse mapping: type_id to PornHub category name
+const typeIdToCategory: Record<number, string> = {
+  1: 'amateur',
+  2: 'anal',
+  3: 'asian',
+  4: 'bbw',
+  5: 'big-ass',
+  6: 'big-tits',
+  7: 'blonde',
+  8: 'blowjob',
+  9: 'brunette',
+  10: 'creampie',
+  11: 'cumshot',
+  12: 'ebony',
+  13: 'hardcore',
+  14: 'hentai',
+  15: 'latina',
+  16: 'lesbian',
+  17: 'milf',
+  18: 'pov',
+  19: 'teen',
+  20: 'threesome',
+}
+
 // Helper function to map PornHub video to Maccms format
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapToMaccmsVideo(video: any, baseUrl: string): MaccmsVideo {
@@ -310,7 +334,14 @@ export async function GET(request: NextRequest) {
 
       // Apply filters
       if (params.t) {
-        options.category = params.t
+        // Convert type_id to category name if numeric, otherwise use as-is
+        const typeId = parseInt(params.t)
+        if (!isNaN(typeId) && typeIdToCategory[typeId]) {
+          options.category = typeIdToCategory[typeId]
+        } else {
+          // Assume it's a category name, convert to lowercase
+          options.category = params.t.toLowerCase().replace(/\s+/g, '-')
+        }
       }
 
       if (params.h) {
