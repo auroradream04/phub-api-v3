@@ -90,6 +90,7 @@ function createSlug(title: string): string {
 }
 
 // Helper function to map PornHub video to Maccms format
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapToMaccmsVideo(video: any, baseUrl: string): MaccmsVideo {
   const vodId = video.video_id || video.key || video.id || 'unknown'
   const vodName = video.title || 'Untitled'
@@ -178,8 +179,10 @@ function jsonToXml(response: MaccmsJsonResponse): string {
 // Helper function to fetch videos with retry logic
 async function fetchVideosWithRetry(
   pornhub: PornHub,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   fetchFunction: () => Promise<any>,
   maxRetries = 3
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any> {
   let result = null
   let retries = maxRetries
@@ -243,6 +246,7 @@ export async function GET(request: NextRequest) {
     const pornhub = new PornHub()
 
     // Prepare response data
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let videos: any[] = []
     let totalCount = 0
     const pageSize = 20
@@ -270,6 +274,7 @@ export async function GET(request: NextRequest) {
 
     } else if (params.ac === 'list') {
       // Fetch video list
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const options: any = {
         page: params.pg,
       }
@@ -362,7 +367,7 @@ export async function GET(request: NextRequest) {
       const errorResponse = {
         code: 0,
         msg: 'Invalid parameters',
-        error: error.errors,
+        error: error.issues,
       }
 
       return NextResponse.json(errorResponse, { status: 400 })
