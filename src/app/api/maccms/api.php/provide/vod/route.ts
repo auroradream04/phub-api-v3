@@ -89,6 +89,30 @@ function createSlug(title: string): string {
     .substring(0, 50)
 }
 
+// Category mapping for PornHub categories to type_id
+const categoryMap: Record<string, number> = {
+  'amateur': 1,
+  'anal': 2,
+  'asian': 3,
+  'bbw': 4,
+  'big ass': 5,
+  'big tits': 6,
+  'blonde': 7,
+  'blowjob': 8,
+  'brunette': 9,
+  'creampie': 10,
+  'cumshot': 11,
+  'ebony': 12,
+  'hardcore': 13,
+  'hentai': 14,
+  'latina': 15,
+  'lesbian': 16,
+  'milf': 17,
+  'pov': 18,
+  'teen': 19,
+  'threesome': 20,
+}
+
 // Helper function to map PornHub video to Maccms format
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapToMaccmsVideo(video: any, baseUrl: string): MaccmsVideo {
@@ -102,11 +126,16 @@ function mapToMaccmsVideo(video: any, baseUrl: string): MaccmsVideo {
   const vodContent = video.tags?.join(', ') || video.categories?.join(', ') || ''
   const vodPlayUrl = `Full Video$${baseUrl}/api/watch/${vodId}/stream?q=720`
 
+  // Map category to type_id
+  const firstCategory = video.categories?.[0]?.toLowerCase() || 'amateur'
+  const typeId = categoryMap[firstCategory] || 1
+  const typeName = video.categories?.[0] || 'Amateur'
+
   return {
     vod_id: vodId,
     vod_name: vodName,
-    type_id: 1,
-    type_name: video.categories?.[0] || 'Adult',
+    type_id: typeId,
+    type_name: typeName,
     vod_en: createSlug(vodName),
     vod_time: vodTime,
     vod_remarks: vodRemarks,
@@ -332,6 +361,30 @@ export async function GET(request: NextRequest) {
     // Calculate pagination
     const pageCount = Math.ceil(totalCount / pageSize)
 
+    // Define categories based on common PornHub categories
+    const categories: MaccmsClass[] = [
+      { type_id: 1, type_name: 'Amateur' },
+      { type_id: 2, type_name: 'Anal' },
+      { type_id: 3, type_name: 'Asian' },
+      { type_id: 4, type_name: 'BBW' },
+      { type_id: 5, type_name: 'Big Ass' },
+      { type_id: 6, type_name: 'Big Tits' },
+      { type_id: 7, type_name: 'Blonde' },
+      { type_id: 8, type_name: 'Blowjob' },
+      { type_id: 9, type_name: 'Brunette' },
+      { type_id: 10, type_name: 'Creampie' },
+      { type_id: 11, type_name: 'Cumshot' },
+      { type_id: 12, type_name: 'Ebony' },
+      { type_id: 13, type_name: 'Hardcore' },
+      { type_id: 14, type_name: 'Hentai' },
+      { type_id: 15, type_name: 'Latina' },
+      { type_id: 16, type_name: 'Lesbian' },
+      { type_id: 17, type_name: 'MILF' },
+      { type_id: 18, type_name: 'POV' },
+      { type_id: 19, type_name: 'Teen' },
+      { type_id: 20, type_name: 'Threesome' },
+    ]
+
     // Prepare response
     const response: MaccmsJsonResponse = {
       code: 1,
@@ -341,9 +394,7 @@ export async function GET(request: NextRequest) {
       limit: pageSize.toString(),
       total: totalCount,
       list: mappedVideos.slice(0, pageSize), // Ensure we don't exceed page size
-      class: [
-        { type_id: 1, type_name: 'Adult' },
-      ],
+      class: categories,
     }
 
     // Return response in requested format
