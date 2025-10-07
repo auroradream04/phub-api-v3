@@ -4,6 +4,12 @@ import { PornHub } from 'pornhub.js'
 // Initialize PornHub client
 const pornhub = new PornHub()
 
+// Custom categories that use search instead of PornHub category IDs
+const CUSTOM_CATEGORIES = [
+  { id: 'japanese', name: 'Japanese' },
+  { id: 'chinese', name: 'Chinese' }
+]
+
 export async function GET() {
   try {
     // Fetch categories from PornHub using the WebMaster API
@@ -20,9 +26,12 @@ export async function GET() {
         .join(' ')
     }))
 
+    // Add custom categories at the beginning
+    const allCategories = [...CUSTOM_CATEGORIES, ...formattedCategories]
+
     return NextResponse.json({
-      categories: formattedCategories,
-      total: formattedCategories.length
+      categories: allCategories,
+      total: allCategories.length
     })
   } catch (error) {
     console.error('[API] Error fetching categories from PornHub:', error)
