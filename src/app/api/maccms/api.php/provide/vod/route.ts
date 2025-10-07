@@ -8,6 +8,7 @@ interface MaccmsVideo {
   vod_name: string
   type_id: number
   type_name: string
+  vod_class: string
   vod_en: string
   vod_time: string
   vod_remarks: string
@@ -107,6 +108,7 @@ function jsonToXml(response: MaccmsJsonResponse): string {
     xml += `      <tid>${video.type_id}</tid>\n`
     xml += `      <name>${wrapCDATA(video.vod_name)}</name>\n`
     xml += `      <type>${escapeXml(video.type_name)}</type>\n`
+    xml += `      <class>${wrapCDATA(video.vod_class)}</class>\n`
     xml += `      <pic>${wrapCDATA(video.vod_pic)}</pic>\n`
     xml += `      <pic_thumb>${wrapCDATA(video.vod_pic)}</pic_thumb>\n`
     xml += `      <pic_slide>${wrapCDATA(video.vod_pic)}</pic_slide>\n`
@@ -176,6 +178,7 @@ export async function GET(request: NextRequest) {
         vod_name: v.vodName,
         type_id: v.typeId,
         type_name: v.typeName,
+        vod_class: v.vodClass || v.typeName,
         vod_en: v.vodEn || '',
         vod_time: formatDate(v.vodTime),
         vod_remarks: v.vodRemarks || '',
@@ -248,6 +251,7 @@ export async function GET(request: NextRequest) {
         vod_name: v.vodName,
         type_id: v.typeId,
         type_name: v.typeName,
+        vod_class: v.vodClass || v.typeName,
         vod_en: v.vodEn || '',
         vod_time: formatDate(v.vodTime),
         vod_remarks: v.vodRemarks || '',

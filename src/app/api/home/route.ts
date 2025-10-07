@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const order = orderParam || 'newest'
 
     // Build orderBy clause
-    let orderBy: any = { vodTime: 'desc' } // Default: newest first
+    let orderBy: { vodTime?: 'desc'; views?: 'desc'; duration?: 'desc' } = { vodTime: 'desc' } // Default: newest first
 
     if (order === 'most-viewed' || order.toLowerCase().includes('viewed')) {
       orderBy = { views: 'desc' }

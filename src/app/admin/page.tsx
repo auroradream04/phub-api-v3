@@ -3,19 +3,31 @@
 import { useSession } from 'next-auth/react'
 import { useState, useEffect } from 'react'
 
+interface Category {
+  id: number
+  name: string
+}
+
 export default function AdminDashboard() {
   const { data: session } = useSession()
-  const [scraping, setScraping] = useState(false)
-  const [endPage, setEndPage] = useState(10)
+
+  // Category scraping states
+  const [categoryScraping, setCategoryScraping] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState<string>('all')
+  const [pagesPerCategory, setPagesPerCategory] = useState(5)
+  const [categories, setCategories] = useState<Category[]>([])
+  const [categoryProgress, setCategoryProgress] = useState('')
+
+  // Stats and messages
   const [stats, setStats] = useState<{
     totalVideos: number
     categories: Array<{ typeId: number; typeName: string; _count: number }>
   } | null>(null)
   const [message, setMessage] = useState('')
-  const [progress, setProgress] = useState('')
 
   useEffect(() => {
     fetchStats()
+    fetchCategories()
   }, [])
 
   const fetchStats = async () => {
@@ -28,70 +40,120 @@ export default function AdminDashboard() {
     }
   }
 
-  const scrapeVideos = async () => {
-    if (endPage < 0) {
-      setMessage('❌ Please enter a valid page number (0 or higher)')
-      return
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch('/api/categories')
+      const data = await res.json()
+      if (data.categories) {
+        setCategories(data.categories)
+      }
+    } catch (error) {
+      console.error('Failed to fetch categories:', error)
     }
+  }
 
-    setScraping(true)
-    const isInfinite = endPage === 0
-    setMessage(isInfinite ? 'Starting scrape of all pages...' : `Starting scrape from page 1 to ${endPage}...`)
-    setProgress('')
-
-    let totalScraped = 0
-    let totalErrors = 0
-    let page = 1
-    let hasMore = true
+  // Category-based scraping function
+  const scrapeCategoryVideos = async () => {
+    setCategoryScraping(true)
+    setCategoryProgress('')
 
     try {
-      while (hasMore && (isInfinite || page <= endPage)) {
-        setProgress(isInfinite
-          ? `Scraping page ${page}...`
-          : `Scraping page ${page}/${endPage}...`
-        )
+      if (selectedCategory === 'all') {
+        // Scrape all categories
+        setMessage(`Starting to scrape ${pagesPerCategory} pages from each category...`)
+        setCategoryProgress('Fetching all categories...')
 
-        const res = await fetch('/api/scraper/videos', {
+        const res = await fetch('/api/scraper/categories', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ page }),
+          body: JSON.stringify({ pagesPerCategory }),
         })
 
         const data = await res.json()
 
         if (data.success) {
-          totalScraped += data.scraped
-          hasMore = data.hasMore
-          setProgress(isInfinite
-            ? `✓ Page ${page} - Scraped ${data.scraped} videos (Total: ${data.totalVideos})`
-            : `✓ Page ${page}/${endPage} - Scraped ${data.scraped} videos`
-          )
+          await fetchStats()
+          setMessage(`✅ All categories scraped! Total: ${data.totalScraped} videos from ${data.results.length} categories`)
 
-          // If no more pages and we're in infinite mode, stop
-          if (isInfinite && !hasMore) {
-            break
-          }
+          // Show detailed results
+          const details = data.results
+            .map((r: { category: string; scraped: number }) => `${r.category}: ${r.scraped} videos`)
+            .join(', ')
+          setCategoryProgress(`Results: ${details}`)
         } else {
-          totalErrors++
-          setProgress(isInfinite
-            ? `✗ Page ${page} - Error: ${data.message}`
-            : `✗ Page ${page}/${endPage} - Error: ${data.message}`
-          )
+          setMessage(`❌ Failed to scrape categories: ${data.message}`)
+        }
+      } else {
+        // Scrape single category
+        const category = categories.find(c => c.id.toString() === selectedCategory)
+        if (!category) {
+          setMessage('❌ Invalid category selected')
+          return
         }
 
-        page++
+        const isInfinite = pagesPerCategory === 0
+        setMessage(isInfinite
+          ? `Starting to scrape all pages from ${category.name}...`
+          : `Starting to scrape ${pagesPerCategory} pages from ${category.name}...`
+        )
 
-        // Small delay to avoid hammering the API
-        await new Promise(resolve => setTimeout(resolve, 500))
+        let totalScraped = 0
+        let totalErrors = 0
+        let page = 1
+        let hasMore = true
+
+        while (hasMore && (isInfinite || page <= pagesPerCategory)) {
+          setCategoryProgress(isInfinite
+            ? `Scraping ${category.name} (page ${page})...`
+            : `Scraping ${category.name} (page ${page}/${pagesPerCategory})...`
+          )
+
+          const res = await fetch('/api/scraper/videos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              page,
+              categoryId: category.id,
+              categoryName: category.name,
+            }),
+          })
+
+          const data = await res.json()
+
+          if (data.success) {
+            totalScraped += data.scraped
+            hasMore = data.hasMore
+            setCategoryProgress(isInfinite
+              ? `✓ ${category.name} page ${page} - Scraped ${data.scraped} videos`
+              : `✓ ${category.name} page ${page}/${pagesPerCategory} - Scraped ${data.scraped} videos`
+            )
+
+            if (isInfinite && !hasMore) {
+              setCategoryProgress(`No more pages for ${category.name}`)
+              break
+            }
+          } else {
+            totalErrors++
+            setCategoryProgress(isInfinite
+              ? `✗ ${category.name} page ${page} - Error: ${data.message}`
+              : `✗ ${category.name} page ${page}/${pagesPerCategory} - Error: ${data.message}`
+            )
+          }
+
+          page++
+
+          // Small delay
+          await new Promise(resolve => setTimeout(resolve, 500))
+        }
+
+        await fetchStats()
+        setMessage(`✅ Category scrape complete! Scraped ${totalScraped} videos from ${category.name}. Errors: ${totalErrors}`)
       }
-
-      await fetchStats()
-      setMessage(`✅ Complete! Scraped ${totalScraped} videos from ${page - 1} pages. Errors: ${totalErrors}`)
     } catch (error) {
       setMessage(`❌ Failed to scrape: ${error}`)
     } finally {
-      setScraping(false)
-      setProgress('')
+      setCategoryScraping(false)
+      setTimeout(() => setCategoryProgress(''), 5000)
     }
   }
 
@@ -148,40 +210,78 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Scrape from page 1 to: <span className="text-gray-500 text-xs">(Enter 0 for all pages)</span>
-          </label>
-          <div className="flex gap-3 items-center">
-            <input
-              type="number"
-              min="0"
-              value={endPage}
-              onChange={(e) => setEndPage(parseInt(e.target.value) || 0)}
-              disabled={scraping}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              placeholder="10"
-            />
-            <button
-              onClick={scrapeVideos}
-              disabled={scraping}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-            >
-              {scraping ? 'Scraping...' : endPage === 0 ? 'Scrape All Pages' : `Scrape ${endPage} Page${endPage > 1 ? 's' : ''}`}
-            </button>
-            <button
-              onClick={clearVideos}
-              disabled={scraping}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors ml-auto"
-            >
-              Clear All Videos
-            </button>
+        {/* Category-based Scraping */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+          <h4 className="font-semibold text-gray-900 mb-3">
+            Scrape Videos by Category
+          </h4>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select Category
+              </label>
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                disabled={categoryScraping}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <option value="all">All Categories</option>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.id.toString()}>
+                    {cat.name} (ID: {cat.id})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Pages per Category <span className="text-gray-500 text-xs">(Enter 0 for all pages)</span>
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="50"
+                value={pagesPerCategory}
+                onChange={(e) => setPagesPerCategory(parseInt(e.target.value) || 0)}
+                disabled={categoryScraping}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                placeholder="5"
+              />
+            </div>
           </div>
+
+          <button
+            onClick={scrapeCategoryVideos}
+            disabled={categoryScraping}
+            className="w-full md:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+          >
+            {categoryScraping
+              ? 'Scraping Categories...'
+              : selectedCategory === 'all'
+                ? `Scrape All Categories (${pagesPerCategory} pages each)`
+                : `Scrape Selected Category (${pagesPerCategory} pages)`
+            }
+          </button>
         </div>
 
-        {progress && (
+        {/* Clear Database Button */}
+        <div className="flex justify-end">
+          <button
+            onClick={clearVideos}
+            disabled={categoryScraping}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Clear All Videos
+          </button>
+        </div>
+
+        {/* Progress indicators */}
+        {categoryProgress && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-700 mb-4">
-            {progress}
+            {categoryProgress}
           </div>
         )}
 
@@ -191,6 +291,7 @@ export default function AdminDashboard() {
           </div>
         )}
 
+        {/* Category Statistics */}
         {stats?.categories && stats.categories.length > 0 && (
           <div className="mt-6">
             <h4 className="text-lg font-semibold text-gray-900 mb-4">

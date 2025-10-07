@@ -152,7 +152,7 @@ function parseStringNumber(str: string): number {
     return +str.replace(/"/g, '')
 }
 
-const mediaDefinitionRegex = /{("group":\d+,"height":\d+,"width":\d+,)?"defaultQuality":(true|false|\d+),"format":"(\w+)","videoUrl":"(.+?)","quality":(("\d+")|(\[[\d,]*\]))(,"remote":(true|false))?}/g
+const mediaDefinitionRegex = /{("group":\d+,"height":\d+,"width":\d+,)?"defaultQuality":(true|false|\d+),"format":"(\w+)","videoUrl":"(.+?)","quality":(("\d+")|(\[[\d,]*\]))(,"segmentFormats":\{[^}]+\})?(,"remote":(true|false))?}/g
 export function parseMediaDefinition(html: string): MediaDefinition[] {
     const mediaDefinitions: MediaDefinition[] = []
     let matchCount = 0

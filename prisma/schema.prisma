@@ -118,8 +118,9 @@ model Video {
   id            String   @id @default(cuid())
   vodId         String   @unique // External video ID (e.g., ph123456)
   vodName       String   @db.VarChar(255)
-  typeId        Int      // Category type_id
+  typeId        Int      // Category type_id (primary category)
   typeName      String   @db.VarChar(100)
+  vodClass      String?  @db.VarChar(500) // Comma-separated category names (e.g., "Asian,Babe,Teen")
   vodEn         String?  @db.VarChar(255) // URL-friendly slug
   vodTime       DateTime @default(now())
   vodRemarks    String?  @db.VarChar(100) // HD, duration, etc.

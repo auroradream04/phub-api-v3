@@ -1,44 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-// Category mapping - matches Maccms categories
-const CATEGORIES = [
-  { id: 1, name: 'Amateur' },
-  { id: 2, name: 'Anal' },
-  { id: 3, name: 'Asian' },
-  { id: 4, name: 'BBW' },
-  { id: 5, name: 'Big Ass' },
-  { id: 6, name: 'Big Tits' },
-  { id: 7, name: 'Blonde' },
-  { id: 8, name: 'Blowjob' },
-  { id: 9, name: 'Brunette' },
-  { id: 10, name: 'Creampie' },
-  { id: 11, name: 'Cumshot' },
-  { id: 12, name: 'Ebony' },
-  { id: 13, name: 'Hardcore' },
-  { id: 14, name: 'Hentai' },
-  { id: 15, name: 'Latina' },
-  { id: 16, name: 'Lesbian' },
-  { id: 17, name: 'MILF' },
-  { id: 18, name: 'POV' },
-  { id: 19, name: 'Teen' },
-  { id: 20, name: 'Threesome' },
-]
-
-// Helper to map PornHub categories to our category IDs (unused but kept for future use)
-// function mapCategory(phCategories: string[]): { id: number; name: string } {
-//   // Try to find first matching category
-//   for (const phCat of phCategories) {
-//     const found = CATEGORIES.find(
-//       (cat) => cat.name.toLowerCase() === phCat.toLowerCase()
-//     )
-//     if (found) return found
-//   }
-
-//   // Default to "Amateur" if no match
-//   return CATEGORIES[0]!
-// }
-
 // Helper to strip emojis and special unicode characters
 function stripEmojis(str: string): string {
   // Remove emojis and other problematic unicode characters
@@ -60,36 +22,56 @@ function parseDuration(duration: string): number {
 
 export async function POST(request: NextRequest) {
   try {
-    const { page = 1 } = await request.json()
+    const { page = 1, categoryId, categoryName } = await request.json()
 
-    console.log(`[Scraper] Fetching page ${page}`)
-
-    // Fetch videos from our own /api/home endpoint
     const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:4444'
-    const homeResponse = await fetch(`${baseUrl}/api/home?page=${page}`)
 
-    if (!homeResponse.ok) {
-      throw new Error(`Failed to fetch videos: ${homeResponse.statusText}`)
+    // If categoryId is provided, scrape from specific category
+    // If not, scrape from general homepage
+    let apiUrl: string
+    let currentCategory: { id: number; name: string } | null = null
+
+    if (categoryId) {
+      apiUrl = `${baseUrl}/api/videos/category/${categoryId}?page=${page}`
+      currentCategory = { id: categoryId, name: categoryName || 'Unknown' }
+      console.log(`[Scraper] Fetching ${categoryName} (ID: ${categoryId}) - page ${page}`)
+    } else {
+      apiUrl = `${baseUrl}/api/home?page=${page}`
+      console.log(`[Scraper] Fetching homepage - page ${page}`)
     }
 
-    const homeData = await homeResponse.json()
+    const response = await fetch(apiUrl)
 
-    if (!homeData || !homeData.data || homeData.data.length === 0) {
+    if (!response.ok) {
+      throw new Error(`Failed to fetch videos: ${response.statusText}`)
+    }
+
+    const data = await response.json()
+
+    // Handle both /api/home and /api/videos/category response formats
+    const videos = data.data || []
+    const hasMore = data.paging ? !data.paging.isEnd : (data.paging?.pages?.next !== null)
+
+    // If scraping by category, use the category info from response
+    if (categoryId && data.category) {
+      currentCategory = data.category
+    }
+
+    if (videos.length === 0) {
       return NextResponse.json({
         success: false,
         message: 'No videos found',
         scraped: 0,
         page,
+        category: currentCategory,
       }, { status: 200 })
     }
 
     let scrapedCount = 0
     let errorCount = 0
 
-    // Process ALL videos from the page (no need to fetch individual details)
-    for (let i = 0; i < homeData.data.length; i++) {
-      const video = homeData.data[i]
-
+    // Process ALL videos from the page
+    for (const video of videos) {
       try {
         // Parse views (e.g., "2.6K" -> 2600, "1.2M" -> 1200000)
         const viewsStr = video.views || '0'
@@ -102,16 +84,55 @@ export async function POST(request: NextRequest) {
           views = parseInt(viewsStr.replace(/,/g, '')) || 0
         }
 
-        // Assign category based on position (rotate through all 20 categories)
-        const categoryIndex = i % CATEGORIES.length
-        const category = CATEGORIES[categoryIndex]!
-
         const durationSeconds = parseDuration(video.duration)
         const publishDate = new Date()
         const year = publishDate.getFullYear().toString()
 
         // Clean title to remove emojis
         const cleanTitle = stripEmojis(video.title)
+
+        // Determine category to use
+        let typeId: number
+        let typeName: string
+
+        if (currentCategory) {
+          // Use the category we're scraping from
+          typeId = currentCategory.id
+          typeName = currentCategory.name
+        } else if (video.categories && video.categories.length > 0) {
+          // Use the first category from video metadata (if available from API)
+          const firstCat = video.categories[0]
+          typeId = typeof firstCat === 'object' ? firstCat.id : 1
+          typeName = typeof firstCat === 'object' ? firstCat.name : firstCat
+        } else {
+          // Fallback to a default category
+          typeId = 1
+          typeName = 'Amateur'
+        }
+
+        // Check if video exists to merge categories
+        const existingVideo = await prisma.video.findUnique({
+          where: { vodId: video.id },
+          select: { vodClass: true, typeId: true, typeName: true },
+        })
+
+        let vodClass: string
+        if (existingVideo) {
+          // Merge categories
+          const existingCategories = existingVideo.vodClass
+            ? existingVideo.vodClass.split(',').map(c => c.trim())
+            : [existingVideo.typeName]
+
+          // Add new category if not already present
+          if (!existingCategories.includes(typeName)) {
+            existingCategories.push(typeName)
+          }
+
+          vodClass = existingCategories.join(',')
+        } else {
+          // New video - use current category
+          vodClass = typeName
+        }
 
         // Upsert video to database
         await prisma.video.upsert({
@@ -125,15 +146,15 @@ export async function POST(request: NextRequest) {
             duration: durationSeconds,
             vodRemarks: `HD ${video.duration}`,
             views: views,
-            typeId: category.id,
-            typeName: category.name,
+            vodClass: vodClass,
             vodYear: year,
           },
           create: {
             vodId: video.id,
             vodName: cleanTitle,
-            typeId: category.id,
-            typeName: category.name,
+            typeId: typeId,
+            typeName: typeName,
+            vodClass: vodClass,
             vodEn: cleanTitle
               .toLowerCase()
               .replace(/[^a-z0-9]+/g, '-')
@@ -156,7 +177,7 @@ export async function POST(request: NextRequest) {
         })
 
         scrapedCount++
-        console.log(`[Scraper] ✓ Saved: ${video.id} - ${cleanTitle} [${category.name}]`)
+        console.log(`[Scraper] ✓ Saved: ${video.id} - ${cleanTitle} [${typeName}]`)
       } catch (error) {
         errorCount++
         console.error(`[Scraper] ✗ Failed to save video ${video.id}:`, error)
@@ -165,11 +186,14 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Scraped ${scrapedCount} videos from page ${page}`,
+      message: currentCategory
+        ? `Scraped ${scrapedCount} videos from ${currentCategory.name} - page ${page}`
+        : `Scraped ${scrapedCount} videos from homepage - page ${page}`,
       scraped: scrapedCount,
       errors: errorCount,
       page,
-      hasMore: !homeData.paging?.isEnd,
+      hasMore,
+      category: currentCategory,
       totalVideos: await prisma.video.count(),
     }, { status: 200 })
 

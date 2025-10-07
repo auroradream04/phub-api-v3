@@ -44,25 +44,13 @@ export default function Home() {
     try {
       setLoading(true)
 
-      // Fetch 2 pages worth of videos (24 total)
-      const apiPage1 = (page - 1) * 2 + 1
-      const apiPage2 = apiPage1 + 1
+      const response = await fetch(`/api/home?page=${page}`)
+      const data = await response.json()
 
-      const [response1, response2] = await Promise.all([
-        fetch(`/api/search/hot?page=${apiPage1}`),
-        fetch(`/api/search/hot?page=${apiPage2}`)
-      ])
+      setFeaturedVideos(data.data || [])
 
-      const [data1, data2] = await Promise.all([
-        response1.json(),
-        response2.json()
-      ])
-
-      const allVideos = [...(data1.data || []), ...(data2.data || [])]
-      setFeaturedVideos(allVideos)
-
-      // Check if there are more videos (if second page has results)
-      setHasMore(data2.data && data2.data.length > 0)
+      // Check if there are more pages
+      setHasMore(!data.paging?.isEnd)
     } catch (error) {
       console.error('Failed to fetch videos:', error)
     } finally {
