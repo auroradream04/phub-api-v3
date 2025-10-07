@@ -9,9 +9,10 @@ const pornhub = new PornHub()
 const VIDEOS_PER_PAGE = 32
 
 // Custom categories that use search instead of PornHub category IDs
-const CUSTOM_CATEGORIES: Record<string, string> = {
-  'japanese': 'Japanese',
-  'chinese': 'Chinese'
+// Map numeric IDs to category names for search
+const CUSTOM_CATEGORIES: Record<number, string> = {
+  9999: 'Japanese',
+  9998: 'Chinese'
 }
 
 export async function GET(
@@ -22,12 +23,12 @@ export async function GET(
     const searchParams = request.nextUrl.searchParams
     const { categoryId: categoryIdParam } = await params
 
-    // Check if this is a custom category (string ID)
-    if (CUSTOM_CATEGORIES[categoryIdParam.toLowerCase()]) {
-      return handleCustomCategory(request, categoryIdParam.toLowerCase())
-    }
-
     const categoryId = parseInt(categoryIdParam, 10)
+
+    // Check if this is a custom category (numeric ID in 9998-9999 range)
+    if (CUSTOM_CATEGORIES[categoryId]) {
+      return handleCustomCategory(request, categoryId)
+    }
 
     // Validate categoryId
     if (isNaN(categoryId)) {
@@ -107,13 +108,13 @@ export async function GET(
 }
 
 // Handle custom categories using search
-async function handleCustomCategory(request: NextRequest, categoryKey: string) {
+async function handleCustomCategory(request: NextRequest, categoryId: number) {
   try {
     const searchParams = request.nextUrl.searchParams
     const pageParam = searchParams.get('page')
     const page = pageParam ? parseInt(pageParam, 10) : 1
 
-    const categoryName = CUSTOM_CATEGORIES[categoryKey]
+    const categoryName = CUSTOM_CATEGORIES[categoryId]
 
     console.log(`[Custom Category] ${categoryName}, Page: ${page}`)
 
@@ -171,7 +172,7 @@ async function handleCustomCategory(request: NextRequest, categoryKey: string) {
         total: totalCount,
       },
       category: {
-        id: categoryKey,
+        id: categoryId,
         name: categoryName
       }
     }

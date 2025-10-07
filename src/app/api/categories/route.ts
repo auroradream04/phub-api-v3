@@ -5,9 +5,10 @@ import { PornHub } from 'pornhub.js'
 const pornhub = new PornHub()
 
 // Custom categories that use search instead of PornHub category IDs
+// Use high numeric IDs (9998-9999) to avoid conflicts with PornHub category IDs
 const CUSTOM_CATEGORIES = [
-  { id: 'japanese', name: 'Japanese' },
-  { id: 'chinese', name: 'Chinese' }
+  { id: 9999, name: 'Japanese' },
+  { id: 9998, name: 'Chinese' }
 ]
 
 export async function GET() {

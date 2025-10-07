@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+// Map custom category string IDs to numeric IDs for database storage
+const CUSTOM_CATEGORY_IDS: Record<string, number> = {
+  'japanese': 9999,
+  'chinese': 9998
+}
+
 // Helper to strip emojis and special unicode characters
 function stripEmojis(str: string): string {
   // Remove emojis and other problematic unicode characters
@@ -33,7 +39,13 @@ export async function POST(request: NextRequest) {
 
     if (categoryId) {
       apiUrl = `${baseUrl}/api/videos/category/${categoryId}?page=${page}`
-      currentCategory = { id: categoryId, name: categoryName || 'Unknown' }
+
+      // Convert custom category string IDs to numeric IDs for database storage
+      const numericId = typeof categoryId === 'string' && CUSTOM_CATEGORY_IDS[categoryId.toLowerCase()]
+        ? CUSTOM_CATEGORY_IDS[categoryId.toLowerCase()]!
+        : (typeof categoryId === 'number' ? categoryId : parseInt(categoryId, 10))
+
+      currentCategory = { id: numericId, name: categoryName || 'Unknown' }
       console.log(`[Scraper] Fetching ${categoryName} (ID: ${categoryId}) - page ${page}`)
     } else {
       apiUrl = `${baseUrl}/api/home?page=${page}`
