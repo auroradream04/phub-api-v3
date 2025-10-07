@@ -1,11 +1,22 @@
 'use client'
 
 import { useSession } from 'next-auth/react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 interface Category {
   id: number
   name: string
+}
+
+interface ProgressState {
+  currentCategory: string
+  currentPage: number
+  totalPages: number
+  categoryIndex: number
+  totalCategories: number
+  scrapedCount: number
+  errorCount: number
+  isRateLimited: boolean
 }
 
 export default function AdminDashboard() {
@@ -17,6 +28,10 @@ export default function AdminDashboard() {
   const [pagesPerCategory, setPagesPerCategory] = useState(5)
   const [categories, setCategories] = useState<Category[]>([])
   const [categoryProgress, setCategoryProgress] = useState('')
+  const [progress, setProgress] = useState<ProgressState | null>(null)
+
+  // Cancel ref
+  const cancelRef = useRef(false)
 
   // Stats and messages
   const [stats, setStats] = useState<{
@@ -52,10 +67,18 @@ export default function AdminDashboard() {
     }
   }
 
+  // Cancel scraping
+  const cancelScraping = () => {
+    cancelRef.current = true
+    setMessage('⏸️ Cancelling scraping...')
+  }
+
   // Category-based scraping function
   const scrapeCategoryVideos = async () => {
     setCategoryScraping(true)
     setCategoryProgress('')
+    setProgress(null)
+    cancelRef.current = false
 
     try {
       if (selectedCategory === 'all') {
@@ -103,6 +126,24 @@ export default function AdminDashboard() {
         let hasMore = true
 
         while (hasMore && (isInfinite || page <= pagesPerCategory)) {
+          // Check for cancel
+          if (cancelRef.current) {
+            setMessage(`⏸️ Scraping cancelled by user. Scraped ${totalScraped} videos before cancellation.`)
+            break
+          }
+
+          // Update progress state
+          setProgress({
+            currentCategory: category.name,
+            currentPage: page,
+            totalPages: isInfinite ? 0 : pagesPerCategory,
+            categoryIndex: 1,
+            totalCategories: 1,
+            scrapedCount: totalScraped,
+            errorCount: totalErrors,
+            isRateLimited: false
+          })
+
           setCategoryProgress(isInfinite
             ? `Scraping ${category.name} (page ${page})...`
             : `Scraping ${category.name} (page ${page}/${pagesPerCategory})...`
@@ -118,14 +159,34 @@ export default function AdminDashboard() {
             }),
           })
 
+          // Check for rate limiting
+          if (res.status === 429) {
+            setProgress(prev => prev ? { ...prev, isRateLimited: true } : null)
+            setCategoryProgress(`⚠️ Rate limited! Waiting 5 seconds before retrying...`)
+            await new Promise(resolve => setTimeout(resolve, 5000))
+            continue // Retry same page
+          }
+
           const data = await res.json()
+
+          // Check for rate limit in error message
+          if (!data.success && data.message && data.message.toLowerCase().includes('rate limit')) {
+            setProgress(prev => prev ? { ...prev, isRateLimited: true } : null)
+            setCategoryProgress(`⚠️ Rate limited! Waiting 5 seconds before retrying...`)
+            await new Promise(resolve => setTimeout(resolve, 5000))
+            continue // Retry same page
+          }
 
           if (data.success) {
             totalScraped += data.scraped
             hasMore = data.hasMore
+
+            // Update progress with new count
+            setProgress(prev => prev ? { ...prev, scrapedCount: totalScraped, isRateLimited: false } : null)
+
             setCategoryProgress(isInfinite
-              ? `✓ ${category.name} page ${page} - Scraped ${data.scraped} videos`
-              : `✓ ${category.name} page ${page}/${pagesPerCategory} - Scraped ${data.scraped} videos`
+              ? `✓ ${category.name} page ${page} - Scraped ${data.scraped} videos (Total: ${totalScraped})`
+              : `✓ ${category.name} page ${page}/${pagesPerCategory} - Scraped ${data.scraped} videos (Total: ${totalScraped})`
             )
 
             if (isInfinite && !hasMore) {
@@ -134,6 +195,7 @@ export default function AdminDashboard() {
             }
           } else {
             totalErrors++
+            setProgress(prev => prev ? { ...prev, errorCount: totalErrors, isRateLimited: false } : null)
             setCategoryProgress(isInfinite
               ? `✗ ${category.name} page ${page} - Error: ${data.message}`
               : `✗ ${category.name} page ${page}/${pagesPerCategory} - Error: ${data.message}`
@@ -142,17 +204,20 @@ export default function AdminDashboard() {
 
           page++
 
-          // Small delay
-          await new Promise(resolve => setTimeout(resolve, 500))
+          // Delay between requests to avoid rate limiting (1-2 seconds)
+          await new Promise(resolve => setTimeout(resolve, 1500))
         }
 
         await fetchStats()
-        setMessage(`✅ Category scrape complete! Scraped ${totalScraped} videos from ${category.name}. Errors: ${totalErrors}`)
+        if (!cancelRef.current) {
+          setMessage(`✅ Category scrape complete! Scraped ${totalScraped} videos from ${category.name}. Errors: ${totalErrors}`)
+        }
       }
     } catch (error) {
       setMessage(`❌ Failed to scrape: ${error}`)
     } finally {
       setCategoryScraping(false)
+      setProgress(null)
       setTimeout(() => setCategoryProgress(''), 5000)
     }
   }
@@ -253,19 +318,112 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <button
-            onClick={scrapeCategoryVideos}
-            disabled={categoryScraping}
-            className="w-full md:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-          >
-            {categoryScraping
-              ? 'Scraping Categories...'
-              : selectedCategory === 'all'
-                ? `Scrape All Categories (${pagesPerCategory} pages each)`
-                : `Scrape Selected Category (${pagesPerCategory} pages)`
-            }
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={scrapeCategoryVideos}
+              disabled={categoryScraping}
+              className="flex-1 md:flex-initial px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+            >
+              {categoryScraping
+                ? 'Scraping Categories...'
+                : selectedCategory === 'all'
+                  ? `Scrape All Categories (${pagesPerCategory} pages each)`
+                  : `Scrape Selected Category (${pagesPerCategory} pages)`
+              }
+            </button>
+
+            {categoryScraping && (
+              <button
+                onClick={cancelScraping}
+                className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+            )}
+          </div>
         </div>
+
+        {/* Enhanced Progress Display */}
+        {progress && (
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-6 mb-4 shadow-lg">
+            <div className="space-y-4">
+              {/* Header */}
+              <div className="flex items-center justify-between">
+                <h4 className="text-lg font-bold text-gray-900">
+                  Scraping Progress
+                </h4>
+                {progress.isRateLimited && (
+                  <span className="px-3 py-1 bg-yellow-100 border border-yellow-400 text-yellow-800 text-sm font-medium rounded-full animate-pulse">
+                    ⚠️ Rate Limited
+                  </span>
+                )}
+              </div>
+
+              {/* Current Category & Page */}
+              <div className="bg-white rounded-lg p-4 border border-blue-200">
+                <div className="text-sm text-gray-600 mb-1">Currently Scraping:</div>
+                <div className="text-xl font-bold text-blue-900">
+                  {progress.currentCategory}
+                  {progress.totalPages > 0 && (
+                    <span className="text-base text-gray-600 ml-2">
+                      (Page {progress.currentPage} of {progress.totalPages})
+                    </span>
+                  )}
+                  {progress.totalPages === 0 && (
+                    <span className="text-base text-gray-600 ml-2">
+                      (Page {progress.currentPage})
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Progress Bar */}
+              {progress.totalPages > 0 && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm text-gray-700">
+                    <span>Progress</span>
+                    <span className="font-medium">
+                      {Math.round((progress.currentPage / progress.totalPages) * 100)}%
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden shadow-inner">
+                    <div
+                      className="bg-gradient-to-r from-blue-500 to-indigo-600 h-4 rounded-full transition-all duration-300 ease-out flex items-center justify-end pr-2"
+                      style={{ width: `${Math.min((progress.currentPage / progress.totalPages) * 100, 100)}%` }}
+                    >
+                      {progress.currentPage > 0 && (
+                        <span className="text-xs text-white font-bold">
+                          {Math.round((progress.currentPage / progress.totalPages) * 100)}%
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Stats Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                  <div className="text-xs text-green-600 font-medium mb-1">Videos Scraped</div>
+                  <div className="text-2xl font-bold text-green-900">{progress.scrapedCount}</div>
+                </div>
+
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <div className="text-xs text-red-600 font-medium mb-1">Errors</div>
+                  <div className="text-2xl font-bold text-red-900">{progress.errorCount}</div>
+                </div>
+
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 col-span-2 md:col-span-1">
+                  <div className="text-xs text-purple-600 font-medium mb-1">Current Page</div>
+                  <div className="text-2xl font-bold text-purple-900">
+                    {progress.currentPage}
+                    {progress.totalPages > 0 && `/${progress.totalPages}`}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Clear Database Button */}
         <div className="flex justify-end">
@@ -280,14 +438,46 @@ export default function AdminDashboard() {
 
         {/* Progress indicators */}
         {categoryProgress && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-700 mb-4">
-            {categoryProgress}
+          <div className="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-4 text-sm mb-4 shadow-sm">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-blue-500 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              </div>
+              <div className="ml-3 flex-1">
+                <p className="text-blue-800 font-medium">{categoryProgress}</p>
+              </div>
+            </div>
           </div>
         )}
 
         {message && (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-700">
-            {message}
+          <div className={`border-l-4 rounded-lg p-4 text-sm shadow-sm ${
+            message.includes('✅') || message.includes('complete')
+              ? 'bg-green-50 border-green-500'
+              : message.includes('❌') || message.includes('Failed')
+              ? 'bg-red-50 border-red-500'
+              : message.includes('⚠️') || message.includes('Rate')
+              ? 'bg-yellow-50 border-yellow-500'
+              : message.includes('⏸️') || message.includes('Cancel')
+              ? 'bg-orange-50 border-orange-500'
+              : 'bg-gray-50 border-gray-400'
+          }`}>
+            <p className={`font-medium ${
+              message.includes('✅') || message.includes('complete')
+                ? 'text-green-800'
+                : message.includes('❌') || message.includes('Failed')
+                ? 'text-red-800'
+                : message.includes('⚠️') || message.includes('Rate')
+                ? 'text-yellow-800'
+                : message.includes('⏸️') || message.includes('Cancel')
+                ? 'text-orange-800'
+                : 'text-gray-700'
+            }`}>
+              {message}
+            </p>
           </div>
         )}
 

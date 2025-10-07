@@ -121,8 +121,23 @@ async function handleCustomCategory(request: NextRequest, categoryId: number) {
       page
     })
 
-    // Debug: Log first 3 video IDs to verify pagination
-    console.log(`[Custom Category] Page ${page} first 3 IDs:`, result.data?.slice(0, 3).map(v => v.id))
+    // Check if PornHub is rate limiting or returning errors
+    if (!result.data || result.data.length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'PornHub returned no results - possible rate limiting. Try again in a few seconds.',
+          data: [],
+          paging: { current: page, maxPage: 1, isEnd: true },
+          counting: { from: 0, to: 0, total: 0 },
+          category: {
+            id: categoryId,
+            name: categoryName
+          }
+        },
+        { status: 200 }
+      )
+    }
 
     // Add category info to the response
     const response = {
@@ -136,10 +151,24 @@ async function handleCustomCategory(request: NextRequest, categoryId: number) {
     return NextResponse.json(response)
   } catch (error) {
     console.error('[Custom Category] Error:', error)
+
+    // Check if it's a JSON parse error (rate limiting)
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    if (errorMessage.includes('JSON') || errorMessage.includes('DOCTYPE')) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'PornHub is rate limiting requests. Please wait a moment and try again.',
+          rateLimited: true
+        },
+        { status: 429 }
+      )
+    }
+
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to fetch custom category from PornHub'
+        error: errorMessage || 'Failed to fetch custom category from PornHub'
       },
       { status: 500 }
     )

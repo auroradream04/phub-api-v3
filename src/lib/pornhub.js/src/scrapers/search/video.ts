@@ -32,8 +32,6 @@ export async function videoSearch(engine: Engine, keyword: string, options: Vide
     counting: Counting
 }> {
     const url = Route.videoSearch(keyword, options)
-    console.log(`[PornHub.js] videoSearch URL: ${url}`)
-    console.log(`[PornHub.js] Options:`, JSON.stringify(options))
     const res = await engine.request.get(url)
     const html = await res.text()
     const $ = getCheerio(html)
