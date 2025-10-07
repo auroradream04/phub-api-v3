@@ -1,4 +1,4 @@
-const { getVideoDuration } = require('./dist/lib/ffmpeg-hls')
+import { getVideoDuration } from './dist/lib/ffmpeg-hls.js'
 
 async function test() {
   try {

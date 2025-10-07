@@ -331,8 +331,9 @@ async function injectAds(m3u8Text: string, quality: string, baseUrl: string, vid
         segmentUrl = `${baseUrlObj.origin}${basePath}/${line.trim()}`
       }
 
-      // Prepend CORS proxy if enabled (only for PornHub CDN URLs, not our API)
-      if (corsProxyEnabled && segmentUrl.includes('phncdn.com')) {
+      // Prepend CORS proxy if enabled (for all external URLs, not our API)
+      const isOwnApi = segmentUrl.includes(process.env.NEXTAUTH_URL || 'localhost:4444')
+      if (corsProxyEnabled && !isOwnApi) {
         segmentUrl = `${corsProxyUrl}${segmentUrl}`
       }
 

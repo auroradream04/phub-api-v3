@@ -7,11 +7,12 @@ const pornhub = new PornHub()
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { categoryId: string } }
+  { params }: { params: Promise<{ categoryId: string }> }
 ) {
   try {
     const searchParams = request.nextUrl.searchParams
-    const categoryId = parseInt(params.categoryId, 10)
+    const { categoryId: categoryIdParam } = await params
+    const categoryId = parseInt(categoryIdParam, 10)
 
     // Validate categoryId
     if (isNaN(categoryId)) {
