@@ -15,6 +15,19 @@ interface Video {
   provider?: string
 }
 
+// Helper function to format views with k/m suffixes
+function formatViews(views: string): string {
+  const num = parseInt(views.replace(/,/g, ''))
+  if (isNaN(num)) return views
+
+  if (num >= 1000000) {
+    return (num / 1000000).toFixed(1) + 'm'
+  } else if (num >= 1000) {
+    return (num / 1000).toFixed(1) + 'k'
+  }
+  return num.toString()
+}
+
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState('')
   const [featuredVideos, setFeaturedVideos] = useState<Video[]>([])
@@ -201,15 +214,15 @@ export default function Home() {
                       {video.duration}
                     </div>
                   </div>
-                  <div className="p-4">
-                    <h3 className="font-medium text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-300 transition-colors">
+                  <div className="p-4 flex flex-col h-[110px]">
+                    <h3 className="font-medium text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-300 transition-colors flex-1">
                       {video.title}
                     </h3>
-                    <div className="flex items-center justify-between text-sm text-gray-500">
+                    <div className="flex items-center justify-between text-sm text-gray-500 mt-auto">
                       <div className="flex items-center gap-3">
                         <span className="flex items-center gap-1 leading-none">
                           <Eye className="w-4 h-4" />
-                          <span className="leading-none">{video.views}</span>
+                          <span className="leading-none">{formatViews(video.views)}</span>
                         </span>
                         {video.provider && (
                           <span className="flex items-center gap-1 max-w-[120px] leading-none">
