@@ -23,9 +23,9 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  ads       Ad[]
-  sessions  Session[]
-  accounts  Account[]
+  ads      Ad[]
+  sessions Session[]
+  accounts Account[]
 }
 
 model Account {
@@ -64,18 +64,18 @@ model VerificationToken {
 }
 
 model Ad {
-  id          String   @id @default(cuid())
-  title       String
-  description String?  @db.Text
-  duration    Int
-  status      String   @default("active")
-  weight      Int      @default(1) // Higher weight = higher probability
-  forceDisplay Boolean @default(false) // If true, this ad always shows
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  userId      String
+  id           String   @id @default(cuid())
+  title        String
+  description  String?  @db.Text
+  duration     Int
+  status       String   @default("active")
+  weight       Int      @default(1) // Higher weight = higher probability
+  forceDisplay Boolean  @default(false) // If true, this ad always shows
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  userId       String
 
-  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   segments    AdSegment[]
   impressions AdImpression[]
 }
@@ -115,28 +115,28 @@ model SiteSetting {
 }
 
 model Video {
-  id            String   @id @default(cuid())
-  vodId         String   @unique // External video ID (e.g., ph123456)
-  vodName       String   @db.VarChar(255)
-  typeId        Int      // Category type_id (primary category)
-  typeName      String   @db.VarChar(100)
-  vodClass      String?  @db.VarChar(500) // Comma-separated category names (e.g., "Asian,Babe,Teen")
-  vodEn         String?  @db.VarChar(255) // URL-friendly slug
-  vodTime       DateTime @default(now())
-  vodRemarks    String?  @db.VarChar(100) // HD, duration, etc.
-  vodPlayFrom   String   @default("YourAPI") @db.VarChar(100)
-  vodPic        String?  @db.Text // Thumbnail URL
-  vodArea       String?  @db.VarChar(100)
-  vodLang       String?  @db.VarChar(50)
-  vodYear       String?  @db.VarChar(10)
-  vodActor      String?  @db.Text // Comma-separated
-  vodDirector   String?  @db.Text
-  vodContent    String?  @db.Text // Description
-  vodPlayUrl    String   @db.Text // Episode$URL format
-  views         Int      @default(0)
-  duration      Int?     // Duration in seconds
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id          String   @id @default(cuid())
+  vodId       String   @unique // External video ID (e.g., ph123456)
+  vodName     String   @db.VarChar(255)
+  typeId      Int // Category type_id (primary category)
+  typeName    String   @db.VarChar(100)
+  vodClass    String?  @db.VarChar(500) // Comma-separated category names (e.g., "Asian,Babe,Teen")
+  vodEn       String?  @db.VarChar(255) // URL-friendly slug
+  vodTime     DateTime @default(now())
+  vodRemarks  String?  @db.VarChar(100) // HD, duration, etc.
+  vodPlayFrom String   @default("YourAPI") @db.VarChar(100)
+  vodPic      String?  @db.Text // Thumbnail URL
+  vodArea     String?  @db.VarChar(100)
+  vodLang     String?  @db.VarChar(50)
+  vodYear     String?  @db.VarChar(10)
+  vodActor    String?  @db.Text // Comma-separated
+  vodDirector String?  @db.Text
+  vodContent  String?  @db.Text // Description
+  vodPlayUrl  String   @db.Text // Episode$URL format
+  views       Int      @default(0)
+  duration    Int? // Duration in seconds
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([typeId])
   @@index([vodTime])
