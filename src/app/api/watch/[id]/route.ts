@@ -1,16 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PornHub } from 'pornhub.js'
-import { getRandomProxy } from '@/lib/proxy'
+import { prisma } from '@/lib/prisma'
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Extract the id parameter from the route
     const { id } = await params
 
-    // Validate that id is provided
     if (!id || id.trim() === '') {
       return NextResponse.json(
         { error: 'Video ID is required' },
@@ -18,71 +15,70 @@ export async function GET(
       )
     }
 
-    // Initialize PornHub client
-    const pornhub = new PornHub()
+    // Fetch video from database
+    const video = await prisma.video.findUnique({
+      where: { vodId: id },
+    })
 
-    let videoInfo
-    let retries = 3
-
-    // Try without proxy first
-    try {
-      videoInfo = await pornhub.video(id)
-    } catch (error) {
-      console.error('[API] Request failed without proxy:', error instanceof Error ? error.message : 'Unknown error')
+    if (!video) {
+      return NextResponse.json(
+        { error: 'Video not found' },
+        { status: 404 }
+      )
     }
 
-    // If request failed, retry with random proxy (matching v2 logic)
-    while ((videoInfo === undefined || videoInfo === null || !videoInfo.mediaDefinitions || videoInfo.mediaDefinitions.length < 1) && retries > 0) {
-      const proxyAgent = getRandomProxy()
-
-      if (!proxyAgent) {
-        console.warn('[API] No proxies available. Cannot retry.')
-        break
-      }
-
-      console.log(`[API] Retrying with proxy (${retries} retries remaining)...`)
-      pornhub.setAgent(proxyAgent)
-
-      try {
-        videoInfo = await pornhub.video(id)
-      } catch (error) {
-        console.error('[API] Request failed with proxy:', error instanceof Error ? error.message : 'Unknown error')
-      }
-
-      retries--
-    }
-
-    // If still no valid data after all retries, throw error
-    if (!videoInfo || !videoInfo.mediaDefinitions || videoInfo.mediaDefinitions.length < 1) {
-      throw new Error('Failed to fetch video information after all retries')
-    }
-
-    // Get base URL from environment variable (NEXTAUTH_URL)
-    // This ensures correct protocol (http/https) for all environments
     const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:4444'
 
-    // Transform mediaDefinitions to use our stream endpoint
-    // CORS proxy will be applied to the actual PornHub segment URLs in the stream route
-    const transformedMediaDefinitions = videoInfo.mediaDefinitions.map((md) => ({
-      ...md,
-      originalUrl: md.videoUrl,
-      videoUrl: `${baseUrl}/api/watch/${id}/stream?q=${md.quality}`,
-    }))
+    // Return video info with predefined quality options
+    // The actual video fetching happens in the stream endpoint
+    const videoInfo = {
+      title: video.vodName,
+      views: video.views,
+      rating: 0, // We don't store ratings
+      duration: formatDuration(video.duration || 0),
+      preview: video.vodPic || '',
+      mediaDefinitions: [
+        {
+          quality: 1080,
+          videoUrl: `${baseUrl}/api/watch/${id}/stream.m3u8?q=1080`,
+          format: 'hls',
+        },
+        {
+          quality: 720,
+          videoUrl: `${baseUrl}/api/watch/${id}/stream.m3u8?q=720`,
+          format: 'hls',
+        },
+        {
+          quality: 480,
+          videoUrl: `${baseUrl}/api/watch/${id}/stream.m3u8?q=480`,
+          format: 'hls',
+        },
+      ],
+      tags: video.vodContent ? video.vodContent.split(',').map(t => t.trim()) : [],
+      pornstars: video.vodActor ? video.vodActor.split(',').map(p => p.trim()) : [],
+      categories: [video.typeName],
+    }
 
-    // Return the video info with transformed URLs
-    return NextResponse.json({
-      ...videoInfo,
-      mediaDefinitions: transformedMediaDefinitions,
-    }, { status: 200 })
+    return NextResponse.json(videoInfo, { status: 200 })
 
   } catch (error) {
-    // Handle errors gracefully
     console.error('[API] Error fetching video info:', error)
 
-    // Return generic error message (don't expose internal errors)
     return NextResponse.json(
       { error: 'Failed to fetch video information' },
       { status: 500 }
     )
   }
+}
+
+// Helper to format duration from seconds to MM:SS or HH:MM:SS
+function formatDuration(seconds: number): string {
+  const hours = Math.floor(seconds / 3600)
+  const mins = Math.floor((seconds % 3600) / 60)
+  const secs = seconds % 60
+
+  if (hours > 0) {
+    return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+  }
+  return `${mins}:${secs.toString().padStart(2, '0')}`
 }
