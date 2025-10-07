@@ -200,7 +200,7 @@ export const Route = {
         return urlcat(BASE_URL, pathTemplate, {
             orientation,
             search: searchify(keyword),
-            ...(page !== 1 && { page }),
+            page, // Always include page parameter for proper pagination
             ...(o && { o }),
             ...(hd && { hd: '1' }),
             ...(production !== 'all' && { p: production }),
