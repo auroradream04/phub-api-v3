@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PornHub } from 'pornhub.js'
 import type { VideoListOrdering } from 'pornhub.js'
-import { prisma } from '@/lib/prisma'
 
 // Initialize PornHub client
 const pornhub = new PornHub()
-
-const VIDEOS_PER_PAGE = 32
 
 // Custom categories that use search instead of PornHub category IDs
 // Map numeric IDs to category names for search
@@ -107,7 +104,7 @@ export async function GET(
   }
 }
 
-// Handle custom categories using search
+// Handle custom categories using PornHub search
 async function handleCustomCategory(request: NextRequest, categoryId: number) {
   try {
     const searchParams = request.nextUrl.searchParams
@@ -116,85 +113,31 @@ async function handleCustomCategory(request: NextRequest, categoryId: number) {
 
     const categoryName = CUSTOM_CATEGORIES[categoryId]
 
-    console.log(`[Custom Category] ${categoryName}, Page: ${page}`)
+    console.log(`[Custom Category] ${categoryName}, Page: ${page} - Using PornHub search`)
 
-    // Search in database for this category
-    const [videos, totalCount] = await Promise.all([
-      prisma.video.findMany({
-        where: {
-          OR: [
-            { vodName: { contains: categoryName } },
-            { vodContent: { contains: categoryName } },
-            { vodActor: { contains: categoryName } },
-          ],
-        },
-        orderBy: { vodTime: 'desc' },
-        skip: (page - 1) * VIDEOS_PER_PAGE,
-        take: VIDEOS_PER_PAGE,
-      }),
-      prisma.video.count({
-        where: {
-          OR: [
-            { vodName: { contains: categoryName } },
-            { vodContent: { contains: categoryName } },
-            { vodActor: { contains: categoryName } },
-          ],
-        },
-      }),
-    ])
+    // Use PornHub search API to find videos
+    const result = await pornhub.searchVideo(categoryName, {
+      page
+    })
 
-    // Calculate pagination info
-    const totalPages = Math.ceil(totalCount / VIDEOS_PER_PAGE)
-    const isEnd = page >= totalPages
-
-    // Format response to match PornHub.js structure
+    // Add category info to the response
     const response = {
-      data: videos.map(v => ({
-        title: v.vodName,
-        id: v.vodId,
-        url: `${process.env.NEXTAUTH_URL || 'http://localhost:4444'}/watch/${v.vodId}`,
-        views: v.views.toString(),
-        duration: formatDuration(v.duration || 0),
-        hd: v.vodRemarks?.includes('HD') || false,
-        premium: false,
-        freePremium: false,
-        preview: v.vodPic || '',
-        provider: v.vodActor || '',
-      })),
-      paging: {
-        current: page,
-        maxPage: totalPages,
-        isEnd,
-      },
-      counting: {
-        from: (page - 1) * VIDEOS_PER_PAGE + 1,
-        to: Math.min(page * VIDEOS_PER_PAGE, totalCount),
-        total: totalCount,
-      },
+      ...result,
       category: {
         id: categoryId,
         name: categoryName
       }
     }
 
-    return NextResponse.json(response, {
-      status: 200,
-      headers: {
-        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200',
-      },
-    })
+    return NextResponse.json(response)
   } catch (error) {
     console.error('[Custom Category] Error:', error)
     return NextResponse.json(
-      { error: 'An error occurred while fetching custom category' },
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch custom category from PornHub'
+      },
       { status: 500 }
     )
   }
-}
-
-// Helper to format duration from seconds to MM:SS
-function formatDuration(seconds: number): string {
-  const mins = Math.floor(seconds / 60)
-  const secs = seconds % 60
-  return `${mins}:${secs.toString().padStart(2, '0')}`
 }
