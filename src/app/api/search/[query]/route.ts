@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PornHub } from 'pornhub.js'
-import { getRandomProxy } from '@/lib/proxy'
+import { prisma } from '@/lib/prisma'
+
+const VIDEOS_PER_PAGE = 32
 
 export async function GET(
   request: NextRequest,
@@ -21,103 +22,73 @@ export async function GET(
 
     // Parse search options from query parameters
     const searchParams = request.nextUrl.searchParams
-    const options: Record<string, string | number> = {}
+    const pageParam = searchParams.get('page')
+    const page = pageParam ? parseInt(pageParam, 10) : 1
 
-    // Page number
-    const page = searchParams.get('page')
-    if (page) {
-      options.page = parseInt(page, 10)
-      if (isNaN(options.page) || options.page < 1) {
-        options.page = 1
-      }
-    } else {
-      options.page = 1
+    console.log(`[Search] Query: "${decodedQuery}", Page: ${page}`)
+
+    // Search in database
+    const [videos, totalCount] = await Promise.all([
+      prisma.video.findMany({
+        where: {
+          OR: [
+            { vodName: { contains: decodedQuery } },
+            { vodContent: { contains: decodedQuery } },
+            { vodActor: { contains: decodedQuery } },
+          ],
+        },
+        orderBy: { vodTime: 'desc' },
+        skip: (page - 1) * VIDEOS_PER_PAGE,
+        take: VIDEOS_PER_PAGE,
+      }),
+      prisma.video.count({
+        where: {
+          OR: [
+            { vodName: { contains: decodedQuery } },
+            { vodContent: { contains: decodedQuery } },
+            { vodActor: { contains: decodedQuery } },
+          ],
+        },
+      }),
+    ])
+
+    // Calculate pagination info
+    const totalPages = Math.ceil(totalCount / VIDEOS_PER_PAGE)
+    const isEnd = page >= totalPages
+
+    // Format response to match PornHub.js structure
+    const response = {
+      data: videos.map(v => ({
+        title: v.vodName,
+        id: v.vodId,
+        url: `${process.env.NEXTAUTH_URL || 'http://localhost:4444'}/watch/${v.vodId}`,
+        views: v.views.toString(),
+        duration: formatDuration(v.duration || 0),
+        hd: v.vodRemarks?.includes('HD') || false,
+        premium: false,
+        freePremium: false,
+        preview: v.vodPic || '',
+        provider: v.vodActor || '',
+      })),
+      paging: {
+        current: page,
+        maxPage: totalPages,
+        isEnd,
+      },
+      counting: {
+        from: (page - 1) * VIDEOS_PER_PAGE + 1,
+        to: Math.min(page * VIDEOS_PER_PAGE, totalCount),
+        total: totalCount,
+      },
     }
 
-    // Additional search options
-    const order = searchParams.get('order')
-    if (order) options.order = order
+    console.log(`[Search] Found ${totalCount} results for "${decodedQuery}"`)
 
-    const segments = searchParams.get('segments')
-    if (segments) options.segments = segments
-
-    const period = searchParams.get('period')
-    if (period) options.period = period
-
-    console.log(`[Search] Query: "${decodedQuery}", Options:`, options)
-
-    // Initialize PornHub client
-    const pornhub = new PornHub()
-
-    let videoList
-    let retries = 3
-
-    // Try without proxy first (saves proxy bandwidth)
-    try {
-      videoList = await pornhub.searchVideo(decodedQuery, options)
-      console.log(`[Search] Success without proxy, found ${videoList?.data?.length || 0} results`)
-    } catch (error) {
-      console.error('[Search] Request failed without proxy:', error instanceof Error ? error.message : 'Unknown error')
-    }
-
-    // Retry with random proxies if initial request failed
-    while ((videoList === undefined || videoList === null || !videoList.data || videoList.data.length < 1) && retries > 0) {
-      const proxyAgent = getRandomProxy()
-
-      if (!proxyAgent) {
-        console.warn('[Search] No proxies available. Cannot retry.')
-        break
-      }
-
-      console.log(`[Search] Retrying with proxy (${retries} retries remaining)...`)
-      pornhub.setAgent(proxyAgent)
-
-      try {
-        videoList = await pornhub.searchVideo(decodedQuery, options)
-        console.log(`[Search] Success with proxy, found ${videoList?.data?.length || 0} results`)
-      } catch (error) {
-        console.error('[Search] Request failed with proxy:', error instanceof Error ? error.message : 'Unknown error')
-      }
-
-      retries--
-    }
-
-    // Check if we got valid results
-    if (!videoList || !videoList.data || videoList.data.length < 1) {
-      console.error('[Search] No results found after all retries')
-      return NextResponse.json(
-        { error: 'No results found or unable to fetch search results' },
-        { status: 404 }
-      )
-    }
-
-    // Get base URL from environment variable (NEXTAUTH_URL)
-    // This ensures correct protocol (http/https) for all environments
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:4444'
-
-    // Transform video URLs to use our API
-    const transformedVideoList = {
-      ...videoList,
-      data: videoList.data.map((video) => {
-        const videoKey = (video as { id?: string }).id
-        return {
-          ...video,
-          // Keep original URL for reference
-          originalUrl: video.url,
-          // Transform to use our watch endpoint
-          url: videoKey ? `${baseUrl}/api/watch/${videoKey}` : video.url,
-        }
-      })
-    }
-
-    console.log(`[Search] Returning ${transformedVideoList.data.length} results for "${decodedQuery}"`)
-
-    // Return search results
-    return NextResponse.json(transformedVideoList, {
+    return NextResponse.json(response, {
       status: 200,
       headers: {
-        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200', // Cache for 1 hour
-      }
+        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200',
+      },
     })
 
   } catch (error) {
@@ -127,4 +98,11 @@ export async function GET(
       { status: 500 }
     )
   }
+}
+
+// Helper to format duration from seconds to MM:SS
+function formatDuration(seconds: number): string {
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  return `${mins}:${secs.toString().padStart(2, '0')}`
 }
