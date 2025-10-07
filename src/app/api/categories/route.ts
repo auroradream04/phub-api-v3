@@ -6,6 +6,7 @@ const pornhub = new PornHub()
 
 // Custom categories that use search instead of PornHub category IDs
 // Use high numeric IDs (9998-9999) to avoid conflicts with PornHub category IDs
+// NOTE: Display names are capitalized but search queries must be lowercase (PornHub bug)
 const CUSTOM_CATEGORIES = [
   { id: 9999, name: 'Japanese' },
   { id: 9998, name: 'Chinese' }

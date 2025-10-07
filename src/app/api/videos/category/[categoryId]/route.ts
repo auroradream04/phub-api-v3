@@ -7,9 +7,10 @@ const pornhub = new PornHub()
 
 // Custom categories that use search instead of PornHub category IDs
 // Map numeric IDs to category names for search
+// IMPORTANT: PornHub has a bug where uppercase queries don't paginate correctly!
 const CUSTOM_CATEGORIES: Record<number, string> = {
-  9999: 'Japanese',
-  9998: 'Chinese'
+  9999: 'japanese', // lowercase to avoid PornHub pagination bug
+  9998: 'chinese'   // lowercase to avoid PornHub pagination bug
 }
 
 export async function GET(
@@ -119,6 +120,9 @@ async function handleCustomCategory(request: NextRequest, categoryId: number) {
     const result = await pornhub.searchVideo(categoryName, {
       page
     })
+
+    // Debug: Log first 3 video IDs to verify pagination
+    console.log(`[Custom Category] Page ${page} first 3 IDs:`, result.data?.slice(0, 3).map(v => v.id))
 
     // Add category info to the response
     const response = {
