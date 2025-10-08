@@ -179,17 +179,17 @@ function SearchResults() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+      <header className="bg-card/80 backdrop-blur-md border-b border-border sticky top-0 z-50">
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <Link href="/" className="text-2xl font-bold text-blue-300">
+            <Link href="/" className="text-2xl font-bold text-primary">
               视频中心
             </Link>
             <Link
               href="/"
-              className="text-gray-600 hover:text-blue-300 transition-colors flex items-center gap-2"
+              className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"
             >
               <ChevronLeft className="w-5 h-5" />
               返回首页
@@ -210,30 +210,30 @@ function SearchResults() {
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              <h1 className="text-3xl font-bold text-foreground mb-2">
                 {categoryId && selectedCategoryName
                   ? `分类: ${selectedCategoryName}`
                   : query
                   ? `搜索结果: ${query}`
                   : '浏览视频'}
               </h1>
-              <div className="h-1 w-20 bg-gradient-to-r from-blue-300 to-indigo-300 rounded-full"></div>
+              <div className="h-1 w-20 bg-gradient-to-r from-primary to-accent rounded-full"></div>
             </div>
 
             {/* Category Filter Dropdown */}
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
-                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300 min-w-[150px]"
+                className="flex items-center gap-2 px-4 py-2 bg-card border border-border rounded-lg hover:bg-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary min-w-[150px]"
                 disabled={categoriesLoading}
               >
-                <span className="text-gray-700 font-medium">
+                <span className="text-foreground font-medium">
                   {categoryId && selectedCategoryName
                     ? selectedCategoryName
                     : '选择分类'}
                 </span>
                 <ChevronDown
-                  className={`w-4 h-4 text-gray-500 transition-transform ml-auto ${
+                  className={`w-4 h-4 text-muted-foreground transition-transform ml-auto ${
                     isCategoryDropdownOpen ? 'rotate-180' : ''
                   }`}
                 />
@@ -241,13 +241,13 @@ function SearchResults() {
 
               {/* Dropdown Menu */}
               {isCategoryDropdownOpen && !categoriesLoading && (
-                <div className="absolute right-0 sm:right-auto sm:left-0 mt-2 w-64 max-h-96 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                <div className="absolute right-0 sm:right-auto sm:left-0 mt-2 w-64 max-h-96 overflow-y-auto bg-card border border-border rounded-lg shadow-lg shadow-primary/10 z-20">
                   {/* All Categories Option */}
                   <button
                     onClick={() => handleCategorySelect(null)}
-                    className="w-full px-4 py-2 text-left hover:bg-gray-50 transition-colors border-b border-gray-100"
+                    className="w-full px-4 py-2 text-left hover:bg-muted transition-colors border-b border-border"
                   >
-                    <span className="text-gray-900 font-medium">所有分类</span>
+                    <span className="text-foreground font-medium">所有分类</span>
                   </button>
 
                   {/* Category List */}
@@ -255,10 +255,10 @@ function SearchResults() {
                     <button
                       key={category.id}
                       onClick={() => handleCategorySelect(category.id)}
-                      className={`w-full px-4 py-2 text-left hover:bg-gray-50 transition-colors ${
+                      className={`w-full px-4 py-2 text-left hover:bg-muted transition-colors ${
                         categoryId === category.id.toString()
-                          ? 'bg-blue-50 text-blue-600'
-                          : 'text-gray-700'
+                          ? 'bg-primary/10 text-primary'
+                          : 'text-foreground'
                       }`}
                     >
                       <span>{category.name}</span>
@@ -273,19 +273,19 @@ function SearchResults() {
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[...Array(12)].map((_, i) => (
-              <div key={i} className="bg-white rounded-xl overflow-hidden border border-gray-200 animate-pulse">
-                <div className="w-full h-48 bg-gray-200"></div>
+              <div key={i} className="bg-card rounded-xl overflow-hidden border border-border animate-pulse">
+                <div className="w-full h-48 bg-muted"></div>
                 <div className="p-4 space-y-3">
-                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                  <div className="h-4 bg-muted rounded w-3/4"></div>
+                  <div className="h-3 bg-muted rounded w-1/2"></div>
                 </div>
               </div>
             ))}
           </div>
         ) : searchResults.length === 0 ? (
           <div className="text-center py-12">
-            <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 text-lg">
+            <Search className="w-16 h-16 text-muted mx-auto mb-4" />
+            <p className="text-muted-foreground text-lg">
               {categoryId
                 ? '该分类暂无视频'
                 : query
@@ -294,7 +294,7 @@ function SearchResults() {
             </p>
             <Link
               href="/"
-              className="inline-flex items-center gap-2 mt-4 text-blue-300 hover:text-blue-400"
+              className="inline-flex items-center gap-2 mt-4 text-primary hover:text-primary/80"
             >
               <ChevronLeft className="w-5 h-5" />
               返回首页
@@ -307,38 +307,38 @@ function SearchResults() {
                 <Link
                   key={video.id}
                   href={`/watch/${video.id}${video.provider ? `?provider=${encodeURIComponent(video.provider)}` : ''}`}
-                  className="bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-blue-300 transition-all group"
+                  className="bg-card rounded-xl overflow-hidden border border-border hover:border-primary/50 transition-all group hover:shadow-lg hover:shadow-primary/10"
                 >
-                  <div className="relative w-full h-48 bg-gray-100 overflow-hidden">
+                  <div className="relative w-full h-48 bg-muted overflow-hidden">
                     <img
                       src={video.preview}
                       alt={video.title}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                     />
-                    <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded">
+                    <div className="absolute bottom-2 right-2 bg-black/90 text-white text-xs px-2 py-1 rounded backdrop-blur-sm">
                       {video.duration}
                     </div>
                   </div>
                   <div className="p-4 flex flex-col h-[110px]">
-                    <h3 className="font-medium text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-300 transition-colors flex-1">
+                    <h3 className="font-medium text-foreground mb-2 line-clamp-2 group-hover:text-primary transition-colors flex-1">
                       {video.title}
                     </h3>
-                    <div className="flex items-center justify-between text-sm text-gray-500 mt-auto">
+                    <div className="flex items-center justify-between text-sm text-muted-foreground mt-auto">
                       <div className="flex items-center gap-3">
                         <span className="flex items-center gap-1 leading-none">
-                          <Eye className="w-4 h-4" />
+                          <Eye className="w-4 h-4 text-primary/60" />
                           <span className="leading-none">{formatViews(video.views)}</span>
                         </span>
                         {video.provider && (
                           <span className="flex items-center gap-1 max-w-[120px] leading-none">
-                            <User className="w-4 h-4 flex-shrink-0" />
+                            <User className="w-4 h-4 flex-shrink-0 text-primary/60" />
                             <span className="truncate leading-none">{video.provider}</span>
                           </span>
                         )}
                       </div>
                       {video.rating && (
                         <span className="flex items-center gap-1 leading-none">
-                          <Star className="w-4 h-4" />
+                          <Star className="w-4 h-4 text-accent fill-accent" />
                           <span className="leading-none">{video.rating}%</span>
                         </span>
                       )}
@@ -356,17 +356,17 @@ function SearchResults() {
                   disabled={currentPage === 1}
                   className={`px-6 py-3 rounded-lg font-medium transition-all ${
                     currentPage === 1
-                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                      : 'bg-white text-blue-300 border-2 border-blue-300 hover:bg-blue-300 hover:text-white'
+                      ? 'bg-muted text-muted-foreground cursor-not-allowed opacity-50'
+                      : 'bg-card text-primary border-2 border-primary hover:bg-primary hover:text-primary-foreground'
                   }`}
                 >
                   上一页
                 </button>
 
-                <div className="flex items-center gap-2 px-6 py-3 bg-white rounded-lg border border-gray-200">
-                  <span className="text-gray-600">第</span>
-                  <span className="text-blue-300 font-bold text-lg">{currentPage}</span>
-                  <span className="text-gray-600">页</span>
+                <div className="flex items-center gap-2 px-6 py-3 bg-card rounded-lg border border-border">
+                  <span className="text-muted-foreground">第</span>
+                  <span className="text-primary font-bold text-lg">{currentPage}</span>
+                  <span className="text-muted-foreground">页</span>
                 </div>
 
                 <button
@@ -374,8 +374,8 @@ function SearchResults() {
                   disabled={!hasMore}
                   className={`px-6 py-3 rounded-lg font-medium transition-all ${
                     !hasMore
-                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                      : 'bg-blue-300 text-white hover:bg-blue-400'
+                      ? 'bg-muted text-muted-foreground cursor-not-allowed opacity-50'
+                      : 'bg-primary text-primary-foreground hover:bg-primary/90'
                   }`}
                 >
                   下一页
@@ -387,9 +387,9 @@ function SearchResults() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 py-8 mt-12">
+      <footer className="bg-card/50 border-t border-border py-8 mt-12">
         <div className="px-4 sm:px-6 lg:px-8">
-          <div className="text-center text-gray-500 text-sm">
+          <div className="text-center text-muted-foreground text-sm">
             <p>© 2024 视频中心. 保留所有权利.</p>
           </div>
         </div>
@@ -401,8 +401,8 @@ function SearchResults() {
 export default function SearchPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-gray-500">加载中...</div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-muted-foreground">加载中...</div>
       </div>
     }>
       <SearchResults />

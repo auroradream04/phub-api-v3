@@ -240,57 +240,57 @@ export default function AdminDashboard() {
 
   return (
     <div className="px-4 sm:px-0 space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900">
+      <h2 className="text-2xl font-bold text-foreground">
         Dashboard
       </h2>
 
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <p className="text-gray-700">
+      <div className="bg-card border border-border rounded-lg p-6">
+        <p className="text-foreground">
           Welcome back, {session?.user?.name || session?.user?.email}!
         </p>
-        <p className="text-gray-500 mt-2">
+        <p className="text-muted-foreground mt-2">
           This is your admin dashboard. Use the navigation above to manage ads.
         </p>
       </div>
 
       {/* Video Scraper Section */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h3 className="text-xl font-bold text-gray-900 mb-4">
+      <div className="bg-card border border-border rounded-lg p-6">
+        <h3 className="text-xl font-bold text-foreground mb-4">
           Video Scraper
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="text-sm text-blue-600 font-medium">Total Videos</div>
-            <div className="text-2xl font-bold text-blue-900 mt-1">
+          <div className="bg-primary/10 border border-primary/30 rounded-lg p-4">
+            <div className="text-sm text-primary font-medium">Total Videos</div>
+            <div className="text-2xl font-bold text-foreground mt-1">
               {stats?.totalVideos || 0}
             </div>
           </div>
 
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <div className="text-sm text-green-600 font-medium">Categories</div>
-            <div className="text-2xl font-bold text-green-900 mt-1">
+          <div className="bg-accent/10 border border-accent/30 rounded-lg p-4">
+            <div className="text-sm text-accent font-medium">Categories</div>
+            <div className="text-2xl font-bold text-foreground mt-1">
               {stats?.categories?.length || 0}
             </div>
           </div>
         </div>
 
         {/* Category-based Scraping */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-          <h4 className="font-semibold text-gray-900 mb-3">
+        <div className="bg-muted/50 border border-border rounded-lg p-4 mb-4">
+          <h4 className="font-semibold text-foreground mb-3">
             Scrape Videos by Category
           </h4>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 Select Category
               </label>
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
                 disabled={categoryScraping}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-4 py-2 border border-border bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-primary disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <option value="all">All Categories</option>
                 {categories.map((cat) => (
@@ -302,8 +302,8 @@ export default function AdminDashboard() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Pages per Category <span className="text-gray-500 text-xs">(Enter 0 for all pages)</span>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Pages per Category <span className="text-muted-foreground text-xs">(Enter 0 for all pages)</span>
               </label>
               <input
                 type="number"
@@ -312,7 +312,7 @@ export default function AdminDashboard() {
                 value={pagesPerCategory}
                 onChange={(e) => setPagesPerCategory(parseInt(e.target.value) || 0)}
                 disabled={categoryScraping}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-4 py-2 border border-border bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-primary disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="5"
               />
             </div>
@@ -322,7 +322,7 @@ export default function AdminDashboard() {
             <button
               onClick={scrapeCategoryVideos}
               disabled={categoryScraping}
-              className="flex-1 md:flex-initial px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+              className="flex-1 md:flex-initial px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
             >
               {categoryScraping
                 ? 'Scraping Categories...'
@@ -335,7 +335,7 @@ export default function AdminDashboard() {
             {categoryScraping && (
               <button
                 onClick={cancelScraping}
-                className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+                className="px-6 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-colors font-medium"
               >
                 Cancel
               </button>
@@ -345,32 +345,32 @@ export default function AdminDashboard() {
 
         {/* Enhanced Progress Display */}
         {progress && (
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-6 mb-4 shadow-lg">
+          <div className="bg-gradient-to-br from-card to-muted/30 border-2 border-primary/30 rounded-lg p-6 mb-4 shadow-lg shadow-primary/10">
             <div className="space-y-4">
               {/* Header */}
               <div className="flex items-center justify-between">
-                <h4 className="text-lg font-bold text-gray-900">
+                <h4 className="text-lg font-bold text-foreground">
                   Scraping Progress
                 </h4>
                 {progress.isRateLimited && (
-                  <span className="px-3 py-1 bg-yellow-100 border border-yellow-400 text-yellow-800 text-sm font-medium rounded-full animate-pulse">
+                  <span className="px-3 py-1 bg-yellow-900/20 border border-yellow-600/50 text-yellow-500 text-sm font-medium rounded-full animate-pulse">
                     ⚠️ Rate Limited
                   </span>
                 )}
               </div>
 
               {/* Current Category & Page */}
-              <div className="bg-white rounded-lg p-4 border border-blue-200">
-                <div className="text-sm text-gray-600 mb-1">Currently Scraping:</div>
-                <div className="text-xl font-bold text-blue-900">
+              <div className="bg-card rounded-lg p-4 border border-border">
+                <div className="text-sm text-muted-foreground mb-1">Currently Scraping:</div>
+                <div className="text-xl font-bold text-primary">
                   {progress.currentCategory}
                   {progress.totalPages > 0 && (
-                    <span className="text-base text-gray-600 ml-2">
+                    <span className="text-base text-muted-foreground ml-2">
                       (Page {progress.currentPage} of {progress.totalPages})
                     </span>
                   )}
                   {progress.totalPages === 0 && (
-                    <span className="text-base text-gray-600 ml-2">
+                    <span className="text-base text-muted-foreground ml-2">
                       (Page {progress.currentPage})
                     </span>
                   )}
@@ -380,19 +380,19 @@ export default function AdminDashboard() {
               {/* Progress Bar */}
               {progress.totalPages > 0 && (
                 <div className="space-y-2">
-                  <div className="flex justify-between text-sm text-gray-700">
+                  <div className="flex justify-between text-sm text-foreground">
                     <span>Progress</span>
-                    <span className="font-medium">
+                    <span className="font-medium text-primary">
                       {Math.round((progress.currentPage / progress.totalPages) * 100)}%
                     </span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden shadow-inner">
+                  <div className="w-full bg-muted rounded-full h-4 overflow-hidden shadow-inner">
                     <div
-                      className="bg-gradient-to-r from-blue-500 to-indigo-600 h-4 rounded-full transition-all duration-300 ease-out flex items-center justify-end pr-2"
+                      className="bg-gradient-to-r from-primary to-accent h-4 rounded-full transition-all duration-300 ease-out flex items-center justify-end pr-2"
                       style={{ width: `${Math.min((progress.currentPage / progress.totalPages) * 100, 100)}%` }}
                     >
                       {progress.currentPage > 0 && (
-                        <span className="text-xs text-white font-bold">
+                        <span className="text-xs text-primary-foreground font-bold">
                           {Math.round((progress.currentPage / progress.totalPages) * 100)}%
                         </span>
                       )}
@@ -403,19 +403,19 @@ export default function AdminDashboard() {
 
               {/* Stats Grid */}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                  <div className="text-xs text-green-600 font-medium mb-1">Videos Scraped</div>
-                  <div className="text-2xl font-bold text-green-900">{progress.scrapedCount}</div>
+                <div className="bg-primary/10 border border-primary/30 rounded-lg p-3">
+                  <div className="text-xs text-primary font-medium mb-1">Videos Scraped</div>
+                  <div className="text-2xl font-bold text-foreground">{progress.scrapedCount}</div>
                 </div>
 
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <div className="text-xs text-red-600 font-medium mb-1">Errors</div>
-                  <div className="text-2xl font-bold text-red-900">{progress.errorCount}</div>
+                <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3">
+                  <div className="text-xs text-destructive font-medium mb-1">Errors</div>
+                  <div className="text-2xl font-bold text-foreground">{progress.errorCount}</div>
                 </div>
 
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 col-span-2 md:col-span-1">
-                  <div className="text-xs text-purple-600 font-medium mb-1">Current Page</div>
-                  <div className="text-2xl font-bold text-purple-900">
+                <div className="bg-accent/10 border border-accent/30 rounded-lg p-3 col-span-2 md:col-span-1">
+                  <div className="text-xs text-accent font-medium mb-1">Current Page</div>
+                  <div className="text-2xl font-bold text-foreground">
                     {progress.currentPage}
                     {progress.totalPages > 0 && `/${progress.totalPages}`}
                   </div>
@@ -430,7 +430,7 @@ export default function AdminDashboard() {
           <button
             onClick={clearVideos}
             disabled={categoryScraping}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Clear All Videos
           </button>
@@ -438,16 +438,16 @@ export default function AdminDashboard() {
 
         {/* Progress indicators */}
         {categoryProgress && (
-          <div className="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-4 text-sm mb-4 shadow-sm">
+          <div className="bg-primary/10 border-l-4 border-primary rounded-lg p-4 text-sm mb-4 shadow-sm">
             <div className="flex items-start">
               <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-blue-500 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <svg className="h-5 w-5 text-primary animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
               </div>
               <div className="ml-3 flex-1">
-                <p className="text-blue-800 font-medium">{categoryProgress}</p>
+                <p className="text-foreground font-medium">{categoryProgress}</p>
               </div>
             </div>
           </div>
@@ -456,25 +456,25 @@ export default function AdminDashboard() {
         {message && (
           <div className={`border-l-4 rounded-lg p-4 text-sm shadow-sm ${
             message.includes('✅') || message.includes('complete')
-              ? 'bg-green-50 border-green-500'
+              ? 'bg-primary/10 border-primary'
               : message.includes('❌') || message.includes('Failed')
-              ? 'bg-red-50 border-red-500'
+              ? 'bg-destructive/10 border-destructive'
               : message.includes('⚠️') || message.includes('Rate')
-              ? 'bg-yellow-50 border-yellow-500'
+              ? 'bg-yellow-900/10 border-yellow-600/50'
               : message.includes('⏸️') || message.includes('Cancel')
-              ? 'bg-orange-50 border-orange-500'
-              : 'bg-gray-50 border-gray-400'
+              ? 'bg-orange-900/10 border-orange-600/50'
+              : 'bg-muted/50 border-border'
           }`}>
             <p className={`font-medium ${
               message.includes('✅') || message.includes('complete')
-                ? 'text-green-800'
+                ? 'text-primary'
                 : message.includes('❌') || message.includes('Failed')
-                ? 'text-red-800'
+                ? 'text-destructive'
                 : message.includes('⚠️') || message.includes('Rate')
-                ? 'text-yellow-800'
+                ? 'text-yellow-500'
                 : message.includes('⏸️') || message.includes('Cancel')
-                ? 'text-orange-800'
-                : 'text-gray-700'
+                ? 'text-orange-500'
+                : 'text-foreground'
             }`}>
               {message}
             </p>
@@ -484,7 +484,7 @@ export default function AdminDashboard() {
         {/* Category Statistics */}
         {stats?.categories && stats.categories.length > 0 && (
           <div className="mt-6">
-            <h4 className="text-lg font-semibold text-gray-900 mb-4">
+            <h4 className="text-lg font-semibold text-foreground mb-4">
               Videos by Category
             </h4>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -495,25 +495,25 @@ export default function AdminDashboard() {
                 return (
                   <div
                     key={cat.typeId}
-                    className="bg-gradient-to-br from-white to-gray-50 border-2 border-gray-200 rounded-xl p-4 hover:border-blue-300 hover:shadow-md transition-all duration-200"
+                    className="bg-gradient-to-br from-card to-muted/30 border-2 border-border rounded-xl p-4 hover:border-primary/50 hover:shadow-md hover:shadow-primary/10 transition-all duration-200"
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <div className="text-sm font-medium text-gray-900">{cat.typeName}</div>
-                      <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                      <div className="text-sm font-medium text-foreground">{cat.typeName}</div>
+                      <div className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
                         #{cat.typeId}
                       </div>
                     </div>
                     <div className="flex items-end justify-between">
-                      <div className="text-3xl font-bold text-blue-600">
+                      <div className="text-3xl font-bold text-primary">
                         {cat._count}
                       </div>
-                      <div className="text-sm text-gray-500">
+                      <div className="text-sm text-muted-foreground">
                         {percentage}%
                       </div>
                     </div>
-                    <div className="mt-2 w-full bg-gray-200 rounded-full h-1.5">
+                    <div className="mt-2 w-full bg-muted rounded-full h-1.5">
                       <div
-                        className="bg-blue-500 h-1.5 rounded-full transition-all duration-500"
+                        className="bg-gradient-to-r from-primary to-accent h-1.5 rounded-full transition-all duration-500"
                         style={{ width: `${percentage}%` }}
                       />
                     </div>
