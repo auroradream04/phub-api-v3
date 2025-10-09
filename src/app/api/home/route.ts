@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-
-const VIDEOS_PER_PAGE = 32
+import { PornHub, VideoListOrdering } from 'pornhub.js'
+import { getRandomProxy } from '@/lib/proxy'
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,77 +13,74 @@ export async function GET(request: NextRequest) {
     // Default to page 1
     const page = pageParam ? parseInt(pageParam, 10) : 1
 
-    // Default to 'Featured Recently' (newest)
-    const order = orderParam || 'newest'
+    // Default to 'Featured Recently' if no order specified
+    const order = orderParam || 'Featured Recently'
 
-    // Build orderBy clause
-    let orderBy: { vodTime?: 'desc'; views?: 'desc'; duration?: 'desc' } = { vodTime: 'desc' } // Default: newest first
+    // Validate order parameter (must match VideoListOrdering type)
+    const validOrders = [
+      'Featured Recently',
+      'Most Viewed',
+      'Top Rated',
+      'Hottest',
+      'Longest',
+      'Newest'
+    ]
 
-    if (order === 'most-viewed' || order.toLowerCase().includes('viewed')) {
-      orderBy = { views: 'desc' }
-    } else if (order === 'top-rated' || order.toLowerCase().includes('rated')) {
-      orderBy = { views: 'desc' } // We don't have ratings, use views
-    } else if (order === 'longest') {
-      orderBy = { duration: 'desc' }
+    const finalOrder = validOrders.includes(order) ? order : 'Featured Recently'
+
+    const pornhub = new PornHub()
+    let result
+
+    // Try without proxy first
+    try {
+      result = await pornhub.videoList({
+        page,
+        order: finalOrder as VideoListOrdering
+      })
+    } catch (error: unknown) {
+      console.error('[Home] Request failed without proxy:', error instanceof Error ? error.message : 'Unknown error')
     }
 
-    // Fetch videos from database
-    const [videos, totalCount] = await Promise.all([
-      prisma.video.findMany({
-        orderBy,
-        skip: (page - 1) * VIDEOS_PER_PAGE,
-        take: VIDEOS_PER_PAGE,
-      }),
-      prisma.video.count(),
-    ])
+    // Retry with proxy if initial request failed
+    let retries = 3
+    while ((!result || !result.data || result.data.length === 0) && retries > 0) {
+      const proxyAgent = getRandomProxy()
 
-    // Calculate pagination info
-    const totalPages = Math.ceil(totalCount / VIDEOS_PER_PAGE)
-    const isEnd = page >= totalPages
+      if (!proxyAgent) {
+        console.warn('[Home] No proxies available. Cannot retry.')
+        break
+      }
 
-    // Format response to match PornHub.js structure
-    const response = {
-      data: videos.map(v => ({
-        title: v.vodName,
-        id: v.vodId,
-        url: `https://localhost/watch/${v.vodId}`, // Placeholder URL
-        views: v.views.toString(),
-        duration: formatDuration(v.duration || 0),
-        hd: v.vodRemarks?.includes('HD') || false,
-        premium: false,
-        freePremium: false,
-        preview: v.vodPic || '',
-        provider: v.vodActor || '',
-      })),
-      paging: {
-        current: page,
-        maxPage: totalPages,
-        isEnd,
-      },
-      counting: {
-        from: (page - 1) * VIDEOS_PER_PAGE + 1,
-        to: Math.min(page * VIDEOS_PER_PAGE, totalCount),
-        total: totalCount,
-      },
+      console.log(`[Home] Retrying with proxy (${retries} retries remaining)...`)
+      pornhub.setAgent(proxyAgent)
+
+      try {
+        result = await pornhub.videoList({
+          page,
+          order: finalOrder as VideoListOrdering
+        })
+      } catch (error: unknown) {
+        console.error('[Home] Request failed with proxy:', error instanceof Error ? error.message : 'Unknown error')
+      }
+
+      retries--
     }
 
-    return NextResponse.json(response)
+    if (!result || !result.data) {
+      throw new Error('Failed to fetch video list from PornHub')
+    }
+
+    return NextResponse.json(result, { status: 200 })
+
   } catch (error) {
     console.error('[API] Error fetching video list:', error)
 
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : 'Failed to fetch video list'
       },
       { status: 500 }
     )
   }
-}
-
-// Helper to format duration from seconds to MM:SS
-function formatDuration(seconds: number): string {
-  const mins = Math.floor(seconds / 60)
-  const secs = seconds % 60
-  return `${mins}:${secs.toString().padStart(2, '0')}`
 }
