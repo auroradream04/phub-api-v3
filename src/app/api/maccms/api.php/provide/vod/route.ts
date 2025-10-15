@@ -58,29 +58,44 @@ function formatDate(date: Date): string {
   return date.toISOString().replace('T', ' ').split('.')[0]
 }
 
-// Define categories
-const categories: MaccmsClass[] = [
-  { type_id: 1, type_name: 'Amateur' },
-  { type_id: 2, type_name: 'Anal' },
-  { type_id: 3, type_name: 'Asian' },
-  { type_id: 4, type_name: 'BBW' },
-  { type_id: 5, type_name: 'Big Ass' },
-  { type_id: 6, type_name: 'Big Tits' },
-  { type_id: 7, type_name: 'Blonde' },
-  { type_id: 8, type_name: 'Blowjob' },
-  { type_id: 9, type_name: 'Brunette' },
-  { type_id: 10, type_name: 'Creampie' },
-  { type_id: 11, type_name: 'Cumshot' },
-  { type_id: 12, type_name: 'Ebony' },
-  { type_id: 13, type_name: 'Hardcore' },
-  { type_id: 14, type_name: 'Hentai' },
-  { type_id: 15, type_name: 'Latina' },
-  { type_id: 16, type_name: 'Lesbian' },
-  { type_id: 17, type_name: 'MILF' },
-  { type_id: 18, type_name: 'POV' },
-  { type_id: 19, type_name: 'Teen' },
-  { type_id: 20, type_name: 'Threesome' },
-]
+// Cache for categories (refreshed every hour)
+let cachedCategories: MaccmsClass[] | null = null
+let categoriesCacheTime = 0
+const CATEGORIES_CACHE_TTL = 3600000 // 1 hour in ms
+
+// Helper function to fetch categories from database
+async function getCategories(): Promise<MaccmsClass[]> {
+  const now = Date.now()
+
+  // Return cached categories if still valid
+  if (cachedCategories && (now - categoriesCacheTime) < CATEGORIES_CACHE_TTL) {
+    return cachedCategories
+  }
+
+  // Fetch categories from database
+  const dbCategories = await prisma.video.groupBy({
+    by: ['typeId', 'typeName'],
+    _count: { id: true },
+    where: {
+      typeName: { not: '' }
+    },
+    orderBy: {
+      typeId: 'asc'
+    }
+  })
+
+  // Transform to MaccmsClass format
+  const categories: MaccmsClass[] = dbCategories.map(cat => ({
+    type_id: cat.typeId,
+    type_name: cat.typeName
+  }))
+
+  // Update cache
+  cachedCategories = categories
+  categoriesCacheTime = now
+
+  return categories
+}
 
 // Helper function to convert JSON response to XML
 function jsonToXml(response: MaccmsJsonResponse): string {
@@ -274,6 +289,9 @@ export async function GET(request: NextRequest) {
 
     // Calculate pagination
     const pageCount = Math.ceil(totalCount / pageSize)
+
+    // Fetch categories from database
+    const categories = await getCategories()
 
     // Prepare response
     const response: MaccmsJsonResponse = {
