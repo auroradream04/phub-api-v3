@@ -249,7 +249,6 @@ export const CATEGORY_CONSOLIDATION: Record<string, string> = {
   '60fps-1': 'hd-porn',
   '180-1': 'vr',
   '360-1': 'vr',
-  'closed-captions-gay': 'gay',
   'squirting': 'squirt',
 }
 

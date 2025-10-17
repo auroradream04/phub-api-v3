@@ -34,8 +34,8 @@ export default function AdminLayout({
   const userRole = (session?.user as { role?: string })?.role
   if (status === 'loading' || !session || userRole !== 'admin') {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-gray-600">Loading...</div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-muted-foreground">Loading...</div>
       </div>
     )
   }
@@ -47,13 +47,13 @@ export default function AdminLayout({
   ]
 
   return (
-    <div className="min-h-screen bg-white">
-      <nav className="bg-white border-b border-gray-200">
+    <div className="min-h-screen bg-background">
+      <nav className="bg-card border-b border-border">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 justify-between">
             <div className="flex">
               <div className="flex flex-shrink-0 items-center">
-                <h1 className="text-xl font-bold text-gray-900">
+                <h1 className="text-xl font-bold text-foreground">
                   Admin Panel
                 </h1>
               </div>
@@ -62,10 +62,10 @@ export default function AdminLayout({
                   <Link
                     key={item.name}
                     href={item.href}
-                    className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium ${
+                    className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium transition-colors ${
                       pathname === item.href
-                        ? 'border-blue-300 text-gray-900'
-                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-muted-foreground hover:border-primary/50 hover:text-foreground'
                     }`}
                   >
                     {item.name}
@@ -74,12 +74,12 @@ export default function AdminLayout({
               </div>
             </div>
             <div className="flex items-center">
-              <span className="text-sm text-gray-700 mr-4">
+              <span className="text-sm text-muted-foreground mr-4">
                 {session?.user?.email}
               </span>
               <button
                 onClick={() => signOut({ callbackUrl: '/login' })}
-                className="rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-500"
+                className="rounded-md bg-destructive px-3 py-2 text-sm font-semibold text-destructive-foreground hover:bg-destructive/90 transition-colors"
               >
                 Sign out
               </button>

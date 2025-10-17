@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 
 interface HorizontalAd {
   title: string
@@ -43,11 +44,13 @@ export default function HorizontalAds() {
         <button
           key={index}
           onClick={() => handleAdClick(ad)}
-          className="w-3/5 block border border-gray-200 rounded-lg overflow-hidden hover:border-blue-400 transition-colors"
+          className="w-3/5 block border border-gray-200 rounded-lg overflow-hidden hover:border-blue-400 transition-colors relative"
         >
-          <img
+          <Image
             src={ad.image}
             alt={ad.title}
+            width={800}
+            height={200}
             className="w-full h-auto"
             loading="lazy"
           />

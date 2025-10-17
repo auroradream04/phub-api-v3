@@ -60,7 +60,7 @@ export default function AdminSettingsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-600 dark:text-gray-400">Loading settings...</div>
+        <div className="text-muted-foreground">Loading settings...</div>
       </div>
     )
   }
@@ -69,8 +69,8 @@ export default function AdminSettingsPage() {
     <div className="px-4 sm:px-6 lg:px-8">
       <div className="sm:flex sm:items-center">
         <div className="sm:flex-auto">
-          <h1 className="text-2xl font-semibold text-gray-900">Site Settings</h1>
-          <p className="mt-2 text-sm text-gray-700">
+          <h1 className="text-2xl font-semibold text-foreground">Site Settings</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
             Configure global site settings for CORS proxy, ads, and video streaming.
           </p>
         </div>
@@ -78,7 +78,9 @@ export default function AdminSettingsPage() {
 
       {message && (
         <div className={`mt-4 p-4 rounded-md border ${
-          message.type === 'success' ? 'bg-green-50 text-green-800 border-green-200' : 'bg-red-50 text-red-800 border-red-200'
+          message.type === 'success'
+            ? 'bg-primary/10 text-primary border-primary/30'
+            : 'bg-destructive/10 text-destructive border-destructive/30'
         }`}>
           {message.text}
         </div>
@@ -86,9 +88,9 @@ export default function AdminSettingsPage() {
 
       <div className="mt-8 space-y-6">
         {settings.map((setting) => (
-          <div key={setting.id} className="bg-white border border-gray-200 rounded-lg">
+          <div key={setting.id} className="bg-card border border-border rounded-lg">
             <div className="px-4 py-5 sm:p-6">
-              <label htmlFor={setting.key} className="block text-sm font-medium text-gray-900">
+              <label htmlFor={setting.key} className="block text-sm font-medium text-foreground">
                 {setting.key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
               </label>
               <div className="mt-2">
@@ -97,10 +99,10 @@ export default function AdminSettingsPage() {
                   id={setting.key}
                   value={setting.value}
                   onChange={(e) => updateSetting(setting.key, e.target.value)}
-                  className="block w-full rounded-md border-gray-300 focus:border-blue-300 focus:ring-blue-300 sm:text-sm"
+                  className="block w-full rounded-md border-border bg-input text-foreground focus:border-primary focus:ring-2 focus:ring-primary sm:text-sm px-3 py-2 transition-colors"
                 />
               </div>
-              <p className="mt-2 text-sm text-gray-500">
+              <p className="mt-2 text-sm text-muted-foreground">
                 {getSettingDescription(setting.key)}
               </p>
             </div>
@@ -112,7 +114,7 @@ export default function AdminSettingsPage() {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="rounded-md bg-blue-300 px-4 py-2 text-sm font-semibold text-gray-900 hover:bg-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {saving ? 'Saving...' : 'Save Settings'}
         </button>

@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Eye, Star, Clock, ChevronLeft, User } from 'lucide-react'
 import Hls from 'hls.js'
 import HorizontalAdsSlider from '@/components/HorizontalAdsSlider'
@@ -321,10 +322,12 @@ export default function WatchPage() {
                 className="bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-blue-300 transition-all group"
               >
                 <div className="relative w-full h-48 bg-gray-100 overflow-hidden">
-                  <img
+                  <Image
                     src={video.preview}
                     alt={video.title}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                    fill
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    className="object-cover group-hover:scale-110 transition-transform duration-300"
                   />
                   <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded">
                     {video.duration}
