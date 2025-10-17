@@ -64,6 +64,9 @@ let cachedCategories: MaccmsClass[] | null = null
 let categoriesCacheTime = 0
 const CATEGORIES_CACHE_TTL = 3600000 // 1 hour in ms
 
+// Cache for typeId mapping (typeName → canonical typeId)
+let cachedTypeIdMap: Map<string, number> | null = null
+
 // Helper function to fetch categories from database
 async function getCategories(): Promise<MaccmsClass[]> {
   const now = Date.now()
@@ -88,6 +91,7 @@ async function getCategories(): Promise<MaccmsClass[]> {
   // Group categories by their canonical name and merge counts
   // IMPORTANT: japanese and chinese must NEVER be consolidated
   const categoryMap = new Map<string, { typeId: number; typeName: string; count: number }>()
+  const typeIdMap = new Map<string, number>() // Map: typeName (any variant) → canonical typeId
 
   for (const cat of dbCategories) {
     const normalized = cat.typeName.toLowerCase().trim()
@@ -106,6 +110,8 @@ async function getCategories(): Promise<MaccmsClass[]> {
       // Add count to existing category
       const existing = categoryMap.get(key)!
       existing.count += cat._count.id
+      // Map this typeName variant to the canonical typeId
+      typeIdMap.set(normalized, existing.typeId)
     } else {
       // Create new category entry
       categoryMap.set(key, {
@@ -113,6 +119,8 @@ async function getCategories(): Promise<MaccmsClass[]> {
         typeName: chineseName,
         count: cat._count.id
       })
+      // Map this typeName to its own typeId (it's the canonical one)
+      typeIdMap.set(normalized, cat.typeId)
     }
   }
 
@@ -124,9 +132,21 @@ async function getCategories(): Promise<MaccmsClass[]> {
 
   // Update cache
   cachedCategories = categories
+  cachedTypeIdMap = typeIdMap
   categoriesCacheTime = now
 
   return categories
+}
+
+// Helper function to get canonical typeId for a typeName
+async function getCanonicalTypeId(typeName: string): Promise<number> {
+  // Ensure categories are loaded
+  if (!cachedTypeIdMap) {
+    await getCategories()
+  }
+
+  const normalized = typeName.toLowerCase().trim()
+  return cachedTypeIdMap?.get(normalized) || 0 // Return 0 if not found (shouldn't happen)
 }
 
 // Helper function to convert JSON response to XML
@@ -220,10 +240,11 @@ export async function GET(request: NextRequest) {
         },
       })
 
-      videos = dbVideos.map(v => ({
+      // Map videos with canonical typeIds
+      videos = await Promise.all(dbVideos.map(async v => ({
         vod_id: v.vodId,
         vod_name: v.vodName,
-        type_id: v.typeId,
+        type_id: await getCanonicalTypeId(v.typeName),
         type_name: getCategoryChineseName(v.typeName),
         vod_class: v.vodClass || getCategoryChineseName(v.typeName),
         vod_en: v.vodEn || '',
@@ -241,7 +262,7 @@ export async function GET(request: NextRequest) {
         vod_director: v.vodDirector || '',
         vod_content: v.vodContent || '',
         vod_play_url: v.vodPlayUrl,
-      }))
+      })))
 
       totalCount = videos.length
 
@@ -310,10 +331,11 @@ export async function GET(request: NextRequest) {
         prisma.video.count({ where }),
       ])
 
-      videos = dbVideos.map(v => ({
+      // Map videos with canonical typeIds
+      videos = await Promise.all(dbVideos.map(async v => ({
         vod_id: v.vodId,
         vod_name: v.vodName,
-        type_id: v.typeId,
+        type_id: await getCanonicalTypeId(v.typeName),
         type_name: getCategoryChineseName(v.typeName),
         vod_class: v.vodClass || getCategoryChineseName(v.typeName),
         vod_en: v.vodEn || '',
@@ -331,7 +353,7 @@ export async function GET(request: NextRequest) {
         vod_director: v.vodDirector || '',
         vod_content: v.vodContent || '',
         vod_play_url: v.vodPlayUrl,
-      }))
+      })))
 
       totalCount = total
     }
