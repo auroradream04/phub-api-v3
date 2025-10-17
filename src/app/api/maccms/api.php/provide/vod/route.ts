@@ -25,6 +25,7 @@ interface MaccmsVideo {
   vod_director: string
   vod_content: string
   vod_play_url: string
+  vod_hits: number
 }
 
 interface MaccmsClass {
@@ -187,6 +188,7 @@ function jsonToXml(response: MaccmsJsonResponse): string {
     xml += `      <note>${escapeXml(video.vod_remarks)}</note>\n`
     xml += `      <actor>${wrapCDATA(video.vod_actor)}</actor>\n`
     xml += `      <director>${wrapCDATA(video.vod_director)}</director>\n`
+    xml += `      <hit>${video.vod_hits}</hit>\n`
     xml += '      <dl>\n'
     xml += `        <dd flag="${escapeXml(video.vod_play_from)}">${wrapCDATA(video.vod_play_url)}</dd>\n`
     xml += '      </dl>\n'
@@ -262,6 +264,7 @@ export async function GET(request: NextRequest) {
         vod_director: v.vodDirector || '',
         vod_content: v.vodContent || '',
         vod_play_url: v.vodPlayUrl,
+        vod_hits: v.views,
       })))
 
       totalCount = videos.length
@@ -353,6 +356,7 @@ export async function GET(request: NextRequest) {
         vod_director: v.vodDirector || '',
         vod_content: v.vodContent || '',
         vod_play_url: v.vodPlayUrl,
+        vod_hits: v.views,
       })))
 
       totalCount = total
