@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
+import { getCategoryChineseName } from '@/lib/category-mapping'
 
 // Type definitions for Maccms response format
 interface MaccmsVideo {
@@ -84,10 +85,10 @@ async function getCategories(): Promise<MaccmsClass[]> {
     }
   })
 
-  // Transform to MaccmsClass format
+  // Transform to MaccmsClass format with Chinese names
   const categories: MaccmsClass[] = dbCategories.map(cat => ({
     type_id: cat.typeId,
-    type_name: cat.typeName
+    type_name: getCategoryChineseName(cat.typeName)
   }))
 
   // Update cache
@@ -192,8 +193,8 @@ export async function GET(request: NextRequest) {
         vod_id: v.vodId,
         vod_name: v.vodName,
         type_id: v.typeId,
-        type_name: v.typeName,
-        vod_class: v.vodClass || v.typeName,
+        type_name: getCategoryChineseName(v.typeName),
+        vod_class: v.vodClass || getCategoryChineseName(v.typeName),
         vod_en: v.vodEn || '',
         vod_time: formatDate(v.vodTime),
         vod_remarks: v.vodRemarks || '',
@@ -265,8 +266,8 @@ export async function GET(request: NextRequest) {
         vod_id: v.vodId,
         vod_name: v.vodName,
         type_id: v.typeId,
-        type_name: v.typeName,
-        vod_class: v.vodClass || v.typeName,
+        type_name: getCategoryChineseName(v.typeName),
+        vod_class: v.vodClass || getCategoryChineseName(v.typeName),
         vod_en: v.vodEn || '',
         vod_time: formatDate(v.vodTime),
         vod_remarks: v.vodRemarks || '',
