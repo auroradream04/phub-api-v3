@@ -222,7 +222,7 @@ export async function GET(request: NextRequest) {
       at: searchParams.get('at') || '',
     })
 
-    const pageSize = 20
+    const pageSize = 100
     const skip = (params.pg - 1) * pageSize
 
     let videos: MaccmsVideo[] = []
@@ -416,7 +416,7 @@ export async function GET(request: NextRequest) {
     if (searchParams.get('at') === 'xml') {
       const xmlError = `<?xml version="1.0" encoding="utf-8"?>
 <rss version="1.0">
-  <list page="1" pagecount="0" pagesize="20" recordcount="0">
+  <list page="1" pagecount="0" pagesize="100" recordcount="0">
   </list>
   <class>
     <ty id="1">Adult</ty>
