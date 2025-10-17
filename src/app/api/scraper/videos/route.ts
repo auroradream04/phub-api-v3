@@ -32,6 +32,17 @@ export async function POST(request: NextRequest) {
 
     const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:4444'
 
+    // Fetch scraper filter settings from database
+    const minViewsSetting = await prisma.siteSetting.findUnique({
+      where: { key: 'scraper_min_views' }
+    })
+    const minDurationSetting = await prisma.siteSetting.findUnique({
+      where: { key: 'scraper_min_duration' }
+    })
+
+    const minViews = minViewsSetting ? parseInt(minViewsSetting.value) : 0
+    const minDuration = minDurationSetting ? parseInt(minDurationSetting.value) : 0
+
     // If categoryId is provided, scrape from specific category
     // If not, scrape from general homepage
     let apiUrl: string
@@ -81,6 +92,7 @@ export async function POST(request: NextRequest) {
 
     let scrapedCount = 0
     let errorCount = 0
+    let skippedCount = 0
 
     // Process ALL videos from the page
     for (const video of videos) {
@@ -97,6 +109,19 @@ export async function POST(request: NextRequest) {
         }
 
         const durationSeconds = parseDuration(video.duration)
+
+        // Apply filters: skip if video doesn't meet minimum requirements
+        if (minViews > 0 && views < minViews) {
+          skippedCount++
+          console.log(`[Scraper] ⊘ Skipped: ${video.id} - ${video.title} (views: ${views} < ${minViews})`)
+          continue
+        }
+
+        if (minDuration > 0 && durationSeconds < minDuration) {
+          skippedCount++
+          console.log(`[Scraper] ⊘ Skipped: ${video.id} - ${video.title} (duration: ${durationSeconds}s < ${minDuration}s)`)
+          continue
+        }
         const publishDate = new Date()
         const year = publishDate.getFullYear().toString()
 
@@ -196,13 +221,22 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const filterSummary = skippedCount > 0
+      ? ` (${skippedCount} filtered)`
+      : ''
+
     return NextResponse.json({
       success: true,
       message: currentCategory
-        ? `Scraped ${scrapedCount} videos from ${currentCategory.name} - page ${page}`
-        : `Scraped ${scrapedCount} videos from homepage - page ${page}`,
+        ? `Scraped ${scrapedCount} videos from ${currentCategory.name} - page ${page}${filterSummary}`
+        : `Scraped ${scrapedCount} videos from homepage - page ${page}${filterSummary}`,
       scraped: scrapedCount,
       errors: errorCount,
+      skipped: skippedCount,
+      filters: {
+        minViews: minViews,
+        minDuration: minDuration,
+      },
       page,
       hasMore,
       category: currentCategory,

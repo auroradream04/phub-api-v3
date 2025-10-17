@@ -95,11 +95,12 @@ export default function AdminSettingsPage() {
               </label>
               <div className="mt-2">
                 <input
-                  type="text"
+                  type={setting.key.includes('min_views') || setting.key.includes('min_duration') ? 'number' : 'text'}
                   id={setting.key}
                   value={setting.value}
                   onChange={(e) => updateSetting(setting.key, e.target.value)}
                   className="block w-full rounded-md border-border bg-input text-foreground focus:border-primary focus:ring-2 focus:ring-primary sm:text-sm px-3 py-2 transition-colors"
+                  min={setting.key.includes('min_views') || setting.key.includes('min_duration') ? "0" : undefined}
                 />
               </div>
               <p className="mt-2 text-sm text-muted-foreground">
@@ -128,7 +129,9 @@ function getSettingDescription(key: string): string {
     'cors_proxy_url': 'The CORS proxy URL to use for fetching external video segments',
     'cors_proxy_enabled': 'Enable or disable CORS proxy (true/false)',
     'segments_to_skip': 'Number of video segments to skip at the beginning',
-    'ads_script_url': 'External URL for fetching ad content'
+    'ads_script_url': 'External URL for fetching ad content',
+    'scraper_min_views': 'Minimum view count required to scrape a video (e.g., 10000). Videos below this will be skipped.',
+    'scraper_min_duration': 'Minimum duration in seconds required to scrape a video (e.g., 60). Videos shorter than this will be skipped.'
   }
   return descriptions[key] || 'No description available'
 }
