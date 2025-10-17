@@ -196,7 +196,7 @@ export const CATEGORY_MAPPING: Record<string, string> = {
  * Maps specific categories to broader ones to reduce clutter
  */
 export const CATEGORY_CONSOLIDATION: Record<string, string> = {
-  // All gay variants → gay
+  // === ALL GAY VARIANTS → gay ===
   'amateur-gay': 'gay',
   'asian-gay': 'gay',
   'bareback-gay': 'gay',
@@ -241,14 +241,29 @@ export const CATEGORY_CONSOLIDATION: Record<string, string> = {
   'vintage-gay': 'gay',
   'webcam-gay': 'gay',
 
-  // Duplicate/similar categories
+  // === VR/360/180 → vr ===
+  'virtual-reality-1': 'vr',
+  '180-1': 'vr',
+  '360-1': 'vr',
+
+  // === HD VARIANTS → hd-porn ===
+  '60fps-1': 'hd-porn',
+
+  // === VERIFIED VARIANTS → verified-amateurs ===
+  'verified-couples': 'verified-amateurs',
+  'verified-models': 'verified-amateurs',
+
+  // === ROLEPLAY VARIANTS → cosplay ===
+  'role-play': 'cosplay',
+
+  // === SOLO VARIANTS ===
+  'solo-female': 'masturbation',
+  'solo-male': 'masturbation',
+
+  // === DUPLICATE CATEGORIES ===
   'college-18-1': 'college-18',
   'red-head': 'redhead',
   'uncensored-1': 'uncensored',
-  'virtual-reality-1': 'vr',
-  '60fps-1': 'hd-porn',
-  '180-1': 'vr',
-  '360-1': 'vr',
   'squirting': 'squirt',
 }
 
@@ -284,4 +299,26 @@ export function getCategoryChineseName(englishName: string): string {
 export function getCategoryEnglishName(chineseName: string): string {
   const entry = Object.entries(CATEGORY_MAPPING).find(([, chinese]) => chinese === chineseName)
   return entry ? entry[0] : chineseName
+}
+
+/**
+ * Get the canonical category for a given category name
+ * Returns the base category if this is a variant (e.g., 'amateur-gay' → 'gay')
+ */
+export function getCanonicalCategory(categoryName: string): string {
+  const normalized = categoryName.toLowerCase().trim()
+  return CATEGORY_CONSOLIDATION[normalized] || normalized
+}
+
+/**
+ * Get all category names that consolidate to a given canonical category
+ * Returns array including the canonical category itself
+ */
+export function getConsolidatedCategories(canonicalCategory: string): string[] {
+  const normalized = canonicalCategory.toLowerCase().trim()
+  const variants = Object.entries(CATEGORY_CONSOLIDATION)
+    .filter(([, target]) => target === normalized)
+    .map(([source]) => source)
+
+  return [normalized, ...variants]
 }

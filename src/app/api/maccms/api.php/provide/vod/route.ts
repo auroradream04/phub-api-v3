@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
-import { getCategoryChineseName } from '@/lib/category-mapping'
+import { getCategoryChineseName, getCanonicalCategory, getConsolidatedCategories } from '@/lib/category-mapping'
 
 // Type definitions for Maccms response format
 interface MaccmsVideo {
@@ -85,10 +85,31 @@ async function getCategories(): Promise<MaccmsClass[]> {
     }
   })
 
-  // Transform to MaccmsClass format with Chinese names
-  const categories: MaccmsClass[] = dbCategories.map(cat => ({
+  // Group categories by their canonical name and merge counts
+  const categoryMap = new Map<string, { typeId: number; typeName: string; count: number }>()
+
+  for (const cat of dbCategories) {
+    const canonical = getCanonicalCategory(cat.typeName)
+    const chineseName = getCategoryChineseName(cat.typeName)
+
+    if (categoryMap.has(canonical)) {
+      // Add count to existing category
+      const existing = categoryMap.get(canonical)!
+      existing.count += cat._count.id
+    } else {
+      // Create new category entry
+      categoryMap.set(canonical, {
+        typeId: cat.typeId,
+        typeName: chineseName,
+        count: cat._count.id
+      })
+    }
+  }
+
+  // Transform to MaccmsClass format
+  const categories: MaccmsClass[] = Array.from(categoryMap.values()).map(cat => ({
     type_id: cat.typeId,
-    type_name: getCategoryChineseName(cat.typeName)
+    type_name: cat.typeName
   }))
 
   // Update cache
@@ -223,7 +244,24 @@ export async function GET(request: NextRequest) {
       if (params.t) {
         const typeId = parseInt(params.t)
         if (!isNaN(typeId)) {
-          where.typeId = typeId
+          // Find the category name for this typeId
+          const categoryResult = await prisma.video.findFirst({
+            where: { typeId },
+            select: { typeName: true }
+          })
+
+          if (categoryResult) {
+            const canonical = getCanonicalCategory(categoryResult.typeName)
+            const allVariants = getConsolidatedCategories(canonical)
+
+            // Query for all consolidated category variants
+            where.typeName = {
+              in: allVariants
+            }
+          } else {
+            // Fallback to exact typeId if not found
+            where.typeId = typeId
+          }
         } else {
           // Search by category name
           where.typeName = {
