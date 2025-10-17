@@ -86,19 +86,29 @@ async function getCategories(): Promise<MaccmsClass[]> {
   })
 
   // Group categories by their canonical name and merge counts
+  // IMPORTANT: japanese and chinese must NEVER be consolidated
   const categoryMap = new Map<string, { typeId: number; typeName: string; count: number }>()
 
   for (const cat of dbCategories) {
-    const canonical = getCanonicalCategory(cat.typeName)
+    const normalized = cat.typeName.toLowerCase().trim()
+
+    // Special handling: NEVER consolidate japanese or chinese
+    let key: string
+    if (normalized === 'japanese' || normalized === 'chinese') {
+      key = normalized // Use original name as key
+    } else {
+      key = getCanonicalCategory(cat.typeName) // Use canonical for everything else
+    }
+
     const chineseName = getCategoryChineseName(cat.typeName)
 
-    if (categoryMap.has(canonical)) {
+    if (categoryMap.has(key)) {
       // Add count to existing category
-      const existing = categoryMap.get(canonical)!
+      const existing = categoryMap.get(key)!
       existing.count += cat._count.id
     } else {
       // Create new category entry
-      categoryMap.set(canonical, {
+      categoryMap.set(key, {
         typeId: cat.typeId,
         typeName: chineseName,
         count: cat._count.id

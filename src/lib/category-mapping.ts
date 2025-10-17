@@ -194,6 +194,10 @@ export const CATEGORY_MAPPING: Record<string, string> = {
 /**
  * Category consolidation rules for MACCMS
  * Maps specific categories to broader ones to reduce clutter
+ *
+ * SPECIAL CATEGORIES (NEVER CONSOLIDATE):
+ * - japanese: Keep separate (custom category)
+ * - chinese: Keep separate (custom category)
  */
 export const CATEGORY_CONSOLIDATION: Record<string, string> = {
   // === ALL GAY VARIANTS → gay ===
@@ -241,30 +245,142 @@ export const CATEGORY_CONSOLIDATION: Record<string, string> = {
   'vintage-gay': 'gay',
   'webcam-gay': 'gay',
 
-  // === VR/360/180 → vr ===
+  // === HAIR COLOR → blonde ===
+  'red-head': 'blonde',
+  'redhead': 'blonde',
+  'brunette': 'blonde',
+
+  // === BODY TYPES → bbw ===
+  'babe': 'bbw',
+  'big-ass': 'bbw',
+  'big-tits': 'bbw',
+  'small-tits': 'bbw',
+
+  // === SEX ACTS → hardcore ===
+  'anal': 'hardcore',
+  'blowjob': 'hardcore',
+  'handjob': 'hardcore',
+  'fingering': 'hardcore',
+  'pussy-licking': 'hardcore',
+  'rough-sex': 'hardcore',
+  'double-penetration': 'hardcore',
+  'fisting': 'hardcore',
+  'gangbang': 'hardcore',
+
+  // === CUMSHOTS → cumshot ===
+  'creampie': 'cumshot',
+  'bukkake': 'cumshot',
+  'squirt': 'cumshot',
+  'squirting': 'cumshot',
+
+  // === AGE/STUDENT → college-18 ===
+  'college-18-1': 'college-18',
+  '18-25': 'college-18',
+  'school-18': 'college-18',
+  'babysitter-18': 'college-18',
+  'twink-18': 'college-18',
+
+  // === MATURE → mature ===
+  'milf': 'mature',
+  'old-young-18': 'mature',
+
+  // === QUALITY/FORMAT → hd-porn ===
+  '60fps-1': 'hd-porn',
+  '3d': 'hd-porn',
+  'uncensored': 'hd-porn',
+  'uncensored-1': 'hd-porn',
+  'closed-captions': 'hd-porn',
+
+  // === VR → vr ===
   'virtual-reality-1': 'vr',
   '180-1': 'vr',
   '360-1': 'vr',
+  'interactive': 'vr',
 
-  // === HD VARIANTS → hd-porn ===
-  '60fps-1': 'hd-porn',
-
-  // === VERIFIED VARIANTS → verified-amateurs ===
+  // === VERIFIED/EXCLUSIVE → verified-amateurs ===
   'verified-couples': 'verified-amateurs',
   'verified-models': 'verified-amateurs',
+  'exclusive': 'verified-amateurs',
+  'behind-the-scenes': 'verified-amateurs',
 
-  // === ROLEPLAY VARIANTS → cosplay ===
+  // === ROLEPLAY → cosplay ===
   'role-play': 'cosplay',
+  'step-fantasy': 'cosplay',
+  'cuckold': 'cosplay',
 
-  // === SOLO VARIANTS ===
+  // === SOLO → masturbation ===
   'solo-female': 'masturbation',
   'solo-male': 'masturbation',
 
-  // === DUPLICATE CATEGORIES ===
-  'college-18-1': 'college-18',
-  'red-head': 'redhead',
-  'uncensored-1': 'uncensored',
-  'squirting': 'squirt',
+  // === REGIONAL → asian ===
+  'korean': 'asian',
+  'indian': 'asian',
+  // NOTE: japanese and chinese are EXCLUDED - they stay separate!
+
+  'arab': 'asian',
+  'brazilian': 'latina',
+  'french': 'euro',
+  'german': 'euro',
+  'british': 'euro',
+  'italian': 'euro',
+  'russian': 'euro',
+  'czech': 'euro',
+
+  // === ETHNICITY → interracial ===
+  'ebony': 'interracial',
+  'latina': 'interracial',
+
+  // === KINK/FETISH → fetish ===
+  'bondage': 'fetish',
+  'feet': 'fetish',
+  'smoking': 'fetish',
+  'pissing': 'fetish',
+  'strap-on': 'fetish',
+
+  // === MISC → amateur ===
+  'reality': 'amateur',
+  'casting': 'amateur',
+  'webcam': 'amateur',
+  'party': 'amateur',
+  'public': 'amateur',
+
+  // === ENTERTAINMENT → hentai ===
+  'cartoon': 'hentai',
+  'parody': 'hentai',
+  'funny': 'hentai',
+  'gaming': 'hentai',
+  'music': 'hentai',
+  'podcast': 'hentai',
+  'sfw': 'hentai',
+  'described-video': 'hentai',
+
+  // === TRANS → transgender ===
+  'trans-male': 'transgender',
+  'trans-with-girl': 'transgender',
+  'trans-with-guy': 'transgender',
+
+  // === THREESOME → threesome ===
+  'ffm': 'threesome',
+  'fmm': 'threesome',
+  'orgy': 'threesome',
+
+  // === OTHER ===
+  'big-dick': 'amateur',
+  'pornstar': 'amateur',
+  'celebrity': 'amateur',
+  'compilation': 'amateur',
+  'striptease': 'amateur',
+  'massage': 'amateur',
+  'vintage': 'amateur',
+  'romantic': 'amateur',
+  'popular-with-women': 'amateur',
+  'bisexual-male': 'amateur',
+  'female-orgasm': 'masturbation',
+  'scissoring': 'lesbian',
+  'muscular-men': 'amateur',
+  'tattooed-men': 'amateur',
+  'tattooed-women': 'amateur',
+  'unknown': 'amateur',
 }
 
 /**
