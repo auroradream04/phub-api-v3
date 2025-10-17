@@ -20,7 +20,7 @@ async function analyzeCategories() {
       }
     });
 
-    sampleVideos.forEach(video => {
+    sampleVideos.forEach((video: { vodId: number; vodName: string; typeId: number; typeName: string; vodClass: string | null }) => {
       console.log(`Video: ${video.vodName.substring(0, 50)}...`);
       console.log(`  - vodId: ${video.vodId}`);
       console.log(`  - typeId: ${video.typeId}`);
@@ -46,7 +46,7 @@ async function analyzeCategories() {
 
     console.log('TypeID | TypeName | Video Count');
     console.log('-------|----------|------------');
-    typeNames.forEach(cat => {
+    typeNames.forEach((cat: { typeId: number; typeName: string; _count: { id: number } }) => {
       console.log(`${cat.typeId.toString().padEnd(6)} | ${cat.typeName.padEnd(25)} | ${cat._count.id}`);
     });
 
@@ -68,10 +68,10 @@ async function analyzeCategories() {
 
     // Parse and count all categories
     const categoryMap = new Map<string, number>();
-    vodClasses.forEach(video => {
+    vodClasses.forEach((video: { vodClass: string | null }) => {
       if (video.vodClass) {
-        const categories = video.vodClass.split(',').map(c => c.trim());
-        categories.forEach(cat => {
+        const categories = video.vodClass.split(',').map((c: string) => c.trim());
+        categories.forEach((cat: string) => {
           if (cat) {
             categoryMap.set(cat, (categoryMap.get(cat) || 0) + 1);
           }
@@ -86,7 +86,7 @@ async function analyzeCategories() {
     console.log('Top 20 categories from vodClass:');
     console.log('Category Name | Occurrence Count');
     console.log('--------------|------------------');
-    sortedCategories.slice(0, 20).forEach(([cat, count]) => {
+    sortedCategories.slice(0, 20).forEach(([cat, count]: [string, number]) => {
       console.log(`${cat.padEnd(35)} | ${count}`);
     });
 
@@ -144,7 +144,7 @@ async function analyzeCategories() {
 
       if (typeNames.length > 1) {
         inconsistentCount++;
-        console.log(`⚠️  TypeId ${group.typeId} has multiple names: ${typeNames.map(t => t.typeName).join(', ')}`);
+        console.log(`⚠️  TypeId ${group.typeId} has multiple names: ${typeNames.map((t: { typeName: string }) => t.typeName).join(', ')}`);
       }
     }
 
@@ -217,7 +217,7 @@ const categoryList = categories.map(cat => ({
     console.log('------------------------');
     const top10Categories = typeNames.slice(0, 10);
     console.log('Top 10 categories by video count:');
-    top10Categories.forEach((cat, index) => {
+    top10Categories.forEach((cat: { typeId: number; typeName: string; _count: { id: number } }, index: number) => {
       console.log(`${index + 1}. ID: ${cat.typeId} => "${cat.typeName}" (${cat._count.id} videos)`);
     });
 
