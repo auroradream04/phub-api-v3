@@ -162,19 +162,22 @@ model DomainAccess {
 
 // API request logging for analytics and monitoring
 model ApiRequestLog {
-  id            String   @id @default(cuid())
-  domain        String?  @db.VarChar(255) // Extracted from referer/origin
-  domainAccessId String? // Reference to DomainAccess if exists
-  endpoint      String   @db.VarChar(500) // /api/home, /api/video/123, etc.
-  method        String   @db.VarChar(10) // GET, POST, etc.
-  statusCode    Int // 200, 403, etc.
-  responseTime  Int? // Response time in ms
-  ipAddress     String?  @db.VarChar(45) // IPv4 or IPv6
-  userAgent     String?  @db.Text
-  referer       String?  @db.Text
-  country       String?  @db.VarChar(2) // ISO country code
-  blocked       Boolean  @default(false) // Was request blocked?
-  timestamp     DateTime @default(now())
+  id                String   @id @default(cuid())
+  domain            String?  @db.VarChar(255) // Extracted from referer/origin/host
+  domainAccessId    String? // Reference to DomainAccess if exists
+  endpoint          String   @db.VarChar(500) // /api/home, /api/video/123, etc.
+  method            String   @db.VarChar(10) // GET, POST, etc.
+  statusCode        Int // 200, 403, etc.
+  responseTime      Int? // Response time in ms
+  ipAddress         String?  @db.VarChar(45) // IPv4 or IPv6
+  userAgent         String?  @db.Text
+  referer           String?  @db.Text
+  hasReferrer       Boolean  @default(false) // Whether referer header was present
+  ipSessionHash     String?  @db.VarChar(16) // SHA256 hash of IP:UserAgent for tracking direct requests
+  clientFingerprint String?  @db.VarChar(16) // Hash of User-Agent + Accept headers for correlation
+  country           String?  @db.VarChar(2) // ISO country code
+  blocked           Boolean  @default(false) // Was request blocked?
+  timestamp         DateTime @default(now())
 
   domainAccess DomainAccess? @relation(fields: [domainAccessId], references: [id], onDelete: SetNull)
 
@@ -183,4 +186,6 @@ model ApiRequestLog {
   @@index([timestamp])
   @@index([blocked])
   @@index([domainAccessId])
+  @@index([ipSessionHash]) // For grouping direct/unknown requests
+  @@index([clientFingerprint]) // For tracking by fingerprint
 }

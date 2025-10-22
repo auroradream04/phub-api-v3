@@ -1,45 +1,131 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import crypto from 'crypto'
 
 /**
- * Extract domain from referer or origin header
+ * Extract domain with improved fallback precedence
+ * Tries: referer → origin → x-forwarded-host → host → null
  */
 function extractDomain(request: NextRequest): string | null {
   try {
+    // Try referer first (most reliable for web requests)
     const referer = request.headers.get('referer')
+    if (referer) {
+      try {
+        const url = new URL(referer)
+        return normalizeDomain(url.hostname)
+      } catch {
+        // Invalid referer URL, continue to next option
+      }
+    }
+
+    // Try origin header
     const origin = request.headers.get('origin')
-    const urlString = referer || origin
-
-    if (!urlString) return null
-
-    const url = new URL(urlString)
-    let domain = url.hostname
-
-    // Remove www. prefix
-    if (domain.startsWith('www.')) {
-      domain = domain.substring(4)
+    if (origin) {
+      try {
+        const url = new URL(origin)
+        return normalizeDomain(url.hostname)
+      } catch {
+        // Invalid origin URL, continue to next option
+      }
     }
 
-    // Handle localhost for development
-    if (domain === 'localhost' || domain.startsWith('192.168.') || domain.startsWith('127.0.')) {
-      return 'localhost'
+    // Try x-forwarded-host (from proxies)
+    const xForwardedHost = request.headers.get('x-forwarded-host')
+    if (xForwardedHost) {
+      return normalizeDomain(xForwardedHost.split(',')[0].trim())
     }
 
-    return domain
+    // Try host header as last resort
+    const host = request.headers.get('host')
+    if (host) {
+      return normalizeDomain(host.split(':')[0]) // Remove port if present
+    }
+
+    return null
   } catch {
     return null
   }
 }
 
 /**
- * Get client IP from headers
+ * Normalize domain: remove www, handle localhost
+ */
+function normalizeDomain(domain: string): string {
+  // Remove www. prefix
+  if (domain.startsWith('www.')) {
+    domain = domain.substring(4)
+  }
+
+  // Handle localhost for development
+  if (domain === 'localhost' || domain.startsWith('192.168.') || domain.startsWith('127.0.') || domain === '::1') {
+    return 'localhost'
+  }
+
+  return domain
+}
+
+/**
+ * Get client IP from headers with fallback
+ * Checks: x-forwarded-for → x-real-ip → cf-connecting-ip (Cloudflare)
  */
 function getClientIP(request: NextRequest): string | null {
-  return (
-    request.headers.get('x-forwarded-for')?.split(',')[0] ||
-    request.headers.get('x-real-ip') ||
-    null
-  )
+  try {
+    // x-forwarded-for can contain multiple IPs (client, proxy1, proxy2, ...)
+    const xForwardedFor = request.headers.get('x-forwarded-for')
+    if (xForwardedFor) {
+      return xForwardedFor.split(',')[0].trim()
+    }
+
+    // x-real-ip is set by nginx/similar
+    const xRealIp = request.headers.get('x-real-ip')
+    if (xRealIp) {
+      return xRealIp.trim()
+    }
+
+    // Cloudflare IP
+    const cfConnectingIp = request.headers.get('cf-connecting-ip')
+    if (cfConnectingIp) {
+      return cfConnectingIp.trim()
+    }
+
+    return null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Generate IP-based session hash for tracking direct/unknown requests
+ * Hash of IP + User-Agent allows grouping requests from same client
+ */
+function generateIpSessionHash(ip: string | null, userAgent: string | null): string | null {
+  if (!ip) return null
+
+  try {
+    const hashInput = `${ip}:${userAgent || 'unknown'}`
+    return crypto.createHash('sha256').update(hashInput).digest('hex').substring(0, 16)
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Generate client fingerprint from multiple headers
+ * Used to correlate requests even if IP changes
+ */
+function generateClientFingerprint(request: NextRequest): string {
+  try {
+    const components = [
+      request.headers.get('user-agent') || 'unknown',
+      request.headers.get('accept-language') || 'unknown',
+      request.headers.get('accept-encoding') || 'unknown'
+    ]
+    const fingerprint = components.join('|')
+    return crypto.createHash('sha256').update(fingerprint).digest('hex').substring(0, 16)
+  } catch {
+    return 'unknown'
+  }
 }
 
 /**
@@ -72,6 +158,11 @@ export async function checkAndLogDomain(
   const ipAddress = getClientIP(request)
   const userAgent = request.headers.get('user-agent')
   const referer = request.headers.get('referer')
+  const hasReferrer = !!referer
+
+  // Generate tracking hashes for requests without domain
+  const ipSessionHash = domain ? null : generateIpSessionHash(ipAddress, userAgent)
+  const clientFingerprint = generateClientFingerprint(request)
 
   let domainAccessId: string | null = null
   let allowed = true
@@ -112,6 +203,9 @@ export async function checkAndLogDomain(
           ipAddress,
           userAgent,
           referer,
+          hasReferrer,
+          ipSessionHash,
+          clientFingerprint,
           blocked: !allowed
         }
       })

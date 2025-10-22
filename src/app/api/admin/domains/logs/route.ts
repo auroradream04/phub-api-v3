@@ -17,6 +17,7 @@ export async function GET() {
       select: {
         id: true,
         domain: true,
+        ipSessionHash: true,
         blocked: true,
         timestamp: true
       },
@@ -30,17 +31,28 @@ export async function GET() {
       return NextResponse.json({ logs: [] })
     }
 
-    // Group by pre-extracted domain
-    const domainMap = new Map<string, { count: number; blocked: number; allowed: number; lastSeen: Date }>()
+    // Group by pre-extracted domain and IP session hash for Direct/Unknown
+    const domainMap = new Map<string, { count: number; blocked: number; allowed: number; lastSeen: Date; ipSessionHash?: string | null }>()
 
     allLogs.forEach((log) => {
-      const domain = log.domain || 'Direct/Unknown'
+      // For requests with a domain, use domain as key
+      // For Direct/Unknown (no domain), group by ipSessionHash if available
+      let key: string
+      let ipSessionHash: string | null | undefined
 
-      if (!domainMap.has(domain)) {
-        domainMap.set(domain, { count: 0, blocked: 0, allowed: 0, lastSeen: new Date(0) })
+      if (log.domain) {
+        key = log.domain
+      } else {
+        // For direct/unknown requests, create a composite key with ipSessionHash
+        key = `Direct/Unknown${log.ipSessionHash ? '#' + log.ipSessionHash : ''}`
+        ipSessionHash = log.ipSessionHash
       }
 
-      const stats = domainMap.get(domain)!
+      if (!domainMap.has(key)) {
+        domainMap.set(key, { count: 0, blocked: 0, allowed: 0, lastSeen: new Date(0), ipSessionHash })
+      }
+
+      const stats = domainMap.get(key)!
       stats.count++
       if (log.blocked) {
         stats.blocked++
@@ -54,13 +66,22 @@ export async function GET() {
 
     // Convert to array and sort by count descending
     const enrichedLogs = Array.from(domainMap.entries())
-      .map(([domain, stats]) => ({
-        domain,
-        requests: stats.count,
-        blocked: stats.blocked,
-        allowed: stats.allowed,
-        lastSeen: stats.lastSeen
-      }))
+      .map(([key, stats]) => {
+        // Extract domain and ipSessionHash from key
+        const isDirect = key.startsWith('Direct/Unknown')
+        const parts = key.split('#')
+        const domain = isDirect ? null : key
+        const ipSessionHash = parts.length > 1 ? parts[1] : stats.ipSessionHash
+
+        return {
+          domain: domain || 'Direct/Unknown',
+          requests: stats.count,
+          blocked: stats.blocked,
+          allowed: stats.allowed,
+          lastSeen: stats.lastSeen,
+          ipSessionHash: ipSessionHash
+        }
+      })
       .sort((a, b) => b.requests - a.requests)
       .slice(0, 100)
 
