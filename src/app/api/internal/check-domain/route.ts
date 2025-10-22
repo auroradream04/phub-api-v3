@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { checkDomainAccess, extractDomain, logApiRequest } from '@/lib/domain-checker'
+import { checkDomainAccess, extractDomain } from '@/lib/domain-checker'
 
 // Internal API for domain checking (called from middleware or routes)
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { referer, origin, endpoint, method } = body
+    const { referer, origin } = body
 
     const domain = extractDomain(referer, origin)
     const accessCheck = await checkDomainAccess(domain)

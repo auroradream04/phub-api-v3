@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 
 interface Domain {
   id: string
@@ -55,7 +55,7 @@ export default function DomainsClient() {
   })
 
   // Fetch domains
-  const fetchDomains = async () => {
+  const fetchDomains = useCallback(async () => {
     try {
       setLoading(true)
       const params = new URLSearchParams()
@@ -65,26 +65,26 @@ export default function DomainsClient() {
       const response = await fetch(`/api/admin/domains?${params}`)
       const data = await response.json()
       setDomains(data.domains || [])
-    } catch (error) {
-      console.error('Failed to fetch domains:', error)
+    } catch {
+      console.error('Failed to fetch domains')
     } finally {
       setLoading(false)
     }
-  }
+  }, [search, statusFilter])
 
   // Fetch request logs grouped by domain
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     try {
       setLoading(true)
       const response = await fetch('/api/admin/domains/logs')
       const data = await response.json()
       setLogs(data.logs || [])
-    } catch (error) {
-      console.error('Failed to fetch logs:', error)
+    } catch {
+      console.error('Failed to fetch logs')
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   // Fetch detailed logs for a specific domain
   const fetchDetailedLogs = async (domain: string) => {
@@ -93,8 +93,8 @@ export default function DomainsClient() {
       const response = await fetch(`/api/admin/domains/logs/detail?domain=${encodeURIComponent(domain)}`)
       const data = await response.json()
       setDetailedLogs(data.logs || [])
-    } catch (error) {
-      console.error('Failed to fetch detailed logs:', error)
+    } catch {
+      console.error('Failed to fetch detailed logs')
     } finally {
       setLoading(false)
     }
@@ -116,7 +116,7 @@ export default function DomainsClient() {
     } else {
       fetchLogs()
     }
-  }, [activeTab, search, statusFilter])
+  }, [activeTab, search, statusFilter, fetchDomains, fetchLogs])
 
   const handleAdd = async () => {
     try {
@@ -131,10 +131,10 @@ export default function DomainsClient() {
         setFormData({ domain: '', status: 'allowed', type: 'whitelist', reason: '' })
         fetchDomains()
       } else {
-        const error = await response.json()
-        alert(error.error || 'Failed to add domain')
+        const errorData = await response.json()
+        alert(errorData.error || 'Failed to add domain')
       }
-    } catch (error) {
+    } catch {
       alert('Failed to add domain')
     }
   }
@@ -156,7 +156,7 @@ export default function DomainsClient() {
       } else {
         alert('Failed to update domain')
       }
-    } catch (error) {
+    } catch {
       alert('Failed to update domain')
     }
   }
@@ -168,7 +168,7 @@ export default function DomainsClient() {
       const response = await fetch(`/api/admin/domains/${id}`, { method: 'DELETE' })
       if (response.ok) fetchDomains()
       else alert('Failed to delete domain')
-    } catch (error) {
+    } catch {
       alert('Failed to delete domain')
     }
   }

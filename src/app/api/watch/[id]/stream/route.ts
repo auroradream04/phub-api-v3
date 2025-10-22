@@ -18,16 +18,16 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const requestStart = Date.now()
+  const { id } = await params
+
+  // Check domain access
+  const domainCheck = await checkAndLogDomain(request, `/api/watch/${id}/stream`, 'GET')
+  if (!domainCheck.allowed) {
+    return domainCheck.response
+  }
 
   try {
-    const { id } = await params
     const quality = request.nextUrl.searchParams.get('q')
-
-    // Check domain access
-    const domainCheck = await checkAndLogDomain(request, `/api/watch/${id}/stream`, 'GET')
-    if (!domainCheck.allowed) {
-      return domainCheck.response
-    }
 
     if (!id || id.trim() === '') {
       return NextResponse.json(
