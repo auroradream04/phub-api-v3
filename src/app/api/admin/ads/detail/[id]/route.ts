@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { prisma } from '@/lib/prisma'
+import { getDomainDisplayName } from '@/lib/extract-domain'
 
 export async function GET(
   request: NextRequest,
@@ -61,14 +62,14 @@ export async function GET(
     // Calculate impressions in period
     const impressionsInPeriod = impressions.length
 
-    // Group by referrer for top sources
-    const referrerMap = new Map<string, number>()
+    // Group by domain extracted from referrer for top sources
+    const sourceMap = new Map<string, number>()
     impressions.forEach(imp => {
-      const referrer = imp.referrer || 'direct'
-      referrerMap.set(referrer, (referrerMap.get(referrer) || 0) + 1)
+      const domain = getDomainDisplayName(imp.referrer)
+      sourceMap.set(domain, (sourceMap.get(domain) || 0) + 1)
     })
 
-    const topSources = Array.from(referrerMap.entries())
+    const topSources = Array.from(sourceMap.entries())
       .map(([source, count]) => ({ source, count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 10)

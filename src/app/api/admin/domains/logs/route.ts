@@ -2,27 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../../../auth/[...nextauth]/route'
 import { prisma } from '@/lib/prisma'
-
-/**
- * Extract domain from a full referrer URL
- */
-function extractDomainFromReferrer(referrer: string | null): string | null {
-  if (!referrer) return null
-
-  try {
-    const url = new URL(referrer)
-    let domain = url.hostname
-
-    // Remove www. prefix
-    if (domain.startsWith('www.')) {
-      domain = domain.substring(4)
-    }
-
-    return domain
-  } catch {
-    return null
-  }
-}
+import { extractDomainFromReferrer, getDomainDisplayName } from '@/lib/extract-domain'
 
 // GET /api/admin/domains/logs - Get request logs grouped by domain
 export async function GET() {
@@ -55,7 +35,7 @@ export async function GET() {
     const domainMap = new Map<string, { count: number; blocked: number; allowed: number; lastSeen: Date }>()
 
     allLogs.forEach((log) => {
-      const domain = extractDomainFromReferrer(log.referer) || 'Direct/Unknown'
+      const domain = getDomainDisplayName(log.referer)
 
       if (!domainMap.has(domain)) {
         domainMap.set(domain, { count: 0, blocked: 0, allowed: 0, lastSeen: new Date(0) })
