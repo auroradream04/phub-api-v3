@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../../../../auth/[...nextauth]/route'
 import { prisma } from '@/lib/prisma'
-import { extractDomainFromReferrer, getDomainDisplayName } from '@/lib/extract-domain'
 
 // GET /api/admin/domains/logs/detail - Get detailed request logs for a specific domain
 export async function GET(request: NextRequest) {
@@ -24,8 +23,11 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit
 
-    // Get recent logs and filter by extracted domain (limit to last 10000 for performance)
+    // Get logs filtered by pre-extracted domain using database query
     const allLogs = await prisma.apiRequestLog.findMany({
+      where: {
+        domain: domainParam
+      },
       orderBy: { timestamp: 'desc' },
       take: 10000,
       select: {
@@ -43,11 +45,8 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    // Filter logs by extracted domain
-    const filteredLogs = allLogs.filter((log) => {
-      const extractedDomain = getDomainDisplayName(log.referer)
-      return extractedDomain === domainParam
-    })
+    // All logs are already filtered by domain from database
+    const filteredLogs = allLogs
 
     // Apply pagination
     const totalCount = filteredLogs.length
@@ -65,8 +64,7 @@ export async function GET(request: NextRequest) {
       referer: log.referer,
       country: log.country,
       blocked: log.blocked,
-      timestamp: log.timestamp,
-      domain: getDomainDisplayName(log.referer)
+      timestamp: log.timestamp
     }))
 
     return NextResponse.json({

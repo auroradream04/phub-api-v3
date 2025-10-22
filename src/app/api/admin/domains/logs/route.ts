@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../../../auth/[...nextauth]/route'
 import { prisma } from '@/lib/prisma'
-import { extractDomainFromReferrer, getDomainDisplayName } from '@/lib/extract-domain'
 
 // GET /api/admin/domains/logs - Get request logs grouped by domain
 export async function GET() {
@@ -13,11 +12,11 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get recent logs with referer field (limit to last 10000 for performance)
+    // Get recent logs with pre-extracted domain (limit to last 10000 for performance)
     const allLogs = await prisma.apiRequestLog.findMany({
       select: {
         id: true,
-        referer: true,
+        domain: true,
         blocked: true,
         timestamp: true
       },
@@ -31,11 +30,11 @@ export async function GET() {
       return NextResponse.json({ logs: [] })
     }
 
-    // Group by extracted domain
+    // Group by pre-extracted domain
     const domainMap = new Map<string, { count: number; blocked: number; allowed: number; lastSeen: Date }>()
 
     allLogs.forEach((log) => {
-      const domain = getDomainDisplayName(log.referer)
+      const domain = log.domain || 'Direct/Unknown'
 
       if (!domainMap.has(domain)) {
         domainMap.set(domain, { count: 0, blocked: 0, allowed: 0, lastSeen: new Date(0) })
