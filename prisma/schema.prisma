@@ -142,3 +142,45 @@ model Video {
   @@index([vodTime])
   @@index([views])
 }
+
+// Domain access control - whitelist/blacklist management
+model DomainAccess {
+  id          String   @id @default(cuid())
+  domain      String   @unique @db.VarChar(255) // e.g., "example.com"
+  status      String   @default("allowed") // allowed, blocked
+  type        String   @default("whitelist") // whitelist, blacklist
+  reason      String?  @db.Text // Why blocked/allowed
+  addedBy     String?  // Admin user ID who added this rule
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  requestLogs ApiRequestLog[]
+
+  @@index([status])
+  @@index([domain])
+}
+
+// API request logging for analytics and monitoring
+model ApiRequestLog {
+  id            String   @id @default(cuid())
+  domain        String?  @db.VarChar(255) // Extracted from referer/origin
+  domainAccessId String? // Reference to DomainAccess if exists
+  endpoint      String   @db.VarChar(500) // /api/home, /api/video/123, etc.
+  method        String   @db.VarChar(10) // GET, POST, etc.
+  statusCode    Int // 200, 403, etc.
+  responseTime  Int? // Response time in ms
+  ipAddress     String?  @db.VarChar(45) // IPv4 or IPv6
+  userAgent     String?  @db.Text
+  referer       String?  @db.Text
+  country       String?  @db.VarChar(2) // ISO country code
+  blocked       Boolean  @default(false) // Was request blocked?
+  timestamp     DateTime @default(now())
+
+  domainAccess DomainAccess? @relation(fields: [domainAccessId], references: [id], onDelete: SetNull)
+
+  @@index([domain])
+  @@index([endpoint])
+  @@index([timestamp])
+  @@index([blocked])
+  @@index([domainAccessId])
+}

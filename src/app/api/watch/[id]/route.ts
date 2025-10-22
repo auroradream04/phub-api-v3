@@ -137,23 +137,23 @@ export async function GET(
     // Retry with proxy if initial request failed (and it wasn't a 404)
     let retries = 3
     while (!videoData && retries > 0) {
-      const proxyAgent = getRandomProxy()
+      const proxyInfo = getRandomProxy('Watch API')
 
-      if (!proxyAgent) {
+      if (!proxyInfo) {
         log('warn', `No proxies available - cannot retry`, { videoId: id, requestId })
         break
       }
 
-      log('info', `Retrying with proxy (${retries} retries remaining)`, { videoId: id, requestId })
-      pornhub.setAgent(proxyAgent)
+      log('info', `Retrying with proxy ${proxyInfo.proxyUrl} (${retries} retries remaining)`, { videoId: id, requestId })
+      pornhub.setAgent(proxyInfo.agent)
 
       try {
         videoData = await pornhub.video(id)
-        log('info', `Fetch successful with proxy`, { videoId: id, retries, requestId })
+        log('info', `Fetch successful with proxy ${proxyInfo.proxyUrl}`, { videoId: id, retries, requestId })
         break
       } catch (apiError) {
         lastError = apiError instanceof Error ? apiError : new Error(String(apiError))
-        log('warn', `Fetch failed with proxy`, {
+        log('warn', `Fetch failed with proxy ${proxyInfo.proxyUrl}`, {
           videoId: id,
           error: lastError.message,
           retriesRemaining: retries - 1,

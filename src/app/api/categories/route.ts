@@ -17,31 +17,39 @@ export async function GET() {
 
     // Always use proxy - retry with different proxies if needed
     let retries = 3
+    let attemptNum = 1
     while ((!categories || categories.length === 0) && retries > 0) {
-      const proxyAgent = getRandomProxy()
+      const proxyInfo = getRandomProxy('Categories API')
 
-      if (!proxyAgent) {
+      if (!proxyInfo) {
         console.warn('[Categories] No proxies available. Cannot retry.')
         break
       }
 
-      console.log(`[Categories] Attempting request with random proxy (${retries} retries remaining)...`)
-      pornhub.setAgent(proxyAgent)
+      console.log(`[Categories] Attempt ${attemptNum}/3 using proxy ${proxyInfo.proxyUrl}`)
+      pornhub.setAgent(proxyInfo.agent)
 
+      const startTime = Date.now()
       try {
         // Fetch categories from PornHub using the WebMaster API
         categories = await pornhub.webMaster.getCategories()
 
+        const duration = Date.now() - startTime
+
         // Check for soft blocking (empty results)
         if (!categories || categories.length === 0) {
-          console.log('[Categories] Received empty results (possible soft block), retrying with different proxy...')
+          console.log(`[Categories] ⚠️  Proxy ${proxyInfo.proxyUrl} returned empty results (soft block) after ${duration}ms - trying different proxy...`)
           categories = null
+        } else {
+          console.log(`[Categories] ✅ Proxy ${proxyInfo.proxyUrl} successful! Got ${categories.length} categories in ${duration}ms`)
         }
       } catch (error: unknown) {
-        console.error('[Categories] Request failed with proxy:', error instanceof Error ? error.message : 'Unknown error')
+        const duration = Date.now() - startTime
+        console.error(`[Categories] ❌ Proxy ${proxyInfo.proxyUrl} failed after ${duration}ms:`, error instanceof Error ? error.message : 'Unknown error')
       }
 
       retries--
+      attemptNum++
     }
 
     if (!categories || categories.length === 0) {

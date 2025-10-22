@@ -59,9 +59,10 @@ export function getProxyList(): string[] {
 
 /**
  * Gets a random proxy agent from the proxy list
- * @returns Random proxy agent (HttpsProxyAgent, HttpProxyAgent, or SocksProxyAgent) or null if no proxies available
+ * @param route Optional route name for logging purposes
+ * @returns Object with proxy agent and proxy URL (masked), or null if no proxies available
  */
-export function getRandomProxy(): HttpsProxyAgent<string> | HttpProxyAgent<string> | SocksProxyAgent | null {
+export function getRandomProxy(route?: string): { agent: HttpsProxyAgent<string> | HttpProxyAgent<string> | SocksProxyAgent, proxyUrl: string } | null {
   try {
     const proxyList = getProxyList();
 
@@ -71,19 +72,31 @@ export function getRandomProxy(): HttpsProxyAgent<string> | HttpProxyAgent<strin
 
     // Select random proxy
     const randomProxy = proxyList[Math.floor(Math.random() * proxyList.length)];
-    console.log('[Proxy] Using proxy:', randomProxy.replace(/:[^:@]+@/, ':****@')); // Mask password in logs
+
+    // Extract host:port for logging (mask credentials)
+    const maskedProxy = randomProxy.replace(/:[^:@]+@/, ':****@');
+
+    // Extract just host:port for easier identification
+    const urlMatch = randomProxy.match(/@([^:]+):(\d+)/);
+    const hostPort = urlMatch ? `${urlMatch[1]}:${urlMatch[2]}` : maskedProxy;
+
+    const routePrefix = route ? `[${route}]` : '[Proxy]';
+    console.log(`${routePrefix} Selected proxy: ${hostPort}`);
 
     // Determine proxy type and create appropriate agent
+    let agent;
     if (randomProxy.startsWith('socks4://') || randomProxy.startsWith('socks5://')) {
-      return new SocksProxyAgent(randomProxy);
+      agent = new SocksProxyAgent(randomProxy);
     } else if (randomProxy.startsWith('http://')) {
-      return new HttpProxyAgent(randomProxy);
+      agent = new HttpProxyAgent(randomProxy);
     } else if (randomProxy.startsWith('https://')) {
-      return new HttpsProxyAgent(randomProxy);
+      agent = new HttpsProxyAgent(randomProxy);
     } else {
       // Default to HTTPS proxy if no protocol specified
-      return new HttpsProxyAgent(randomProxy);
+      agent = new HttpsProxyAgent(randomProxy);
     }
+
+    return { agent, proxyUrl: hostPort };
   } catch (error) {
     console.error('[Proxy] Error creating proxy agent:', error);
     return null;

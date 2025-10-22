@@ -39,30 +39,38 @@ export async function GET(
 
     // Always use proxy - retry with different proxies if needed
     let retries = 3
+    let attemptNum = 1
     while ((videoInfo === undefined || videoInfo === null || !videoInfo.mediaDefinitions || videoInfo.mediaDefinitions.length < 1) && retries > 0) {
-      const proxyAgent = getRandomProxy()
+      const proxyInfo = getRandomProxy('Stream API')
 
-      if (!proxyAgent) {
+      if (!proxyInfo) {
         console.warn('[Stream] No proxies available. Cannot retry.')
         break
       }
 
-      console.log(`[Stream] Attempting request with random proxy (${retries} retries remaining)...`)
-      pornhub.setAgent(proxyAgent)
+      console.log(`[Stream] Attempt ${attemptNum}/3 for video ${id} (quality: ${quality}) using proxy ${proxyInfo.proxyUrl}`)
+      pornhub.setAgent(proxyInfo.agent)
 
+      const startTime = Date.now()
       try {
         videoInfo = await pornhub.video(id)
 
+        const duration = Date.now() - startTime
+
         // Check for soft blocking (missing media definitions)
         if (!videoInfo.mediaDefinitions || videoInfo.mediaDefinitions.length < 1) {
-          console.log('[Stream] Received empty media definitions (possible soft block), retrying with different proxy...')
+          console.log(`[Stream] ⚠️  Proxy ${proxyInfo.proxyUrl} returned empty media definitions (soft block) after ${duration}ms - trying different proxy...`)
           videoInfo = null
+        } else {
+          console.log(`[Stream] ✅ Proxy ${proxyInfo.proxyUrl} successful! Got ${videoInfo.mediaDefinitions.length} quality options in ${duration}ms`)
         }
       } catch (error: unknown) {
-        console.error('[Stream] Request failed with proxy:', error instanceof Error ? error.message : 'Unknown error')
+        const duration = Date.now() - startTime
+        console.error(`[Stream] ❌ Proxy ${proxyInfo.proxyUrl} failed after ${duration}ms:`, error instanceof Error ? error.message : 'Unknown error')
       }
 
       retries--
+      attemptNum++
     }
 
     if (!videoInfo || !videoInfo.mediaDefinitions || videoInfo.mediaDefinitions.length < 1) {
