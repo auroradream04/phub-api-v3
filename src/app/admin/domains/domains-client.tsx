@@ -21,10 +21,25 @@ interface RequestLog {
   lastSeen: string
 }
 
+interface DetailedLog {
+  id: string
+  domain: string
+  endpoint: string
+  method: string
+  statusCode: number
+  responseTime: number
+  blocked: boolean
+  timestamp: string
+  ipAddress: string | null
+  userAgent: string | null
+}
+
 export default function DomainsClient() {
   const [activeTab, setActiveTab] = useState<'domains' | 'logs'>('logs')
   const [domains, setDomains] = useState<Domain[]>([])
   const [logs, setLogs] = useState<RequestLog[]>([])
+  const [detailedLogs, setDetailedLogs] = useState<DetailedLog[]>([])
+  const [selectedDomainForDetail, setSelectedDomainForDetail] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -69,6 +84,30 @@ export default function DomainsClient() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Fetch detailed logs for a specific domain
+  const fetchDetailedLogs = async (domain: string) => {
+    try {
+      setLoading(true)
+      const response = await fetch(`/api/admin/domains/logs/detail?domain=${encodeURIComponent(domain)}`)
+      const data = await response.json()
+      setDetailedLogs(data.logs || [])
+    } catch (error) {
+      console.error('Failed to fetch detailed logs:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleDomainClick = (domain: string) => {
+    setSelectedDomainForDetail(domain)
+    fetchDetailedLogs(domain)
+  }
+
+  const handleBackToList = () => {
+    setSelectedDomainForDetail(null)
+    setDetailedLogs([])
   }
 
   useEffect(() => {
@@ -194,11 +233,11 @@ export default function DomainsClient() {
       </div>
 
       {/* Request Logs Tab */}
-      {activeTab === 'logs' && (
+      {activeTab === 'logs' && !selectedDomainForDetail && (
         <div>
           <div className="mb-4">
             <p className="text-sm text-gray-600">
-              See which domains are accessing your API. Click "Block" to add them to the blacklist.
+              See which domains are accessing your API. Click on a domain to see detailed logs.
             </p>
           </div>
 
@@ -241,8 +280,8 @@ export default function DomainsClient() {
                   </tr>
                 ) : (
                   logs.map((log, idx) => (
-                    <tr key={idx}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                    <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer" onClick={() => log.domain && handleDomainClick(log.domain)}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline">
                         {log.domain || 'Direct/Unknown'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -260,12 +299,118 @@ export default function DomainsClient() {
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         {log.domain && (
                           <button
-                            onClick={() => handleBlockDomain(log.domain)}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleBlockDomain(log.domain)
+                            }}
                             className="text-red-600 hover:text-red-900"
                           >
                             Block
                           </button>
                         )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Domain Detail View */}
+      {activeTab === 'logs' && selectedDomainForDetail && (
+        <div>
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <button
+                onClick={handleBackToList}
+                className="text-blue-600 hover:text-blue-800 flex items-center gap-2 mb-2"
+              >
+                ← Back to all domains
+              </button>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                Requests from: {selectedDomainForDetail}
+              </h2>
+              <p className="text-sm text-gray-500">
+                Showing individual requests from this domain
+              </p>
+            </div>
+            <button
+              onClick={() => handleBlockDomain(selectedDomainForDetail)}
+              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+            >
+              Block This Domain
+            </button>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-700">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Timestamp
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Endpoint
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Method
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Response Time
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    IP Address
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                {loading ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                      Loading...
+                    </td>
+                  </tr>
+                ) : detailedLogs.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                      No requests found
+                    </td>
+                  </tr>
+                ) : (
+                  detailedLogs.map((log) => (
+                    <tr key={log.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(log.timestamp).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900 dark:text-white font-mono">
+                        {log.endpoint}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {log.method}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          log.blocked
+                            ? 'bg-red-100 text-red-800'
+                            : log.statusCode >= 200 && log.statusCode < 300
+                            ? 'bg-green-100 text-green-800'
+                            : log.statusCode >= 400
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {log.statusCode}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {log.responseTime}ms
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">
+                        {log.ipAddress || '-'}
                       </td>
                     </tr>
                   ))
