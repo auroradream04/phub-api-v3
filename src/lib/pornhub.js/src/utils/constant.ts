@@ -1,1 +1,1 @@
-export const BASE_URL = 'https://cn.pornhub.com'
+export const BASE_URL = 'https://www.pornhub.com'
