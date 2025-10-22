@@ -13,8 +13,18 @@ interface Domain {
   createdAt: string
 }
 
+interface RequestLog {
+  domain: string
+  requests: number
+  blocked: number
+  allowed: number
+  lastSeen: string
+}
+
 export default function DomainsClient() {
+  const [activeTab, setActiveTab] = useState<'domains' | 'logs'>('logs')
   const [domains, setDomains] = useState<Domain[]>([])
+  const [logs, setLogs] = useState<RequestLog[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -29,6 +39,7 @@ export default function DomainsClient() {
     reason: ''
   })
 
+  // Fetch domains
   const fetchDomains = async () => {
     try {
       setLoading(true)
@@ -46,9 +57,27 @@ export default function DomainsClient() {
     }
   }
 
+  // Fetch request logs grouped by domain
+  const fetchLogs = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/admin/domains/logs')
+      const data = await response.json()
+      setLogs(data.logs || [])
+    } catch (error) {
+      console.error('Failed to fetch logs:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   useEffect(() => {
-    fetchDomains()
-  }, [search, statusFilter])
+    if (activeTab === 'domains') {
+      fetchDomains()
+    } else {
+      fetchLogs()
+    }
+  }, [activeTab, search, statusFilter])
 
   const handleAdd = async () => {
     try {
@@ -67,7 +96,6 @@ export default function DomainsClient() {
         alert(error.error || 'Failed to add domain')
       }
     } catch (error) {
-      console.error('Failed to add domain:', error)
       alert('Failed to add domain')
     }
   }
@@ -90,28 +118,30 @@ export default function DomainsClient() {
         alert('Failed to update domain')
       }
     } catch (error) {
-      console.error('Failed to update domain:', error)
       alert('Failed to update domain')
     }
   }
 
   const handleDelete = async (id: string, domain: string) => {
-    if (!confirm(`Are you sure you want to delete ${domain}?`)) return
+    if (!confirm(`Delete ${domain}?`)) return
 
     try {
-      const response = await fetch(`/api/admin/domains/${id}`, {
-        method: 'DELETE'
-      })
-
-      if (response.ok) {
-        fetchDomains()
-      } else {
-        alert('Failed to delete domain')
-      }
+      const response = await fetch(`/api/admin/domains/${id}`, { method: 'DELETE' })
+      if (response.ok) fetchDomains()
+      else alert('Failed to delete domain')
     } catch (error) {
-      console.error('Failed to delete domain:', error)
       alert('Failed to delete domain')
     }
+  }
+
+  const handleBlockDomain = (domain: string) => {
+    setFormData({
+      domain,
+      status: 'blocked',
+      type: 'blacklist',
+      reason: 'Blocked from request logs'
+    })
+    setShowAddDialog(true)
   }
 
   const openEditDialog = (domain: Domain) => {
@@ -126,234 +156,378 @@ export default function DomainsClient() {
   }
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Domain Access Control</h1>
-        <p className="text-muted-foreground">
-          Manage which domains can access your API
+    <div className="max-w-7xl mx-auto p-6">
+      {/* Header */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          Domain Access Control
+        </h1>
+        <p className="mt-1 text-sm text-gray-500">
+          Monitor API usage and manage domain access
         </p>
       </div>
 
-      {/* Filters and Add Button */}
-      <div className="flex gap-4 mb-6">
-        <input
-          type="text"
-          placeholder="Search domains..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="max-w-xs border rounded px-3 py-2"
-        />
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="border rounded px-3 py-2"
-        >
-          <option value="all">All Status</option>
-          <option value="allowed">Allowed</option>
-          <option value="blocked">Blocked</option>
-        </select>
-        <button
-          onClick={() => setShowAddDialog(true)}
-          className="ml-auto bg-primary text-primary-foreground px-4 py-2 rounded hover:opacity-90"
-        >
-          Add Domain
-        </button>
+      {/* Tabs */}
+      <div className="border-b border-gray-200 mb-6">
+        <nav className="-mb-px flex space-x-8">
+          <button
+            onClick={() => setActiveTab('logs')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'logs'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Request Logs
+          </button>
+          <button
+            onClick={() => setActiveTab('domains')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'domains'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Blocked Domains
+          </button>
+        </nav>
       </div>
 
-      {/* Domains Table */}
-      <div className="border rounded-lg overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-muted">
-            <tr>
-              <th className="text-left p-4 font-medium">Domain</th>
-              <th className="text-left p-4 font-medium">Status</th>
-              <th className="text-left p-4 font-medium">Type</th>
-              <th className="text-left p-4 font-medium">Total Requests</th>
-              <th className="text-left p-4 font-medium">Last 7 Days</th>
-              <th className="text-left p-4 font-medium">Reason</th>
-              <th className="text-right p-4 font-medium">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={7} className="text-center py-8">
-                  Loading...
-                </td>
-              </tr>
-            ) : domains.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="text-center py-8 text-muted-foreground">
-                  No domains found. Add one to get started.
-                </td>
-              </tr>
-            ) : (
-              domains.map((domain) => (
-                <tr key={domain.id} className="border-t">
-                  <td className="p-4 font-medium">{domain.domain}</td>
-                  <td className="p-4">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      domain.status === 'blocked'
-                        ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                        : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                    }`}>
-                      {domain.status}
-                    </span>
-                  </td>
-                  <td className="p-4">
-                    <span className="px-2 py-1 rounded text-xs font-medium border">
-                      {domain.type}
-                    </span>
-                  </td>
-                  <td className="p-4">{domain.totalRequests.toLocaleString()}</td>
-                  <td className="p-4">{domain.recentRequests.toLocaleString()}</td>
-                  <td className="p-4 max-w-xs truncate">{domain.reason || '-'}</td>
-                  <td className="p-4 text-right space-x-2">
-                    <button
-                      onClick={() => openEditDialog(domain)}
-                      className="px-3 py-1 text-sm rounded hover:bg-muted"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(domain.id, domain.domain)}
-                      className="px-3 py-1 text-sm rounded hover:bg-muted text-red-600"
-                    >
-                      Delete
-                    </button>
-                  </td>
+      {/* Request Logs Tab */}
+      {activeTab === 'logs' && (
+        <div>
+          <div className="mb-4">
+            <p className="text-sm text-gray-600">
+              See which domains are accessing your API. Click "Block" to add them to the blacklist.
+            </p>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-700">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Domain
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Total Requests
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Allowed
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Blocked
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Last Seen
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              </thead>
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                {loading ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                      Loading...
+                    </td>
+                  </tr>
+                ) : logs.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                      No requests logged yet
+                    </td>
+                  </tr>
+                ) : (
+                  logs.map((log, idx) => (
+                    <tr key={idx}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                        {log.domain || 'Direct/Unknown'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {log.requests.toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">
+                        {log.allowed.toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600">
+                        {log.blocked.toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(log.lastSeen).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        {log.domain && (
+                          <button
+                            onClick={() => handleBlockDomain(log.domain)}
+                            className="text-red-600 hover:text-red-900"
+                          >
+                            Block
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
-      {/* Add Dialog */}
+      {/* Domains Tab */}
+      {activeTab === 'domains' && (
+        <div>
+          <div className="flex gap-4 mb-6">
+            <input
+              type="text"
+              placeholder="Search domains..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="all">All Status</option>
+              <option value="allowed">Allowed</option>
+              <option value="blocked">Blocked</option>
+            </select>
+            <button
+              onClick={() => setShowAddDialog(true)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              Add Domain
+            </button>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-700">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Domain
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Type
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Reason
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                {loading ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
+                      Loading...
+                    </td>
+                  </tr>
+                ) : domains.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
+                      No blocked domains yet
+                    </td>
+                  </tr>
+                ) : (
+                  domains.map((domain) => (
+                    <tr key={domain.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                        {domain.domain}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            domain.status === 'blocked'
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-green-100 text-green-800'
+                          }`}
+                        >
+                          {domain.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {domain.type}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500">
+                        {domain.reason || '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button
+                          onClick={() => openEditDialog(domain)}
+                          className="text-blue-600 hover:text-blue-900 mr-4"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(domain.id, domain.domain)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Add/Edit Dialogs - Same as before but with matching styling */}
       {showAddDialog && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-background p-6 rounded-lg max-w-md w-full">
-            <h2 className="text-xl font-bold mb-4">Add Domain</h2>
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+              Add Domain
+            </h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Domain</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Domain
+                </label>
                 <input
                   type="text"
                   placeholder="example.com"
                   value={formData.domain}
                   onChange={(e) => setFormData({ ...formData, domain: e.target.value })}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Status</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Status
+                </label>
                 <select
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="allowed">Allowed</option>
                   <option value="blocked">Blocked</option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Type</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Type
+                </label>
                 <select
                   value={formData.type}
                   onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="whitelist">Whitelist</option>
                   <option value="blacklist">Blacklist</option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Reason (Optional)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Reason
+                </label>
                 <textarea
-                  placeholder="Why is this domain allowed/blocked?"
                   value={formData.reason}
                   onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-                  className="w-full border rounded px-3 py-2 min-h-[80px]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  rows={3}
                 />
               </div>
             </div>
-            <div className="flex justify-end gap-2 mt-6">
+            <div className="mt-6 flex justify-end gap-3">
               <button
                 onClick={() => setShowAddDialog(false)}
-                className="px-4 py-2 border rounded hover:bg-muted"
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleAdd}
-                className="px-4 py-2 bg-primary text-primary-foreground rounded hover:opacity-90"
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
               >
-                Add Domain
+                Add
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Edit Dialog */}
       {showEditDialog && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-background p-6 rounded-lg max-w-md w-full">
-            <h2 className="text-xl font-bold mb-4">Edit Domain</h2>
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+              Edit Domain
+            </h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Domain</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Domain
+                </label>
                 <input
                   type="text"
                   value={formData.domain}
                   disabled
-                  className="w-full border rounded px-3 py-2 bg-muted"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Status</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Status
+                </label>
                 <select
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="allowed">Allowed</option>
                   <option value="blocked">Blocked</option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Type</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Type
+                </label>
                 <select
                   value={formData.type}
                   onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="whitelist">Whitelist</option>
                   <option value="blacklist">Blacklist</option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Reason (Optional)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Reason
+                </label>
                 <textarea
-                  placeholder="Why is this domain allowed/blocked?"
                   value={formData.reason}
                   onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-                  className="w-full border rounded px-3 py-2 min-h-[80px]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  rows={3}
                 />
               </div>
             </div>
-            <div className="flex justify-end gap-2 mt-6">
+            <div className="mt-6 flex justify-end gap-3">
               <button
                 onClick={() => setShowEditDialog(false)}
-                className="px-4 py-2 border rounded hover:bg-muted"
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleUpdate}
-                className="px-4 py-2 bg-primary text-primary-foreground rounded hover:opacity-90"
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
               >
-                Update Domain
+                Update
               </button>
             </div>
           </div>
