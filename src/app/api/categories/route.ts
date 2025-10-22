@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server'
 import { PornHub } from 'pornhub.js'
-
-// Initialize PornHub client
-const pornhub = new PornHub()
+import { getRandomProxy } from '@/lib/proxy'
 
 // Custom categories that use search instead of PornHub category IDs
 // Use high numeric IDs (9998-9999) to avoid conflicts with PornHub category IDs
@@ -14,8 +12,41 @@ const CUSTOM_CATEGORIES = [
 
 export async function GET() {
   try {
-    // Fetch categories from PornHub using the WebMaster API
-    const categories = await pornhub.webMaster.getCategories()
+    const pornhub = new PornHub()
+    let categories
+
+    // Always use proxy - retry with different proxies if needed
+    let retries = 3
+    while ((!categories || categories.length === 0) && retries > 0) {
+      const proxyAgent = getRandomProxy()
+
+      if (!proxyAgent) {
+        console.warn('[Categories] No proxies available. Cannot retry.')
+        break
+      }
+
+      console.log(`[Categories] Attempting request with random proxy (${retries} retries remaining)...`)
+      pornhub.setAgent(proxyAgent)
+
+      try {
+        // Fetch categories from PornHub using the WebMaster API
+        categories = await pornhub.webMaster.getCategories()
+
+        // Check for soft blocking (empty results)
+        if (!categories || categories.length === 0) {
+          console.log('[Categories] Received empty results (possible soft block), retrying with different proxy...')
+          categories = null
+        }
+      } catch (error: unknown) {
+        console.error('[Categories] Request failed with proxy:', error instanceof Error ? error.message : 'Unknown error')
+      }
+
+      retries--
+    }
+
+    if (!categories || categories.length === 0) {
+      throw new Error('Failed to fetch categories from PornHub')
+    }
 
     // The API returns objects with 'id' and 'category' fields
     // Convert 'category' field to 'name' for consistency and format properly

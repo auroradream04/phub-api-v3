@@ -29,14 +29,7 @@ export async function GET(
     const pornhub = new PornHub()
     let result
 
-    // Try without proxy first
-    try {
-      result = await pornhub.searchVideo(decodedQuery, { page })
-    } catch (error: unknown) {
-      console.error('[Search] Request failed without proxy:', error instanceof Error ? error.message : 'Unknown error')
-    }
-
-    // Retry with proxy if initial request failed
+    // Always use proxy - retry with different proxies if needed
     let retries = 3
     while ((!result || !result.data || result.data.length === 0) && retries > 0) {
       const proxyAgent = getRandomProxy()
@@ -46,11 +39,17 @@ export async function GET(
         break
       }
 
-      console.log(`[Search] Retrying with proxy (${retries} retries remaining)...`)
+      console.log(`[Search] Attempting request with random proxy (${retries} retries remaining)...`)
       pornhub.setAgent(proxyAgent)
 
       try {
         result = await pornhub.searchVideo(decodedQuery, { page })
+
+        // Check for soft blocking (empty results)
+        if (!result.data || result.data.length === 0) {
+          console.log('[Search] Received empty results (possible soft block), retrying with different proxy...')
+          result = null
+        }
       } catch (error: unknown) {
         console.error('[Search] Request failed with proxy:', error instanceof Error ? error.message : 'Unknown error')
       }

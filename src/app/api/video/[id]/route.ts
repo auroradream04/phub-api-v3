@@ -19,12 +19,7 @@ export async function GET(
     const pornhub = new PornHub()
     let videoInfo
 
-    try {
-      videoInfo = await pornhub.video(id)
-    } catch (error: unknown) {
-      console.error('[Video] Request failed without proxy:', error instanceof Error ? error.message : 'Unknown error')
-    }
-
+    // Always use proxy - retry with different proxies if needed
     let retries = 3
     while ((videoInfo === undefined || videoInfo === null || !videoInfo.mediaDefinitions || videoInfo.mediaDefinitions.length < 1) && retries > 0) {
       const proxyAgent = getRandomProxy()
@@ -34,11 +29,17 @@ export async function GET(
         break
       }
 
-      console.log(`[Video] Retrying with proxy (${retries} retries remaining)...`)
+      console.log(`[Video] Attempting request with random proxy (${retries} retries remaining)...`)
       pornhub.setAgent(proxyAgent)
 
       try {
         videoInfo = await pornhub.video(id)
+
+        // Check for soft blocking (missing media definitions)
+        if (!videoInfo.mediaDefinitions || videoInfo.mediaDefinitions.length < 1) {
+          console.log('[Video] Received empty media definitions (possible soft block), retrying with different proxy...')
+          videoInfo = null
+        }
       } catch (error: unknown) {
         console.error('[Video] Request failed with proxy:', error instanceof Error ? error.message : 'Unknown error')
       }
