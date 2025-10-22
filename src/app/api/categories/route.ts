@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { PornHub } from 'pornhub.js'
 import { getRandomProxy } from '@/lib/proxy'
+import { checkAndLogDomain } from '@/lib/domain-middleware'
 
 // Custom categories that use search instead of PornHub category IDs
 // Use high numeric IDs (9998-9999) to avoid conflicts with PornHub category IDs
@@ -10,7 +11,15 @@ const CUSTOM_CATEGORIES = [
   { id: 9998, name: 'Chinese' }
 ]
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const requestStart = Date.now()
+
+  // Check domain access
+  const domainCheck = await checkAndLogDomain(request, '/api/categories', 'GET')
+  if (!domainCheck.allowed) {
+    return domainCheck.response
+  }
+
   try {
     const pornhub = new PornHub()
     let categories = null
@@ -55,6 +64,7 @@ export async function GET() {
     }
 
     if (!categories || categories.length === 0) {
+      await domainCheck.logRequest(500, Date.now() - requestStart)
       throw new Error('Failed to fetch categories from PornHub')
     }
 
@@ -71,6 +81,9 @@ export async function GET() {
 
     // Add custom categories at the beginning
     const allCategories = [...CUSTOM_CATEGORIES, ...formattedCategories]
+
+    // Log successful request
+    await domainCheck.logRequest(200, Date.now() - requestStart)
 
     return NextResponse.json({
       categories: allCategories,

@@ -1,8 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PornHub, VideoListOrdering } from 'pornhub.js'
 import { getRandomProxy } from '@/lib/proxy'
+import { checkAndLogDomain } from '@/lib/domain-middleware'
 
 export async function GET(request: NextRequest) {
+  const requestStart = Date.now()
+
+  // Check domain access
+  const domainCheck = await checkAndLogDomain(request, '/api/home', 'GET')
+  if (!domainCheck.allowed) {
+    return domainCheck.response // Returns 403 if blocked
+  }
+
   try {
     const searchParams = request.nextUrl.searchParams
 
@@ -73,8 +82,13 @@ export async function GET(request: NextRequest) {
     }
 
     if (!result || !result.data) {
+      // Log failed request
+      await domainCheck.logRequest(500, Date.now() - requestStart)
       throw new Error('Failed to fetch video list from PornHub')
     }
+
+    // Log successful request
+    await domainCheck.logRequest(200, Date.now() - requestStart)
 
     return NextResponse.json(result, { status: 200 })
 

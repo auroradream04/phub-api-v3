@@ -4,6 +4,7 @@ import { getRandomProxy } from '@/lib/proxy'
 import { prisma } from '@/lib/prisma'
 import { getSiteSetting, SETTING_KEYS } from '@/lib/site-settings'
 import { getClientIP, getCountryFromIP } from '@/lib/geo'
+import { checkAndLogDomain } from '@/lib/domain-middleware'
 
 interface AdWithSegments {
   id: string
@@ -16,9 +17,17 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const requestStart = Date.now()
+
   try {
     const { id } = await params
     const quality = request.nextUrl.searchParams.get('q')
+
+    // Check domain access
+    const domainCheck = await checkAndLogDomain(request, `/api/watch/${id}/stream`, 'GET')
+    if (!domainCheck.allowed) {
+      return domainCheck.response
+    }
 
     if (!id || id.trim() === '') {
       return NextResponse.json(
@@ -76,6 +85,7 @@ export async function GET(
     }
 
     if (!videoInfo || !videoInfo.mediaDefinitions || videoInfo.mediaDefinitions.length < 1) {
+      await domainCheck.logRequest(500, Date.now() - requestStart)
       throw new Error('Failed to fetch video information')
     }
 
@@ -84,6 +94,7 @@ export async function GET(
     )
 
     if (!mediaDefinition) {
+      await domainCheck.logRequest(404, Date.now() - requestStart)
       return NextResponse.json(
         { error: `Quality ${quality} not found` },
         { status: 404 }
@@ -131,6 +142,9 @@ export async function GET(
 
     const modifiedM3u8 = await injectAds(originalM3u8, quality, originalM3u8Url, id, request.headers)
 
+    // Log successful request
+    await domainCheck.logRequest(200, Date.now() - requestStart)
+
     return new Response(modifiedM3u8, {
       headers: {
         'Content-Type': 'application/vnd.apple.mpegurl',
@@ -141,6 +155,7 @@ export async function GET(
 
   } catch (error) {
     console.error('[Stream] Error:', error)
+    await domainCheck.logRequest(500, Date.now() - requestStart)
     return NextResponse.json(
       { error: 'Failed to generate stream' },
       { status: 500 }

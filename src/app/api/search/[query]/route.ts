@@ -1,13 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PornHub } from 'pornhub.js'
 import { getRandomProxy } from '@/lib/proxy'
+import { checkAndLogDomain } from '@/lib/domain-middleware'
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ query: string }> }
 ) {
+  const requestStart = Date.now()
+
   try {
     const { query } = await params
+
+    // Check domain access
+    const domainCheck = await checkAndLogDomain(request, `/api/search/${query}`, 'GET')
+    if (!domainCheck.allowed) {
+      return domainCheck.response
+    }
 
     if (!query || query.trim() === '') {
       return NextResponse.json(
@@ -68,10 +77,14 @@ export async function GET(
     }
 
     if (!result || !result.data) {
+      await domainCheck.logRequest(500, Date.now() - requestStart)
       throw new Error('Failed to fetch search results from PornHub')
     }
 
     console.log(`[Search] Found ${result.data.length} results for "${decodedQuery}"`)
+
+    // Log successful request
+    await domainCheck.logRequest(200, Date.now() - requestStart)
 
     return NextResponse.json(result, {
       status: 200,

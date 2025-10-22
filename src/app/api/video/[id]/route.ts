@@ -1,13 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PornHub } from 'pornhub.js'
 import { getRandomProxy } from '@/lib/proxy'
+import { checkAndLogDomain } from '@/lib/domain-middleware'
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const requestStart = Date.now()
+
   try {
     const { id } = await params
+
+    // Check domain access
+    const domainCheck = await checkAndLogDomain(request, `/api/video/${id}`, 'GET')
+    if (!domainCheck.allowed) {
+      return domainCheck.response
+    }
 
     if (!id || id.trim() === '') {
       return NextResponse.json(
@@ -58,8 +67,12 @@ export async function GET(
     }
 
     if (!videoInfo || !videoInfo.mediaDefinitions || videoInfo.mediaDefinitions.length < 1) {
+      await domainCheck.logRequest(500, Date.now() - requestStart)
       throw new Error('Failed to fetch video information')
     }
+
+    // Log successful request
+    await domainCheck.logRequest(200, Date.now() - requestStart)
 
     // Return original video info without any URL modifications
     return NextResponse.json(videoInfo, { status: 200 })
