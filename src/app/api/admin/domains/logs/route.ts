@@ -3,6 +3,27 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../../../auth/[...nextauth]/route'
 import { prisma } from '@/lib/prisma'
 
+/**
+ * Extract domain from a full referrer URL
+ */
+function extractDomainFromReferrer(referrer: string | null): string | null {
+  if (!referrer) return null
+
+  try {
+    const url = new URL(referrer)
+    let domain = url.hostname
+
+    // Remove www. prefix
+    if (domain.startsWith('www.')) {
+      domain = domain.substring(4)
+    }
+
+    return domain
+  } catch {
+    return null
+  }
+}
+
 // GET /api/admin/domains/logs - Get request logs grouped by domain
 export async function GET() {
   try {
@@ -12,50 +33,52 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get logs grouped by domain with counts
-    const logs = await prisma.apiRequestLog.groupBy({
-      by: ['domain'],
-      _count: {
-        id: true
-      },
-      _max: {
+    // Get all logs with referer field
+    const allLogs = await prisma.apiRequestLog.findMany({
+      select: {
+        id: true,
+        referer: true,
+        blocked: true,
         timestamp: true
       },
       orderBy: {
-        _count: {
-          id: 'desc'
-        }
-      },
-      take: 100
+        timestamp: 'desc'
+      }
     })
 
-    // For each domain, get blocked and allowed counts
-    const enrichedLogs = await Promise.all(
-      logs.map(async (log) => {
-        const [blocked, allowed] = await Promise.all([
-          prisma.apiRequestLog.count({
-            where: {
-              domain: log.domain,
-              blocked: true
-            }
-          }),
-          prisma.apiRequestLog.count({
-            where: {
-              domain: log.domain,
-              blocked: false
-            }
-          })
-        ])
+    // Group by extracted domain
+    const domainMap = new Map<string, { count: number; blocked: number; allowed: number; lastSeen: Date }>()
 
-        return {
-          domain: log.domain,
-          requests: log._count.id,
-          blocked,
-          allowed,
-          lastSeen: log._max.timestamp || new Date()
-        }
-      })
-    )
+    allLogs.forEach((log) => {
+      const domain = extractDomainFromReferrer(log.referer) || 'Direct/Unknown'
+
+      if (!domainMap.has(domain)) {
+        domainMap.set(domain, { count: 0, blocked: 0, allowed: 0, lastSeen: new Date(0) })
+      }
+
+      const stats = domainMap.get(domain)!
+      stats.count++
+      if (log.blocked) {
+        stats.blocked++
+      } else {
+        stats.allowed++
+      }
+      if (log.timestamp > stats.lastSeen) {
+        stats.lastSeen = log.timestamp
+      }
+    })
+
+    // Convert to array and sort by count descending
+    const enrichedLogs = Array.from(domainMap.entries())
+      .map(([domain, stats]) => ({
+        domain,
+        requests: stats.count,
+        blocked: stats.blocked,
+        allowed: stats.allowed,
+        lastSeen: stats.lastSeen
+      }))
+      .sort((a, b) => b.requests - a.requests)
+      .slice(0, 100)
 
     return NextResponse.json({ logs: enrichedLogs })
   } catch (error) {

@@ -3,6 +3,27 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../../../../auth/[...nextauth]/route'
 import { prisma } from '@/lib/prisma'
 
+/**
+ * Extract domain from a full referrer URL
+ */
+function extractDomainFromReferrer(referrer: string | null): string | null {
+  if (!referrer) return null
+
+  try {
+    const url = new URL(referrer)
+    let domain = url.hostname
+
+    // Remove www. prefix
+    if (domain.startsWith('www.')) {
+      domain = domain.substring(4)
+    }
+
+    return domain
+  } catch {
+    return null
+  }
+}
+
 // GET /api/admin/domains/logs/detail - Get detailed request logs for a specific domain
 export async function GET(request: NextRequest) {
   try {
@@ -13,27 +34,19 @@ export async function GET(request: NextRequest) {
     }
 
     const searchParams = request.nextUrl.searchParams
-    const domain = searchParams.get('domain')
+    const domainParam = searchParams.get('domain')
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '50')
 
-    if (!domain) {
+    if (!domainParam) {
       return NextResponse.json({ error: 'Domain parameter required' }, { status: 400 })
     }
 
     const skip = (page - 1) * limit
 
-    // Get total count for pagination
-    const totalCount = await prisma.apiRequestLog.count({
-      where: { domain }
-    })
-
-    // Get detailed logs for this domain
-    const logs = await prisma.apiRequestLog.findMany({
-      where: { domain },
+    // Get all logs and filter by extracted domain
+    const allLogs = await prisma.apiRequestLog.findMany({
       orderBy: { timestamp: 'desc' },
-      take: limit,
-      skip,
       select: {
         id: true,
         endpoint: true,
@@ -48,6 +61,32 @@ export async function GET(request: NextRequest) {
         timestamp: true
       }
     })
+
+    // Filter logs by extracted domain
+    const filteredLogs = allLogs.filter((log) => {
+      const extractedDomain = extractDomainFromReferrer(log.referer) || 'Direct/Unknown'
+      return extractedDomain === domainParam
+    })
+
+    // Apply pagination
+    const totalCount = filteredLogs.length
+    const paginatedLogs = filteredLogs.slice(skip, skip + limit)
+
+    // Map logs for response
+    const logs = paginatedLogs.map((log) => ({
+      id: log.id,
+      endpoint: log.endpoint,
+      method: log.method,
+      statusCode: log.statusCode,
+      responseTime: log.responseTime,
+      ipAddress: log.ipAddress,
+      userAgent: log.userAgent,
+      referer: log.referer,
+      country: log.country,
+      blocked: log.blocked,
+      timestamp: log.timestamp,
+      domain: extractDomainFromReferrer(log.referer) || 'Direct/Unknown'
+    }))
 
     return NextResponse.json({
       logs,
