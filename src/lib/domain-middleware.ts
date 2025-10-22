@@ -68,10 +68,18 @@ export async function checkAndLogDomain(
   logRequest: (statusCode: number, responseTime: number) => Promise<void>
 }> {
   const startTime = Date.now()
+  const refererHeader = request.headers.get('referer')
+  const originHeader = request.headers.get('origin')
+
+  // Debug logging
+  console.log(`[DomainCheck] ${endpoint} - Referer: ${refererHeader}, Origin: ${originHeader}`)
+
   const domain = extractDomain(request)
   const ipAddress = getClientIP(request)
   const userAgent = request.headers.get('user-agent')
-  const referer = request.headers.get('referer')
+  const referer = refererHeader
+
+  console.log(`[DomainCheck] Extracted domain: ${domain}, IP: ${ipAddress}`)
 
   let domainAccessId: string | null = null
   let allowed = true
