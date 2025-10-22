@@ -213,7 +213,7 @@ export default function DomainsClient() {
             onClick={() => setActiveTab('logs')}
             className={`py-4 px-1 border-b-2 font-medium text-sm ${
               activeTab === 'logs'
-                ? 'border-gray-800 text-gray-900 dark:border-gray-300 dark:text-gray-100'
+                ? 'border-zinc-950 text-zinc-950 dark:border-white dark:text-white'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
@@ -223,7 +223,7 @@ export default function DomainsClient() {
             onClick={() => setActiveTab('domains')}
             className={`py-4 px-1 border-b-2 font-medium text-sm ${
               activeTab === 'domains'
-                ? 'border-gray-800 text-gray-900 dark:border-gray-300 dark:text-gray-100'
+                ? 'border-zinc-950 text-zinc-950 dark:border-white dark:text-white'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
@@ -281,7 +281,7 @@ export default function DomainsClient() {
                 ) : (
                   logs.map((log, idx) => (
                     <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer" onClick={() => log.domain && handleDomainClick(log.domain)}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100 hover:underline">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-zinc-900 dark:text-zinc-100 hover:underline">
                         {log.domain || 'Direct/Unknown'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -325,7 +325,7 @@ export default function DomainsClient() {
             <div>
               <button
                 onClick={handleBackToList}
-                className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 flex items-center gap-2 mb-2"
+                className="text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white flex items-center gap-2 mb-2"
               >
                 ← Back to all domains
               </button>
