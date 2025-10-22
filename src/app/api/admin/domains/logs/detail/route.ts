@@ -77,6 +77,10 @@ export async function GET(request: NextRequest) {
         limit,
         pages: Math.ceil(totalCount / limit)
       }
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0'
+      }
     })
   } catch (error) {
     console.error('[API] Error fetching detailed logs:', error)

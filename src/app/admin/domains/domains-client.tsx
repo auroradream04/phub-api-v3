@@ -46,6 +46,8 @@ export default function DomainsClient() {
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [selectedDomain, setSelectedDomain] = useState<Domain | null>(null)
+  const [testingEndpoint, setTestingEndpoint] = useState<string | null>(null)
+  const [testResult, setTestResult] = useState<{ status: number; time: number; data?: unknown; error?: string } | null>(null)
 
   const [formData, setFormData] = useState({
     domain: '',
@@ -108,6 +110,28 @@ export default function DomainsClient() {
   const handleBackToList = () => {
     setSelectedDomainForDetail(null)
     setDetailedLogs([])
+  }
+
+  const testEndpoint = async (endpoint: string) => {
+    try {
+      setTestingEndpoint(endpoint)
+      const start = Date.now()
+      const response = await fetch(`/api${endpoint}`)
+      const time = Date.now() - start
+
+      if (response.ok) {
+        const data = await response.json()
+        setTestResult({ status: response.status, time, data })
+      } else {
+        setTestResult({ status: response.status, time, error: `HTTP ${response.status}` })
+      }
+    } catch (error) {
+      setTestResult({
+        status: 0,
+        time: 0,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      })
+    }
   }
 
   useEffect(() => {
@@ -235,10 +259,16 @@ export default function DomainsClient() {
       {/* Request Logs Tab */}
       {activeTab === 'logs' && !selectedDomainForDetail && (
         <div>
-          <div className="mb-4">
+          <div className="mb-4 flex items-center justify-between">
             <p className="text-sm text-zinc-600">
               See which domains are accessing your API. Click on a domain to see detailed logs.
             </p>
+            <button
+              onClick={() => fetchLogs()}
+              className="px-3 py-1 text-sm bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-white rounded hover:bg-zinc-300 dark:hover:bg-zinc-600"
+            >
+              🔄 Refresh
+            </button>
           </div>
 
           <div className="bg-white dark:bg-zinc-800 shadow rounded-lg overflow-hidden">
@@ -388,7 +418,16 @@ export default function DomainsClient() {
                         {new Date(log.timestamp).toLocaleString()}
                       </td>
                       <td className="px-6 py-4 text-sm text-zinc-900 dark:text-white font-mono">
-                        {log.endpoint}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            testEndpoint(log.endpoint)
+                          }}
+                          className="text-blue-600 dark:text-blue-400 hover:underline"
+                          title="Click to test endpoint"
+                        >
+                          {log.endpoint} ↗
+                        </button>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500">
                         {log.method}
@@ -673,6 +712,64 @@ export default function DomainsClient() {
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
               >
                 Update
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Endpoint Test Result Modal */}
+      {testResult && (
+        <div className="fixed inset-0 bg-zinc-500 bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-zinc-800 rounded-lg p-6 max-w-md w-full shadow-xl">
+            <h3 className="text-lg font-medium text-zinc-900 dark:text-white mb-4">
+              Test Result: {testingEndpoint}
+            </h3>
+            <div className="space-y-3 mb-4">
+              <div>
+                <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Status:</span>
+                <span className={`ml-2 px-2 py-1 rounded text-sm font-semibold ${
+                  testResult.status >= 200 && testResult.status < 300
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-red-100 text-red-800'
+                }`}>
+                  {testResult.status || 'Error'}
+                </span>
+              </div>
+              <div>
+                <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Response Time:</span>
+                <span className="ml-2 text-sm">{testResult.time}ms</span>
+              </div>
+              {testResult.error && (
+                <div>
+                  <span className="text-sm font-medium text-red-600">Error:</span>
+                  <p className="text-sm text-red-600 mt-1">{testResult.error}</p>
+                </div>
+              )}
+              {testResult.data !== undefined && (
+                <div>
+                  <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Response:</span>
+                  <pre className="text-xs bg-zinc-100 dark:bg-zinc-900 p-2 rounded mt-1 overflow-auto max-h-40">
+                    {JSON.stringify(testResult.data as Record<string, unknown>, null, 2).substring(0, 500)}
+                  </pre>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setTestResult(null)
+                  setTestingEndpoint(null)
+                }}
+                className="px-4 py-2 border border-zinc-300 rounded-md text-zinc-700 hover:bg-zinc-50"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => testEndpoint(testingEndpoint!)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                Test Again
               </button>
             </div>
           </div>

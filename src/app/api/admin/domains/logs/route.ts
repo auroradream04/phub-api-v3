@@ -65,7 +65,11 @@ export async function GET() {
       .sort((a, b) => b.requests - a.requests)
       .slice(0, 100)
 
-    return NextResponse.json({ logs: enrichedLogs })
+    return NextResponse.json({ logs: enrichedLogs }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0'
+      }
+    })
   } catch (error) {
     console.error('[API] Error fetching logs:', error)
     return NextResponse.json(
