@@ -29,16 +29,18 @@ export async function GET(request: NextRequest) {
     const finalOrder = validOrders.includes(order) ? order : 'Featured Recently'
 
     const pornhub = new PornHub()
-    let result
+    let result = null
 
-    // Always use proxy - retry with different proxies if needed
+    // ALWAYS use proxy - try up to 3 different proxies
     let retries = 3
     let attemptNum = 1
-    while ((!result || !result.data || result.data.length === 0) && retries > 0) {
+
+    while (retries > 0 && !result) {
+      // Select proxy BEFORE making request
       const proxyInfo = getRandomProxy('Home API')
 
       if (!proxyInfo) {
-        console.warn('[Home] No proxies available. Cannot retry.')
+        console.warn('[Home] No proxies available. Cannot make request.')
         break
       }
 
@@ -47,7 +49,7 @@ export async function GET(request: NextRequest) {
 
       const startTime = Date.now()
       try {
-        result = await pornhub.videoList({
+        const response = await pornhub.videoList({
           page,
           order: finalOrder as VideoListOrdering
         })
@@ -55,11 +57,11 @@ export async function GET(request: NextRequest) {
         const duration = Date.now() - startTime
 
         // Check for soft blocking (empty results)
-        if (!result.data || result.data.length === 0) {
+        if (!response.data || response.data.length === 0) {
           console.log(`[Home] ⚠️  Proxy ${proxyInfo.proxyUrl} returned empty results (soft block) after ${duration}ms - trying different proxy...`)
-          result = null
         } else {
-          console.log(`[Home] ✅ Proxy ${proxyInfo.proxyUrl} successful! Got ${result.data.length} videos in ${duration}ms`)
+          console.log(`[Home] ✅ Proxy ${proxyInfo.proxyUrl} successful! Got ${response.data.length} videos in ${duration}ms`)
+          result = response
         }
       } catch (error: unknown) {
         const duration = Date.now() - startTime

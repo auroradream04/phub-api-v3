@@ -92,68 +92,58 @@ export async function GET(
     const apiStartTime = Date.now()
 
     // Fetch video from PornHub API with retry logic
-    let videoData
+    let videoData = null
     let lastError: Error | null = null
 
-    // Try without proxy first
-    try {
-      log('debug', `Attempting fetch without proxy`, { videoId: id, requestId })
-      videoData = await pornhub.video(id)
-      log('debug', `Fetch successful without proxy`, { videoId: id, requestId })
-    } catch (apiError) {
-      lastError = apiError instanceof Error ? apiError : new Error(String(apiError))
-      log('warn', `Fetch failed without proxy`, {
-        videoId: id,
-        error: lastError.message,
-        requestId
-      })
-
-      // Check if it's a 404 error (video not found) - don't retry with proxy for 404s
-      if (lastError.message.includes('404')) {
-        log('warn', `Video not found on PornHub API (404)`, { videoId: id, requestId })
-
-        const response = {
-          error: 'Video not found',
-          videoId: id,
-          message: 'The requested video does not exist on PornHub',
-          suggestions: [
-            'Check if the video ID is correct',
-            'The video might have been removed or is not available',
-            `Video ID format example: ph5a9634c9a827e (starts with 'ph' followed by alphanumeric characters)`
-          ],
-          timestamp: new Date().toISOString(),
-          requestId
-        }
-
-        log('info', `Response: 404 Not Found`, {
-          videoId: id,
-          requestId,
-          responseTime: `${Date.now() - startTime}ms`
-        })
-        return NextResponse.json(response, { status: 404 })
-      }
-    }
-
-    // Retry with proxy if initial request failed (and it wasn't a 404)
+    // ALWAYS use proxy - try up to 3 different proxies
     let retries = 3
-    while (!videoData && retries > 0) {
+    let attemptNum = 1
+
+    while (retries > 0 && !videoData) {
+      // Select proxy BEFORE making request
       const proxyInfo = getRandomProxy('Watch API')
 
       if (!proxyInfo) {
-        log('warn', `No proxies available - cannot retry`, { videoId: id, requestId })
+        log('warn', `No proxies available - cannot make request`, { videoId: id, requestId })
         break
       }
 
-      log('info', `Retrying with proxy ${proxyInfo.proxyUrl} (${retries} retries remaining)`, { videoId: id, requestId })
+      log('info', `Attempt ${attemptNum}/3 for video ${id} using proxy ${proxyInfo.proxyUrl}`, { videoId: id, requestId })
       pornhub.setAgent(proxyInfo.agent)
 
       try {
         videoData = await pornhub.video(id)
-        log('info', `Fetch successful with proxy ${proxyInfo.proxyUrl}`, { videoId: id, retries, requestId })
+        log('info', `✅ Proxy ${proxyInfo.proxyUrl} successful for video ${id}`, { videoId: id, retries, requestId })
         break
       } catch (apiError) {
         lastError = apiError instanceof Error ? apiError : new Error(String(apiError))
-        log('warn', `Fetch failed with proxy ${proxyInfo.proxyUrl}`, {
+
+        // Check if it's a 404 error (video not found) - don't retry with more proxies for 404s
+        if (lastError.message.includes('404')) {
+          log('warn', `Video not found on PornHub API (404)`, { videoId: id, requestId })
+
+          const response = {
+            error: 'Video not found',
+            videoId: id,
+            message: 'The requested video does not exist on PornHub',
+            suggestions: [
+              'Check if the video ID is correct',
+              'The video might have been removed or is not available',
+              `Video ID format example: ph5a9634c9a827e (starts with 'ph' followed by alphanumeric characters)`
+            ],
+            timestamp: new Date().toISOString(),
+            requestId
+          }
+
+          log('info', `Response: 404 Not Found`, {
+            videoId: id,
+            requestId,
+            responseTime: `${Date.now() - startTime}ms`
+          })
+          return NextResponse.json(response, { status: 404 })
+        }
+
+        log('warn', `❌ Proxy ${proxyInfo.proxyUrl} failed for video ${id}`, {
           videoId: id,
           error: lastError.message,
           retriesRemaining: retries - 1,
@@ -162,6 +152,7 @@ export async function GET(
       }
 
       retries--
+      attemptNum++
     }
 
     apiCallTime = Date.now() - apiStartTime

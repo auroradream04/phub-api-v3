@@ -27,16 +27,18 @@ export async function GET(
     console.log(`[Search] Query: "${decodedQuery}", Page: ${page}`)
 
     const pornhub = new PornHub()
-    let result
+    let result = null
 
-    // Always use proxy - retry with different proxies if needed
+    // ALWAYS use proxy - try up to 3 different proxies
     let retries = 3
     let attemptNum = 1
-    while ((!result || !result.data || result.data.length === 0) && retries > 0) {
+
+    while (retries > 0 && !result) {
+      // Select proxy BEFORE making request
       const proxyInfo = getRandomProxy('Search API')
 
       if (!proxyInfo) {
-        console.warn('[Search] No proxies available. Cannot retry.')
+        console.warn('[Search] No proxies available. Cannot make request.')
         break
       }
 
@@ -45,16 +47,16 @@ export async function GET(
 
       const startTime = Date.now()
       try {
-        result = await pornhub.searchVideo(decodedQuery, { page })
+        const response = await pornhub.searchVideo(decodedQuery, { page })
 
         const duration = Date.now() - startTime
 
         // Check for soft blocking (empty results)
-        if (!result.data || result.data.length === 0) {
+        if (!response.data || response.data.length === 0) {
           console.log(`[Search] ⚠️  Proxy ${proxyInfo.proxyUrl} returned empty results (soft block) after ${duration}ms - trying different proxy...`)
-          result = null
         } else {
-          console.log(`[Search] ✅ Proxy ${proxyInfo.proxyUrl} successful! Got ${result.data.length} results in ${duration}ms`)
+          console.log(`[Search] ✅ Proxy ${proxyInfo.proxyUrl} successful! Got ${response.data.length} results in ${duration}ms`)
+          result = response
         }
       } catch (error: unknown) {
         const duration = Date.now() - startTime

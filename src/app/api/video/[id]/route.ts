@@ -17,16 +17,18 @@ export async function GET(
     }
 
     const pornhub = new PornHub()
-    let videoInfo
+    let videoInfo = null
 
-    // Always use proxy - retry with different proxies if needed
+    // ALWAYS use proxy - try up to 3 different proxies
     let retries = 3
     let attemptNum = 1
-    while ((videoInfo === undefined || videoInfo === null || !videoInfo.mediaDefinitions || videoInfo.mediaDefinitions.length < 1) && retries > 0) {
+
+    while (retries > 0 && !videoInfo) {
+      // Select proxy BEFORE making request
       const proxyInfo = getRandomProxy('Video API')
 
       if (!proxyInfo) {
-        console.warn('[Video] No proxies available. Cannot retry.')
+        console.warn('[Video] No proxies available. Cannot make request.')
         break
       }
 
@@ -35,16 +37,16 @@ export async function GET(
 
       const startTime = Date.now()
       try {
-        videoInfo = await pornhub.video(id)
+        const response = await pornhub.video(id)
 
         const duration = Date.now() - startTime
 
         // Check for soft blocking (missing media definitions)
-        if (!videoInfo.mediaDefinitions || videoInfo.mediaDefinitions.length < 1) {
+        if (!response.mediaDefinitions || response.mediaDefinitions.length < 1) {
           console.log(`[Video] ⚠️  Proxy ${proxyInfo.proxyUrl} returned empty media definitions (soft block) after ${duration}ms - trying different proxy...`)
-          videoInfo = null
         } else {
-          console.log(`[Video] ✅ Proxy ${proxyInfo.proxyUrl} successful! Got ${videoInfo.mediaDefinitions.length} quality options in ${duration}ms`)
+          console.log(`[Video] ✅ Proxy ${proxyInfo.proxyUrl} successful! Got ${response.mediaDefinitions.length} quality options in ${duration}ms`)
+          videoInfo = response
         }
       } catch (error: unknown) {
         const duration = Date.now() - startTime
