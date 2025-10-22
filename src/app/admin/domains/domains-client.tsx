@@ -1,9 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 
 interface Domain {
   id: string
@@ -139,11 +136,12 @@ export default function DomainsClient() {
 
       {/* Filters and Add Button */}
       <div className="flex gap-4 mb-6">
-        <Input
+        <input
+          type="text"
           placeholder="Search domains..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="max-w-xs"
+          className="max-w-xs border rounded px-3 py-2"
         />
         <select
           value={statusFilter}
@@ -154,9 +152,12 @@ export default function DomainsClient() {
           <option value="allowed">Allowed</option>
           <option value="blocked">Blocked</option>
         </select>
-        <Button onClick={() => setShowAddDialog(true)} className="ml-auto">
+        <button
+          onClick={() => setShowAddDialog(true)}
+          className="ml-auto bg-primary text-primary-foreground px-4 py-2 rounded hover:opacity-90"
+        >
           Add Domain
-        </Button>
+        </button>
       </div>
 
       {/* Domains Table */}
@@ -191,31 +192,35 @@ export default function DomainsClient() {
                 <tr key={domain.id} className="border-t">
                   <td className="p-4 font-medium">{domain.domain}</td>
                   <td className="p-4">
-                    <Badge variant={domain.status === 'blocked' ? 'destructive' : 'default'}>
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                      domain.status === 'blocked'
+                        ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                        : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                    }`}>
                       {domain.status}
-                    </Badge>
+                    </span>
                   </td>
                   <td className="p-4">
-                    <Badge variant="outline">{domain.type}</Badge>
+                    <span className="px-2 py-1 rounded text-xs font-medium border">
+                      {domain.type}
+                    </span>
                   </td>
                   <td className="p-4">{domain.totalRequests.toLocaleString()}</td>
                   <td className="p-4">{domain.recentRequests.toLocaleString()}</td>
                   <td className="p-4 max-w-xs truncate">{domain.reason || '-'}</td>
                   <td className="p-4 text-right space-x-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
+                    <button
                       onClick={() => openEditDialog(domain)}
+                      className="px-3 py-1 text-sm rounded hover:bg-muted"
                     >
                       Edit
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
+                    </button>
+                    <button
                       onClick={() => handleDelete(domain.id, domain.domain)}
+                      className="px-3 py-1 text-sm rounded hover:bg-muted text-red-600"
                     >
                       Delete
-                    </Button>
+                    </button>
                   </td>
                 </tr>
               ))
@@ -232,10 +237,12 @@ export default function DomainsClient() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">Domain</label>
-                <Input
+                <input
+                  type="text"
                   placeholder="example.com"
                   value={formData.domain}
                   onChange={(e) => setFormData({ ...formData, domain: e.target.value })}
+                  className="w-full border rounded px-3 py-2"
                 />
               </div>
               <div>
@@ -271,10 +278,18 @@ export default function DomainsClient() {
               </div>
             </div>
             <div className="flex justify-end gap-2 mt-6">
-              <Button variant="outline" onClick={() => setShowAddDialog(false)}>
+              <button
+                onClick={() => setShowAddDialog(false)}
+                className="px-4 py-2 border rounded hover:bg-muted"
+              >
                 Cancel
-              </Button>
-              <Button onClick={handleAdd}>Add Domain</Button>
+              </button>
+              <button
+                onClick={handleAdd}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded hover:opacity-90"
+              >
+                Add Domain
+              </button>
             </div>
           </div>
         </div>
@@ -288,7 +303,12 @@ export default function DomainsClient() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">Domain</label>
-                <Input value={formData.domain} disabled className="bg-muted" />
+                <input
+                  type="text"
+                  value={formData.domain}
+                  disabled
+                  className="w-full border rounded px-3 py-2 bg-muted"
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Status</label>
@@ -323,10 +343,18 @@ export default function DomainsClient() {
               </div>
             </div>
             <div className="flex justify-end gap-2 mt-6">
-              <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+              <button
+                onClick={() => setShowEditDialog(false)}
+                className="px-4 py-2 border rounded hover:bg-muted"
+              >
                 Cancel
-              </Button>
-              <Button onClick={handleUpdate}>Update Domain</Button>
+              </button>
+              <button
+                onClick={handleUpdate}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded hover:opacity-90"
+              >
+                Update Domain
+              </button>
             </div>
           </div>
         </div>
