@@ -33,7 +33,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get all logs with referer field
+    // Get recent logs with referer field (limit to last 10000 for performance)
     const allLogs = await prisma.apiRequestLog.findMany({
       select: {
         id: true,
@@ -43,8 +43,13 @@ export async function GET() {
       },
       orderBy: {
         timestamp: 'desc'
-      }
+      },
+      take: 10000
     })
+
+    if (!allLogs || allLogs.length === 0) {
+      return NextResponse.json({ logs: [] })
+    }
 
     // Group by extracted domain
     const domainMap = new Map<string, { count: number; blocked: number; allowed: number; lastSeen: Date }>()

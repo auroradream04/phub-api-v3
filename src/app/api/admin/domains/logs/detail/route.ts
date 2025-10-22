@@ -44,9 +44,10 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit
 
-    // Get all logs and filter by extracted domain
+    // Get recent logs and filter by extracted domain (limit to last 10000 for performance)
     const allLogs = await prisma.apiRequestLog.findMany({
       orderBy: { timestamp: 'desc' },
+      take: 10000,
       select: {
         id: true,
         endpoint: true,
