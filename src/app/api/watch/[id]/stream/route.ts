@@ -6,6 +6,8 @@ import { getSiteSetting, SETTING_KEYS } from '@/lib/site-settings'
 import { getClientIP, getCountryFromIP } from '@/lib/geo'
 import { checkAndLogDomain } from '@/lib/domain-middleware'
 
+export const revalidate = 7200 // 2 hours
+
 interface AdWithSegments {
   id: string
   title: string

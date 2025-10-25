@@ -11,6 +11,8 @@ const CUSTOM_CATEGORIES = [
   { id: 9998, name: 'Chinese' }
 ]
 
+export const revalidate = 7200 // 2 hours
+
 export async function GET(request: NextRequest) {
   const requestStart = Date.now()
 

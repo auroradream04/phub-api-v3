@@ -100,6 +100,9 @@ export default function Home() {
                 <Link href="/categories" className="text-foreground/80 hover:text-primary transition-colors">
                   分类
                 </Link>
+                <Link href="/docs" className="text-foreground/80 hover:text-primary transition-colors font-medium">
+                  文档
+                </Link>
               </nav>
             </div>
             <Link

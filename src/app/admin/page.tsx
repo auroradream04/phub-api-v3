@@ -40,9 +40,19 @@ export default function AdminDashboard() {
   } | null>(null)
   const [message, setMessage] = useState('')
 
+  // Cache management
+  const [cacheMessage, setCacheMessage] = useState('')
+  const [cacheLoading, setCacheLoading] = useState(false)
+  const [cacheVideoId, setCacheVideoId] = useState('')
+
+  // Cache stats
+  const [cacheStats, setCacheStats] = useState<any>(null)
+  const [statsLoading, setStatsLoading] = useState(false)
+
   useEffect(() => {
     fetchStats()
     fetchCategories()
+    fetchCacheStats()
   }, [])
 
   const fetchStats = async () => {
@@ -64,6 +74,19 @@ export default function AdminDashboard() {
       }
     } catch (error) {
       console.error('Failed to fetch categories:', error)
+    }
+  }
+
+  const fetchCacheStats = async () => {
+    try {
+      setStatsLoading(true)
+      const res = await fetch('/api/admin/cache/stats')
+      const data = await res.json()
+      setCacheStats(data)
+    } catch (error) {
+      console.error('Failed to fetch cache stats:', error)
+    } finally {
+      setStatsLoading(false)
     }
   }
 
@@ -235,6 +258,35 @@ export default function AdminDashboard() {
       }
     } catch (error) {
       setMessage(`✗ Failed to delete: ${error}`)
+    }
+  }
+
+  const clearCache = async () => {
+    setCacheLoading(true)
+    setCacheMessage('')
+
+    try {
+      const res = await fetch('/api/admin/cache/clear', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          videoId: cacheVideoId.trim() || undefined
+        })
+      })
+
+      const data = await res.json()
+
+      if (res.ok) {
+        setCacheMessage(`✅ ${data.message}`)
+        setCacheVideoId('')
+        setTimeout(() => setCacheMessage(''), 5000)
+      } else {
+        setCacheMessage(`❌ ${data.error || 'Failed to clear cache'}`)
+      }
+    } catch (error) {
+      setCacheMessage(`❌ Error: ${error}`)
+    } finally {
+      setCacheLoading(false)
     }
   }
 
@@ -521,6 +573,292 @@ export default function AdminDashboard() {
                 )
               })}
             </div>
+          </div>
+        )}
+      </div>
+
+      {/* Cache Management Section */}
+      <div className="bg-card border border-border rounded-lg p-6">
+        <h3 className="text-xl font-bold text-foreground mb-4">
+          Cache Management
+        </h3>
+
+        <p className="text-muted-foreground mb-4">
+          Clear cached data to force API routes to refetch data from PornHub. Cache expires automatically every 2 hours.
+        </p>
+
+        <div className="bg-muted/50 border border-border rounded-lg p-4">
+          <h4 className="font-semibold text-foreground mb-3">
+            Clear Cache
+          </h4>
+
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Video ID (Leave empty to clear all video cache)
+              </label>
+              <input
+                type="text"
+                value={cacheVideoId}
+                onChange={(e) => setCacheVideoId(e.target.value)}
+                disabled={cacheLoading}
+                placeholder="e.g., ph5a9634c9a827e"
+                className="w-full px-4 py-2 border border-border bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Enter a specific PornHub video ID to clear only that video's cache, or leave empty to clear all video caches.
+              </p>
+            </div>
+
+            <button
+              onClick={clearCache}
+              disabled={cacheLoading}
+              className="w-full px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+            >
+              {cacheLoading ? 'Clearing Cache...' : cacheVideoId.trim() ? `Clear Cache for Video: ${cacheVideoId.trim()}` : 'Clear All Video Cache'}
+            </button>
+
+            {cacheMessage && (
+              <div className={`border-l-4 rounded-lg p-4 text-sm ${
+                cacheMessage.includes('✅')
+                  ? 'bg-primary/10 border-primary'
+                  : 'bg-destructive/10 border-destructive'
+              }`}>
+                <p className={`font-medium ${
+                  cacheMessage.includes('✅')
+                    ? 'text-primary'
+                    : 'text-destructive'
+                }`}>
+                  {cacheMessage}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Cache Statistics Section */}
+      <div className="bg-card border border-border rounded-lg p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-bold text-foreground">
+            Cache Statistics
+          </h3>
+          <button
+            onClick={fetchCacheStats}
+            disabled={statsLoading}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+          >
+            {statsLoading ? 'Refreshing...' : 'Refresh Stats'}
+          </button>
+        </div>
+
+        {cacheStats ? (
+          <div className="space-y-6">
+            {/* In-Memory Cache Stats */}
+            <div className="bg-muted/50 border border-border rounded-lg p-4">
+              <h4 className="font-semibold text-foreground mb-4">In-Memory Cache</h4>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                <div className="bg-primary/10 border border-primary/30 rounded-lg p-3">
+                  <div className="text-xs text-primary font-medium mb-1">Cached Items</div>
+                  <div className="text-2xl font-bold text-foreground">
+                    {cacheStats.inMemoryStats.totalEntries}
+                  </div>
+                </div>
+
+                <div className="bg-accent/10 border border-accent/30 rounded-lg p-3">
+                  <div className="text-xs text-accent font-medium mb-1">Total Size</div>
+                  <div className="text-2xl font-bold text-foreground">
+                    {cacheStats.inMemoryStats.totalSizeMB}
+                    <span className="text-sm text-muted-foreground">MB</span>
+                  </div>
+                </div>
+
+                <div className="bg-green-900/20 border border-green-600/30 rounded-lg p-3">
+                  <div className="text-xs text-green-500 font-medium mb-1">Hit Rate</div>
+                  <div className="text-2xl font-bold text-foreground">
+                    {cacheStats.inMemoryStats.hitRate}%
+                  </div>
+                </div>
+
+                <div className="bg-blue-900/20 border border-blue-600/30 rounded-lg p-3">
+                  <div className="text-xs text-blue-500 font-medium mb-1">Uptime</div>
+                  <div className="text-2xl font-bold text-foreground">
+                    {cacheStats.inMemoryStats.uptimeMinutes}
+                    <span className="text-sm text-muted-foreground">m</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Stats Summary */}
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-sm">
+                <div className="bg-card rounded p-2 border border-border">
+                  <div className="text-muted-foreground">Sets</div>
+                  <div className="font-bold text-foreground">{cacheStats.inMemoryStats.stats.totalSets}</div>
+                </div>
+                <div className="bg-card rounded p-2 border border-border">
+                  <div className="text-muted-foreground">Gets</div>
+                  <div className="font-bold text-foreground">{cacheStats.inMemoryStats.stats.totalGets}</div>
+                </div>
+                <div className="bg-card rounded p-2 border border-border">
+                  <div className="text-muted-foreground">Hits</div>
+                  <div className="font-bold text-green-500">{cacheStats.inMemoryStats.stats.totalHits}</div>
+                </div>
+                <div className="bg-card rounded p-2 border border-border">
+                  <div className="text-muted-foreground">Misses</div>
+                  <div className="font-bold text-red-500">{cacheStats.inMemoryStats.stats.totalMisses}</div>
+                </div>
+                <div className="bg-card rounded p-2 border border-border">
+                  <div className="text-muted-foreground">Clears</div>
+                  <div className="font-bold text-foreground">{cacheStats.inMemoryStats.stats.totalClears}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Cache by Type */}
+            {Object.keys(cacheStats.inMemoryStats.byType).length > 0 && (
+              <div className="bg-muted/50 border border-border rounded-lg p-4">
+                <h4 className="font-semibold text-foreground mb-4">Cache by Type</h4>
+
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                  {Object.entries(cacheStats.inMemoryStats.byType).map(([type, data]: [string, any]) => (
+                    <div key={type} className="bg-card rounded-lg p-3 border border-border">
+                      <div className="text-sm font-medium text-foreground mb-2 capitalize">{type}</div>
+                      <div className="space-y-1 text-xs text-muted-foreground">
+                        <div>Items: <span className="font-bold text-foreground">{data.count}</span></div>
+                        <div>Size: <span className="font-bold text-foreground">{(data.size / 1024).toFixed(1)}KB</span></div>
+                        <div>Hits: <span className="font-bold text-green-500">{data.hits}</span></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Top Cached Entries */}
+            {cacheStats.inMemoryStats.entries.length > 0 && (
+              <div className="bg-muted/50 border border-border rounded-lg p-4 overflow-x-auto">
+                <h4 className="font-semibold text-foreground mb-4">Top Cached Entries</h4>
+
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="text-left py-2 px-2 text-muted-foreground font-medium">Key</th>
+                      <th className="text-left py-2 px-2 text-muted-foreground font-medium">Type</th>
+                      <th className="text-left py-2 px-2 text-muted-foreground font-medium">Size</th>
+                      <th className="text-left py-2 px-2 text-muted-foreground font-medium">Hits</th>
+                      <th className="text-left py-2 px-2 text-muted-foreground font-medium">Age</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cacheStats.inMemoryStats.entries.map((entry: any) => (
+                      <tr key={entry.key} className="border-b border-border/50 hover:bg-card/50">
+                        <td className="py-2 px-2 font-mono text-xs text-foreground truncate">{entry.key}</td>
+                        <td className="py-2 px-2">
+                          <span className="px-2 py-1 bg-primary/10 text-primary rounded text-xs font-medium capitalize">
+                            {entry.type}
+                          </span>
+                        </td>
+                        <td className="py-2 px-2 text-foreground">{entry.sizeMB}MB</td>
+                        <td className="py-2 px-2 text-green-500 font-bold">{entry.hitCount}</td>
+                        <td className="py-2 px-2 text-muted-foreground">{entry.ageMinutes}m ago</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Database Logs */}
+            {cacheStats.databaseStats && (
+              <div className="bg-muted/50 border border-border rounded-lg p-4">
+                <h4 className="font-semibold text-foreground mb-4">Database Logs</h4>
+
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+                  <div className="bg-card rounded p-3 border border-border">
+                    <div className="text-xs text-muted-foreground mb-1">Total Logs</div>
+                    <div className="text-2xl font-bold text-foreground">
+                      {cacheStats.databaseStats.totalLogs}
+                    </div>
+                  </div>
+
+                  <div className="bg-card rounded p-3 border border-border">
+                    <div className="text-xs text-muted-foreground mb-1">Last 24h</div>
+                    <div className="text-2xl font-bold text-foreground">
+                      {cacheStats.databaseStats.last24Hours}
+                    </div>
+                  </div>
+
+                  <div className="bg-card rounded p-3 border border-border">
+                    <div className="text-xs text-muted-foreground mb-1">Actions</div>
+                    <div className="text-2xl font-bold text-foreground">
+                      {cacheStats.databaseStats.byAction.length}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Recent Logs */}
+                {cacheStats.recentLogs.length > 0 && (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b border-border">
+                          <th className="text-left py-2 px-2 text-muted-foreground font-medium">Action</th>
+                          <th className="text-left py-2 px-2 text-muted-foreground font-medium">Target</th>
+                          <th className="text-left py-2 px-2 text-muted-foreground font-medium">Time</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {cacheStats.recentLogs.slice(0, 10).map((log: any) => (
+                          <tr key={log.id} className="border-b border-border/50">
+                            <td className="py-2 px-2">
+                              <span
+                                className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                  log.action === 'clear'
+                                    ? 'bg-red-900/20 text-red-500'
+                                    : log.action === 'set'
+                                    ? 'bg-green-900/20 text-green-500'
+                                    : 'bg-blue-900/20 text-blue-500'
+                                }`}
+                              >
+                                {log.action}
+                              </span>
+                            </td>
+                            <td className="py-2 px-2 text-foreground font-mono">{log.target || 'N/A'}</td>
+                            <td className="py-2 px-2 text-muted-foreground">
+                              {new Date(log.timestamp).toLocaleTimeString()}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ) : statsLoading ? (
+          <div className="text-center py-8">
+            <div className="inline-block">
+              <svg
+                className="h-8 w-8 text-primary animate-spin"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+            </div>
+            <p className="text-muted-foreground mt-4">Loading cache statistics...</p>
+          </div>
+        ) : (
+          <div className="text-center py-8 text-muted-foreground">
+            No cache statistics available
           </div>
         )}
       </div>

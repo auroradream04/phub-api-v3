@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+export const revalidate = 7200 // 2 hours
+
 // Map custom category string IDs to numeric IDs for database storage
 const CUSTOM_CATEGORY_IDS: Record<string, number> = {
   'japanese': 9999,

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { PornHub } from 'pornhub.js'
 import { getRandomProxy } from '@/lib/proxy'
 
+export const revalidate = 7200 // 2 hours
+
 // ANSI color codes for console styling
 const colors = {
   reset: '\x1b[0m',
@@ -268,7 +270,12 @@ export async function GET(
       categoriesCount: videoInfo.categories.length
     })
 
-    return NextResponse.json(videoInfo, { status: 200 })
+    return NextResponse.json(videoInfo, {
+      status: 200,
+      headers: {
+        'Cache-Control': 'public, s-maxage=7200'
+      }
+    })
 
   } catch (error) {
     const responseTime = Date.now() - startTime

@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 
 const EXTERNAL_ADS_URL = 'https://hcdream.com/berlin/ads/scripts/heiliao.js'
 
+export const revalidate = 7200 // 2 hours
+
 export async function GET() {
   try {
     const response = await fetch(EXTERNAL_ADS_URL, {

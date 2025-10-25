@@ -3,6 +3,8 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { getCategoryChineseName, getCanonicalCategory, getConsolidatedCategories } from '@/lib/category-mapping'
 
+export const revalidate = 7200 // 2 hours
+
 // Type definitions for Maccms response format
 interface MaccmsVideo {
   vod_id: string

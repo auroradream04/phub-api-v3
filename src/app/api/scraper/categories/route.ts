@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+export const revalidate = 7200 // 2 hours
+
 // POST endpoint to scrape videos from all categories
 export async function POST(request: NextRequest) {
   try {

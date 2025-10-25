@@ -3,6 +3,8 @@ import { PornHub } from 'pornhub.js'
 import { getRandomProxy } from '@/lib/proxy'
 import { checkAndLogDomain } from '@/lib/domain-middleware'
 
+export const revalidate = 7200 // 2 hours
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ query: string }> }

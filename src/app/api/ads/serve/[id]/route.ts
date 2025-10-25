@@ -4,6 +4,8 @@ import { readFile } from 'fs/promises'
 import { join } from 'path'
 import { existsSync } from 'fs'
 
+export const revalidate = 7200 // 2 hours
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

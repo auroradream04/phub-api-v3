@@ -3,6 +3,8 @@ import { PornHub } from 'pornhub.js'
 import { getRandomProxy } from '@/lib/proxy'
 import { checkAndLogDomain } from '@/lib/domain-middleware'
 
+export const revalidate = 7200 // 2 hours
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -75,7 +77,12 @@ export async function GET(
     await domainCheck.logRequest(200, Date.now() - requestStart)
 
     // Return original video info without any URL modifications
-    return NextResponse.json(videoInfo, { status: 200 })
+    return NextResponse.json(videoInfo, {
+      status: 200,
+      headers: {
+        'Cache-Control': 'public, s-maxage=7200'
+      }
+    })
 
   } catch (error) {
     console.error('[Video] Error:', error)

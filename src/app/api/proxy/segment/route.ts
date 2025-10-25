@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+export const revalidate = 7200 // 2 hours
+
 export async function GET(request: NextRequest) {
   try {
     const url = request.nextUrl.searchParams.get('url')

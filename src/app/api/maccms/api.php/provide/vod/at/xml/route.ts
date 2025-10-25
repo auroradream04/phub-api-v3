@@ -1,6 +1,8 @@
 import { NextRequest } from 'next/server'
 import { GET as VodHandler } from '../../route'
 
+export const revalidate = 7200 // 2 hours
+
 // This route handles the /api.php/provide/vod/at/xml pattern
 // It forwards the request to the main handler with at=xml parameter
 export async function GET(request: NextRequest) {

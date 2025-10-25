@@ -13,6 +13,8 @@ const CUSTOM_CATEGORIES: Record<number, string> = {
   9998: 'chinese'   // lowercase to avoid PornHub pagination bug
 }
 
+export const revalidate = 7200 // 2 hours
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ categoryId: string }> }
