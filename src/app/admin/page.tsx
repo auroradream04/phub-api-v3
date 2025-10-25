@@ -19,6 +19,30 @@ interface ProgressState {
   isRateLimited: boolean
 }
 
+interface CacheStatsType {
+  inMemoryStats: {
+    totalEntries: number
+    totalSizeMB: string
+    hitRate: string
+    uptimeMinutes: number
+    stats: {
+      totalSets: number
+      totalGets: number
+      totalClears: number
+      totalHits: number
+      totalMisses: number
+    }
+    byType: Record<string, { count: number; size: number; hits: number }>
+    entries: Array<{ key: string; type: string; sizeMB: string; hitCount: number; ageMinutes: number }>
+  }
+  databaseStats: {
+    totalLogs: number
+    last24Hours: number
+    byAction: Array<{ action: string; _count: { id: number } }>
+  }
+  recentLogs: Array<{ id: string; action: string; target: string | null; videoId: string | null; success: boolean; timestamp: string }>
+}
+
 export default function AdminDashboard() {
   const { data: session } = useSession()
 
@@ -46,7 +70,7 @@ export default function AdminDashboard() {
   const [cacheVideoId, setCacheVideoId] = useState('')
 
   // Cache stats
-  const [cacheStats, setCacheStats] = useState<Record<string, unknown> | null>(null)
+  const [cacheStats, setCacheStats] = useState<CacheStatsType | null>(null)
   const [statsLoading, setStatsLoading] = useState(false)
 
   useEffect(() => {
