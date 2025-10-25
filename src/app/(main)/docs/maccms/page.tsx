@@ -141,7 +141,7 @@ export default function MacCMSGuide() {
             </div>
             <div className="ml-14 space-y-3">
               <p className="text-muted-foreground">
-                在采集配置页面中，点击"添加采集源"或"新增"按钮。
+                在采集配置页面中，点击&quot;添加采集源&quot;或&quot;新增&quot;按钮。
               </p>
               <div className="bg-muted/50 border border-border rounded-lg p-6 space-y-4">
                 <div>
@@ -266,7 +266,7 @@ export default function MacCMSGuide() {
               <ul className="space-y-2 ml-4">
                 <li className="flex gap-2">
                   <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-                  <span className="text-foreground">点击"测试"按钮验证API连接</span>
+                  <span className="text-foreground">点击&quot;测试&quot;按钮验证API连接</span>
                 </li>
                 <li className="flex gap-2">
                   <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
@@ -274,7 +274,7 @@ export default function MacCMSGuide() {
                 </li>
                 <li className="flex gap-2">
                   <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-                  <span className="text-foreground">点击"保存"按钮保存配置</span>
+                  <span className="text-foreground">点击&quot;保存&quot;按钮保存配置</span>
                 </li>
               </ul>
             </div>
@@ -317,7 +317,7 @@ export default function MacCMSGuide() {
                 a: '您的API URL应该是：https://your-domain.com/api/maccms/api.php/provide/vod/at/xml 请将 your-domain.com 替换为您实际的域名或服务器地址。'
               },
               {
-                q: '测试连接失败，显示"无法连接"？',
+                q: '测试连接失败，显示&quot;无法连接&quot;？',
                 a: '请检查：1) 域名或IP地址是否正确；2) 防火墙是否允许该端口的访问；3) 网络连接是否正常。'
               },
               {

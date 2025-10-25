@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const videoId = searchParams.get('videoId')
 
     // Build where clause
-    const where: any = {}
+    const where: { action?: string | null; videoId?: string | null } = {}
     if (action) where.action = action
     if (videoId) where.videoId = videoId
 

@@ -46,7 +46,7 @@ export default function AdminDashboard() {
   const [cacheVideoId, setCacheVideoId] = useState('')
 
   // Cache stats
-  const [cacheStats, setCacheStats] = useState<any>(null)
+  const [cacheStats, setCacheStats] = useState<{ inMemoryStats: any; databaseStats: any; recentLogs: any[] } | null>(null)
   const [statsLoading, setStatsLoading] = useState(false)
 
   useEffect(() => {
@@ -606,7 +606,7 @@ export default function AdminDashboard() {
                 className="w-full px-4 py-2 border border-border bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-primary disabled:opacity-50 disabled:cursor-not-allowed"
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Enter a specific PornHub video ID to clear only that video's cache, or leave empty to clear all video caches.
+                Enter a specific PornHub video ID to clear only that video&apos;s cache, or leave empty to clear all video caches.
               </p>
             </div>
 
@@ -721,7 +721,7 @@ export default function AdminDashboard() {
                 <h4 className="font-semibold text-foreground mb-4">Cache by Type</h4>
 
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                  {Object.entries(cacheStats.inMemoryStats.byType).map(([type, data]: [string, any]) => (
+                  {Object.entries(cacheStats.inMemoryStats.byType).map(([type, data]: [string, { count: number; size: number; hits: number }]) => (
                     <div key={type} className="bg-card rounded-lg p-3 border border-border">
                       <div className="text-sm font-medium text-foreground mb-2 capitalize">{type}</div>
                       <div className="space-y-1 text-xs text-muted-foreground">
@@ -751,7 +751,7 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {cacheStats.inMemoryStats.entries.map((entry: any) => (
+                    {cacheStats.inMemoryStats.entries.map((entry: { key: string; type: string; sizeMB: string; hitCount: number; ageMinutes: number }) => (
                       <tr key={entry.key} className="border-b border-border/50 hover:bg-card/50">
                         <td className="py-2 px-2 font-mono text-xs text-foreground truncate">{entry.key}</td>
                         <td className="py-2 px-2">
@@ -809,7 +809,7 @@ export default function AdminDashboard() {
                         </tr>
                       </thead>
                       <tbody>
-                        {cacheStats.recentLogs.slice(0, 10).map((log: any) => (
+                        {cacheStats.recentLogs.slice(0, 10).map((log: { id: string; action: string; target: string | null; timestamp: string }) => (
                           <tr key={log.id} className="border-b border-border/50">
                             <td className="py-2 px-2">
                               <span
