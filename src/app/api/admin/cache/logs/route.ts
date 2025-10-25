@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const videoId = searchParams.get('videoId')
 
     // Build where clause
-    const where: { action?: string | null; videoId?: string | null } = {}
+    const where: Record<string, string> = {}
     if (action) where.action = action
     if (videoId) where.videoId = videoId
 
@@ -42,10 +42,14 @@ export async function GET(request: NextRequest) {
       orderBy: { _count: { id: 'desc' } }
     })
 
+    const totalCount = Object.keys(where).length > 0
+      ? await prisma.cacheLog.count({ where })
+      : await prisma.cacheLog.count()
+
     return NextResponse.json({
       success: true,
       count: logs.length,
-      totalCount: await prisma.cacheLog.count(where ? { where } : {}),
+      totalCount,
       actionBreakdown: actionBreakdown.map((a) => ({
         action: a.action,
         count: a._count.id
