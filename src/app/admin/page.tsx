@@ -46,7 +46,7 @@ export default function AdminDashboard() {
   const [cacheVideoId, setCacheVideoId] = useState('')
 
   // Cache stats
-  const [cacheStats, setCacheStats] = useState<{ inMemoryStats: any; databaseStats: any; recentLogs: any[] } | null>(null)
+  const [cacheStats, setCacheStats] = useState<Record<string, unknown> | null>(null)
   const [statsLoading, setStatsLoading] = useState(false)
 
   useEffect(() => {

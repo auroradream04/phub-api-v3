@@ -299,7 +299,7 @@ export default function MacCMSGuide() {
                 </p>
                 <p className="text-foreground font-semibold mt-4">手动采集：</p>
                 <p className="text-sm text-muted-foreground ml-4">
-                  在采集列表中点击该采集源旁的"采集"按钮，可以立即开始采集。
+                  在采集列表中点击该采集源旁的&quot;采集&quot;按钮，可以立即开始采集。
                 </p>
               </div>
             </div>
