@@ -64,32 +64,17 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
         })
       }).catch(e => console.debug('Embed impression tracking failed:', e));
 
-      // Fetch preview data dynamically
-      fetch(apiOrigin + '/api/video/' + data.videoId)
-        .then(r => r.json())
-        .then(videoData => {
-          const previewImage = videoData.vodPic;
-          const previewVideo = videoData.vodPlayUrl?.split('$')[1];
+      // Display a placeholder since previews are loaded dynamically on admin side
+      const html = \`
+        <div style="position:relative;width:100%;height:100%;background:#000;overflow:hidden;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+          <div style="text-align:center;color:#666;font-size:14px;">
+            <div style="margin-bottom:8px;">▶</div>
+            <div style="font-size:12px;">\${data.title}</div>
+          </div>
+        </div>
+      \`;
 
-          // Build widget HTML with preview video
-          const html = \`
-            <div style="position:relative;width:100%;height:100%;background:#000;overflow:hidden;border-radius:8px;">
-              \${previewVideo ? \`
-                <video style="width:100%;height:100%;object-fit:cover;display:block;" autoplay muted loop playsinline>
-                  <source src="\${previewVideo}" type="video/webm">
-                  \${previewImage ? \`<img src="\${previewImage}" alt="\${data.title}" style="width:100%;height:100%;object-fit:cover;">\` : ''}
-                </video>
-              \` : \`
-                \${previewImage ? \`<img src="\${previewImage}" alt="\${data.title}" style="width:100%;height:100%;object-fit:cover;display:block;">\` : '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#999;font-size:12px;">No preview available</div>'}
-              \`}
-            </div>
-          \`;
-
-          widget.innerHTML = html;
-        })
-        .catch(() => {
-          widget.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#999;font-size:12px;">Failed to load preview</div>';
-        });
+      widget.innerHTML = html;
       widget.style.cursor = 'pointer';
 
       widget.onclick = (e) => {
