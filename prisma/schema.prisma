@@ -212,6 +212,7 @@ model VideoEmbed {
   id           String   @id @default(cuid())
   videoId      String   // PornHub video ID
   title        String   @db.VarChar(255)
+  displayName  String?  @db.VarChar(255) // Custom display name for the embed (admin only)
   preview      String   @db.Text // Preview image URL
   previewVideo String?  @db.Text // Preview video URL
   redirectUrl  String   @db.Text // Custom destination URL

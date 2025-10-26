@@ -60,7 +60,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
           \` : \`
             <img src="\${data.preview}" alt="\${data.title}" style="width:100%;height:100%;object-fit:cover;display:block;">
           \`}
-          <div style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.9);color:#fff;font-size:11px;padding:4px 8px;border-radius:4px;font-weight:bold;">\${data.videoId}</div>
         </div>
       \`;
 

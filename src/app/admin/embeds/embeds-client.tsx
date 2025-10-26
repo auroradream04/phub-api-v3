@@ -4,12 +4,13 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { encryptEmbedId } from '@/lib/embed-encryption'
-import { Copy, Eye, Trash2 } from 'lucide-react'
+import { Copy, Eye, Trash2, Edit } from 'lucide-react'
 
 interface VideoEmbed {
   id: string
   videoId: string
   title: string
+  displayName?: string
   preview: string
   previewVideo?: string
   redirectUrl: string
@@ -288,7 +289,7 @@ export default function EmbedsClient() {
                 {embeds.map((embed) => (
                   <tr key={embed.id} className="border-b border-border hover:bg-muted/50 transition-colors">
                     <td className="px-6 py-4 text-sm">
-                      <div className="font-medium text-foreground">{embed.title}</div>
+                      <div className="font-medium text-foreground">{embed.displayName || embed.title}</div>
                       <div className="text-xs text-muted-foreground truncate">{embed.redirectUrl}</div>
                     </td>
                     <td className="px-6 py-4 text-sm font-mono text-muted-foreground">{embed.videoId}</td>
@@ -315,6 +316,13 @@ export default function EmbedsClient() {
                       >
                         <Copy size={18} />
                       </button>
+                      <Link
+                        href={`/admin/embeds/${embed.id}/edit`}
+                        title="Edit embed settings"
+                        className="text-primary hover:text-primary/80 transition-colors"
+                      >
+                        <Edit size={18} />
+                      </Link>
                       <Link
                         href={`/admin/embeds/${embed.id}`}
                         title="View details and analytics"
