@@ -9,6 +9,7 @@ const createEmbedSchema = z.object({
   title: z.string().min(1, 'Title is required').max(255),
   displayName: z.string().max(255).optional().nullable().transform(val => val || null),
   redirectUrl: z.string().url('Redirect URL must be valid'),
+  previewSourceUrl: z.string().optional().nullable().transform(val => val || null),
 })
 
 export async function GET(req: NextRequest) {
@@ -110,6 +111,7 @@ export async function POST(req: NextRequest) {
         title: data.title,
         displayName: data.displayName,
         redirectUrl: data.redirectUrl,
+        previewSourceUrl: data.previewSourceUrl,
         createdBy: user!.id,
       },
     })

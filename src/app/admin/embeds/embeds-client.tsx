@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { encryptEmbedId } from '@/lib/embed-encryption'
-import { Copy, Eye, Trash2, Edit } from 'lucide-react'
+import { Copy, Eye, Trash2, Edit, Download, CheckCircle } from 'lucide-react'
 
 interface VideoEmbed {
   id: string
@@ -64,7 +64,9 @@ export default function EmbedsClient() {
     title: '',
     redirectUrl: '',
     displayName: '',
+    previewSourceUrl: '',
   })
+  const [downloadingPreviews, setDownloadingPreviews] = useState<Record<string, boolean>>({})
 
 
   // Fetch embeds
@@ -141,6 +143,7 @@ export default function EmbedsClient() {
       title: video.title,
       redirectUrl: '',
       displayName: '',
+      previewSourceUrl: '',
     })
   }
 
@@ -194,29 +197,41 @@ export default function EmbedsClient() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...formData,
+          videoId: formData.videoId,
+          title: formData.title,
+          redirectUrl: formData.redirectUrl,
           displayName: formData.displayName || null,
+          previewSourceUrl: formData.previewSourceUrl || null,
         }),
       })
 
       if (!res.ok) {
         const errorData = await res.json()
-
         alert(`Failed to create embed: ${JSON.stringify(errorData.error || errorData)}`)
         return
+      }
+
+      const embedData = await res.json()
+      const newEmbedId = embedData.id
+
+      // If preview source URL was provided, download preview immediately
+      if (formData.previewSourceUrl) {
+        alert('Embed created! Downloading preview...')
+        await handleDownloadPreview(newEmbedId, formData.previewSourceUrl)
+      } else {
+        alert('Embed created successfully!')
       }
 
       resetCreateModal()
       setPage(1)
       fetchEmbeds()
     } catch (error) {
-
       alert('Error creating embed')
     }
   }
 
   function resetCreateModal() {
-    setFormData({ videoId: '', title: '', redirectUrl: '', displayName: '' })
+    setFormData({ videoId: '', title: '', redirectUrl: '', displayName: '', previewSourceUrl: '' })
     setSelectedVideo(null)
     setVideoSearch('')
     setSearchResults([])
@@ -237,6 +252,32 @@ export default function EmbedsClient() {
     } catch (error) {
 
       alert('Error deleting embed')
+    }
+  }
+
+  async function handleDownloadPreview(embedId: string, customSource?: string) {
+    try {
+      setDownloadingPreviews((prev) => ({ ...prev, [embedId]: true }))
+
+      const res = await fetch(`/api/admin/embeds/${embedId}/download-preview`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ previewSourceUrl: customSource }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        alert(data.error || 'Failed to download preview')
+        return
+      }
+
+      alert('Preview downloaded successfully!')
+      fetchEmbeds() // Refresh to show updated status
+    } catch (error) {
+      alert('Error downloading preview')
+    } finally {
+      setDownloadingPreviews((prev) => ({ ...prev, [embedId]: false }))
     }
   }
 
@@ -289,6 +330,7 @@ export default function EmbedsClient() {
                   <th className="px-6 py-3 text-left text-sm font-semibold">Video ID</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold">Impressions</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold">Clicks</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold">Preview</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold">Status</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold">Created</th>
                   <th className="px-6 py-3 text-right text-sm font-semibold">Actions</th>
@@ -304,6 +346,24 @@ export default function EmbedsClient() {
                     <td className="px-6 py-4 text-sm font-mono text-muted-foreground">{embed.videoId}</td>
                     <td className="px-6 py-4 text-sm text-foreground">{embed.impressions || 0}</td>
                     <td className="px-6 py-4 text-sm text-foreground">{embed.clicks || 0}</td>
+                    <td className="px-6 py-4 text-sm">
+                      {embed.previewM3u8Path ? (
+                        <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                          <CheckCircle size={16} />
+                          <span className="text-xs">Self-hosted</span>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => handleDownloadPreview(embed.id)}
+                          disabled={downloadingPreviews[embed.id]}
+                          className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Download preview to self-host"
+                        >
+                          <Download size={16} />
+                          <span className="text-xs">{downloadingPreviews[embed.id] ? 'Downloading...' : 'Download'}</span>
+                        </button>
+                      )}
+                    </td>
                     <td className="px-6 py-4 text-sm">
                       <span
                         className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
@@ -535,6 +595,21 @@ export default function EmbedsClient() {
                   />
                   <p className="text-xs text-muted-foreground mt-1">
                     Where users will be taken when they click the embed
+                  </p>
+                </div>
+
+                {/* Preview Source URL (Optional) */}
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">Preview Source (Optional)</label>
+                  <input
+                    type="text"
+                    value={formData.previewSourceUrl}
+                    onChange={(e) => setFormData({ ...formData, previewSourceUrl: e.target.value })}
+                    placeholder="m3u8 URL, video link, or leave empty to use video ID"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Provide an m3u8 playlist URL or direct video link to download preview immediately (leave empty to download later using video ID)
                   </p>
                 </div>
 
