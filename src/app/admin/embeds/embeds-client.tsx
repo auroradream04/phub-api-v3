@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { encryptEmbedId } from '@/lib/embed-encryption'
 
 interface VideoEmbed {
   id: string
@@ -231,7 +232,8 @@ export default function EmbedsClient() {
 
   function copyEmbedCode(embedId: string) {
     const origin = process.env.NEXT_PUBLIC_APP_URL || typeof window !== 'undefined' ? window.location.origin : ''
-    const code = `<script src="${origin}/api/embed/${embedId}/script"><\/script>`
+    const encryptedId = encryptEmbedId(embedId)
+    const code = `<script src="${origin}/api/embed/${encryptedId}/script"><\/script>`
     navigator.clipboard.writeText(code)
     alert('Embed code copied to clipboard!')
   }
