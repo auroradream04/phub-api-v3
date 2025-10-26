@@ -47,11 +47,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
 
     console.log(`[Widget] DB query took ${dbTime}ms`)
 
-    // Fetch video preview from search route (cached)
+    // Fetch video preview from search route (cached with Next.js caching)
     let preview = null
     try {
       const searchStart = Date.now()
-      const searchResponse = await fetch(`${req.nextUrl.origin}/api/embed/${encryptedId}/search`)
+      const searchResponse = await fetch(`${req.nextUrl.origin}/api/embed/${encryptedId}/search`, {
+        next: {
+          revalidate: 7200, // Match search route's 2-hour cache
+          tags: ['embed-preview', encryptedId], // For on-demand revalidation
+        },
+      })
       const searchTime = Date.now() - searchStart
 
       console.log(`[Widget] Search route took ${searchTime}ms`)

@@ -74,7 +74,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
         {
           headers: {
             ...getCorsHeaders(),
-            'Cache-Control': 'public, max-age=3600',
+            'Cache-Control': 'public, max-age=7200', // Match revalidate period
           },
         }
       )
@@ -88,7 +88,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
     return NextResponse.json(preview, {
       headers: {
         ...getCorsHeaders(),
-        'Cache-Control': 'public, max-age=3600',
+        'Cache-Control': 'public, max-age=7200', // Match revalidate period
       },
     })
   } catch (error) {
