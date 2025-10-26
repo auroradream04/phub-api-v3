@@ -11,11 +11,13 @@ interface VideoEmbed {
   videoId: string
   title: string
   displayName?: string
-  preview: string
-  previewVideo?: string
   redirectUrl: string
   enabled: boolean
   createdAt: string
+  previewM3u8Path?: string
+  previewSegmentDir?: string
+  previewDownloadedAt?: string
+  previewSourceUrl?: string
   _count?: { analytics: number }
   impressions?: number
   clicks?: number
@@ -60,8 +62,6 @@ export default function EmbedsClient() {
   const [formData, setFormData] = useState({
     videoId: '',
     title: '',
-    preview: '',
-    previewVideo: '',
     redirectUrl: '',
     displayName: '',
   })
@@ -139,8 +139,6 @@ export default function EmbedsClient() {
     setFormData({
       videoId: video.videoId,
       title: video.title,
-      preview: video.preview,
-      previewVideo: video.previewVideo || '',
       redirectUrl: '',
       displayName: '',
     })
@@ -218,7 +216,7 @@ export default function EmbedsClient() {
   }
 
   function resetCreateModal() {
-    setFormData({ videoId: '', title: '', preview: '', previewVideo: '', redirectUrl: '', displayName: '' })
+    setFormData({ videoId: '', title: '', redirectUrl: '', displayName: '' })
     setSelectedVideo(null)
     setVideoSearch('')
     setSearchResults([])
@@ -546,8 +544,7 @@ export default function EmbedsClient() {
                   <ul className="space-y-1">
                     <li>✓ Video ID: {formData.videoId}</li>
                     <li>✓ Title: {formData.title}</li>
-                    <li>✓ Preview Image: Fetched</li>
-                    {formData.previewVideo && <li>✓ Preview Video: Fetched</li>}
+                    <li>ℹ️ Download preview after creating to enable self-hosted preview</li>
                   </ul>
                 </div>
               </div>
