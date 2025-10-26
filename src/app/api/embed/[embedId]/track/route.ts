@@ -10,6 +10,21 @@ const trackEventSchema = z.object({
   userAgent: z.string().optional(),
 })
 
+function getCorsHeaders() {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  }
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: getCorsHeaders(),
+  })
+}
+
 function hashIP(ipAddress: string | undefined): string | null {
   if (!ipAddress) return null
   return crypto.createHash('sha256').update(ipAddress).digest('hex')
@@ -34,7 +49,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ emb
     // Decrypt the embed ID
     const embedId = decryptEmbedId(encryptedId)
     if (!embedId) {
-      return NextResponse.json({ error: 'Invalid embed ID' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'Invalid embed ID' },
+        { status: 400, headers: getCorsHeaders() }
+      )
     }
 
     // Verify embed exists and is enabled
@@ -43,7 +61,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ emb
     })
 
     if (!embed || !embed.enabled) {
-      return NextResponse.json({ error: 'Embed not found or disabled' }, { status: 404 })
+      return NextResponse.json(
+        { error: 'Embed not found or disabled' },
+        { status: 404, headers: getCorsHeaders() }
+      )
     }
 
     // Parse request body
@@ -69,12 +90,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ emb
       },
     })
 
-    return NextResponse.json({ tracked: true })
+    return NextResponse.json({ tracked: true }, { headers: getCorsHeaders() })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.flatten() }, { status: 400 })
+      return NextResponse.json({ error: error.flatten() }, { status: 400, headers: getCorsHeaders() })
     }
     console.error('Error tracking embed event:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500, headers: getCorsHeaders() })
   }
 }

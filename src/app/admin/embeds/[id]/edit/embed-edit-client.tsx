@@ -58,19 +58,23 @@ export default function EmbedEditClient({ embedId }: { embedId: string }) {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          displayName: displayName || undefined,
+          displayName: displayName || null,
           redirectUrl,
           enabled,
         }),
       })
 
-      if (!res.ok) throw new Error('Failed to save')
+      if (!res.ok) {
+        const errorData = await res.json()
+        throw new Error(errorData.error?.message || 'Failed to save embed')
+      }
 
       alert('Embed updated successfully!')
       router.push(`/admin/embeds/${embedId}`)
     } catch (error) {
       console.error('Error saving embed:', error)
-      alert('Failed to save embed')
+      const message = error instanceof Error ? error.message : 'Failed to save embed'
+      alert(message)
     } finally {
       setSaving(false)
     }

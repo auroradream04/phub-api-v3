@@ -1,6 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { decryptEmbedId } from '@/lib/embed-encryption'
 
+function getCorsHeaders() {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  }
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: getCorsHeaders(),
+  })
+}
+
 export async function GET(req: NextRequest, { params }: { params: Promise<{ embedId: string }> }) {
   try {
     const { embedId: encryptedId } = await params
@@ -95,6 +110,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
       headers: {
         'Content-Type': 'application/javascript',
         'Cache-Control': 'public, max-age=3600',
+        ...getCorsHeaders(),
       },
     })
   } catch (error) {
@@ -104,6 +120,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
       status: 500,
       headers: {
         'Content-Type': 'application/javascript',
+        ...getCorsHeaders(),
       },
     })
   }
