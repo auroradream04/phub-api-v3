@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Search, Eye, Star, User } from 'lucide-react'
 import HorizontalAds from '@/components/HorizontalAds'
-import SmallAds from '@/components/SmallAds'
 import VideoPreview from '@/components/VideoPreview'
 
 interface Video {
@@ -107,15 +106,12 @@ export default function Home() {
                 </Link>
               </nav>
             </div>
-            <div className="flex items-center gap-6">
-              <SmallAds />
-              <Link
-                href="/admin"
-                className="text-sm text-muted-foreground hover:text-primary transition-colors"
-              >
-                管理后台
-              </Link>
-            </div>
+            <Link
+              href="/admin"
+              className="text-sm text-muted-foreground hover:text-primary transition-colors"
+            >
+              管理后台
+            </Link>
           </div>
         </div>
       </header>
