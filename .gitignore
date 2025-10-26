@@ -48,3 +48,6 @@ next-env.d.ts
 
 # dump files
 /_dump
+
+# preview downloads
+/data

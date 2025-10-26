@@ -62,8 +62,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
     // Check if we have a local self-hosted preview
     let previewUrl = null
     if (embed.previewM3u8Path) {
-      // Use local preview (URL is stored in previewM3u8Path field)
-      previewUrl = `${req.nextUrl.origin}${embed.previewM3u8Path}`
+      // Use local preview
+      previewUrl = `${req.nextUrl.origin}/api/${embed.previewM3u8Path}`
       console.log('[Embed] Widget route - Using local preview:', previewUrl)
     } else {
       // Fall back to dynamic preview from search (cached with Next.js caching)
