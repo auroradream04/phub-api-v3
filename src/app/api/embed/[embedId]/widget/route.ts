@@ -64,8 +64,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
     if (embed.previewM3u8Path) {
       // Use local preview
       previewUrl = `${req.nextUrl.origin}/api/${embed.previewM3u8Path}`
-      console.log('[Embed] Widget route - Using local preview:', previewUrl)
+      console.log('[Embed] Widget route - Embed has previewM3u8Path:', embed.previewM3u8Path)
+      console.log('[Embed] Widget route - Constructed preview URL:', previewUrl)
     } else {
+      console.log('[Embed] Widget route - No local preview, trying dynamic search...');
       // Fall back to dynamic preview from search (cached with Next.js caching)
       try {
         const searchStart = Date.now()
@@ -93,15 +95,19 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
     // Return widget data
     const totalTime = Date.now() - startTime
 
+    const responseData = {
+      id: embed.id,
+      videoId: embed.videoId,
+      title: embed.title,
+      redirectUrl: embed.redirectUrl,
+      embedId: encryptedId, // Return encrypted ID for tracking
+      previewUrl, // Return preview URL (local or dynamic)
+    }
+
+    console.log('[Embed] Widget route - Returning data:', JSON.stringify(responseData, null, 2))
+
     return NextResponse.json(
-      {
-        id: embed.id,
-        videoId: embed.videoId,
-        title: embed.title,
-        redirectUrl: embed.redirectUrl,
-        embedId: encryptedId, // Return encrypted ID for tracking
-        previewUrl, // Return preview URL (local or dynamic)
-      },
+      responseData,
       {
         headers: {
           ...getCorsHeaders(),

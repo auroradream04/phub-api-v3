@@ -51,6 +51,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
   fetch(apiOrigin + '/api/embed/' + embedId + '/widget')
     .then(r => r.json())
     .then(data => {
+      console.log('[Phub Embed] Widget data received:', data);
+
       if (!data.id) {
         widget.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#999;font-size:12px;">Embed not found</div>';
         return;
@@ -70,8 +72,19 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
       // Display preview or placeholder
       let html = '';
 
-      if (data.preview && data.preview.video) {
-        // Show video preview - autoplay muted with poster image
+      if (data.previewUrl) {
+        // Show video preview - autoplay muted looping
+        // Support both m3u8 playlists and direct video files (.webm, .mp4)
+        const isM3u8 = data.previewUrl.includes('.m3u8');
+        const isWebm = data.previewUrl.includes('.webm');
+
+        let videoType = 'video/mp4';
+        if (isM3u8) {
+          videoType = 'application/x-mpegURL';
+        } else if (isWebm) {
+          videoType = 'video/webm';
+        }
+
         html = \`
           <div style="position:relative;width:100%;height:100%;overflow:hidden;border-radius:8px;background:#000;">
             <video
@@ -80,17 +93,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
               muted
               loop
               playsinline
-              poster="\${data.preview.image || ''}"
             >
-              <source src="\${data.preview.video}" type="video/mp4" />
+              <source src="\${data.previewUrl}" type="\${videoType}" />
+              Your browser does not support video playback.
             </video>
-          </div>
-        \`;
-      } else if (data.preview && data.preview.image) {
-        // Fallback to image preview (no play button)
-        html = \`
-          <div style="position:relative;width:100%;height:100%;overflow:hidden;border-radius:8px;background:#000;">
-            <img src="\${data.preview.image}" alt="\${data.title}" style="width:100%;height:100%;object-fit:cover;" />
           </div>
         \`;
       } else {
@@ -107,6 +113,18 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
 
       widget.innerHTML = html;
       widget.style.cursor = 'pointer';
+
+      // Add video error handling
+      const videoEl = widget.querySelector('video');
+      if (videoEl) {
+        videoEl.onerror = (e) => {
+          console.error('[Phub Embed] Video load error:', e);
+          widget.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#999;font-size:12px;">Video load error</div>';
+        };
+        videoEl.onloadeddata = () => {
+          console.log('[Phub Embed] Video loaded successfully');
+        };
+      }
 
       widget.onclick = (e) => {
         e.stopPropagation();
@@ -126,6 +144,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
       };
     })
     .catch(error => {
+      console.error('[Phub Embed] Failed to load widget:', error);
       widget.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#999;font-size:12px;">Failed to load</div>';
     });
 })();

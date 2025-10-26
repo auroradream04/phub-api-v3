@@ -26,10 +26,17 @@ export async function GET(
     // Reconstruct filename from path segments (handles nested paths)
     const filename = segment.join('/')
 
-    console.log('[Preview Segment] Serving segment:', embedId, filename)
+    console.log('[Preview Segment] Request received for:', {
+      embedId,
+      segment,
+      filename,
+      fullPath: req.nextUrl.pathname
+    })
 
     // Read the segment file from disk
     const buffer = await readSegment(embedId, filename)
+
+    console.log('[Preview Segment] Buffer loaded:', buffer ? `${buffer.length} bytes` : 'NULL')
 
     if (!buffer) {
       return NextResponse.json(
