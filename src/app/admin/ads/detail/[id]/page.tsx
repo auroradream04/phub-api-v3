@@ -360,7 +360,7 @@ export default function AdDetailPage() {
                 <video
                   ref={videoRef}
                   controls
-                  className="max-w-2xl w-full rounded-lg border border-border"
+                  className="w-full rounded-lg border border-border"
                 >
                   Your browser does not support HLS playback.
                 </video>
@@ -656,7 +656,7 @@ export default function AdDetailPage() {
           </>
         ) : (
           /* Settings Tab - Dark Theme */
-          <div className="max-w-3xl">
+          <div>
             <div className="bg-card rounded-lg border border-border p-6">
               <h2 className="text-lg font-semibold text-foreground mb-6">Ad Settings</h2>
 
