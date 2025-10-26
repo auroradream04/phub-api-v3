@@ -258,40 +258,6 @@ function createLocalM3u8(content: string, downloadedSegments: string[], embedId:
 }
 
 /**
- * Create a simple m3u8 wrapper for a direct video link
- */
-async function createSimpleM3u8(
-  videoUrl: string
-): Promise<{ m3u8Path: string; segmentDir: string } | null> {
-  try {
-    await ensurePreviewDir()
-
-    const embedId = generateEmbedPreviewId()
-    const segmentDir = path.join(PREVIEW_DATA_DIR, embedId)
-    await mkdir(segmentDir, { recursive: true })
-
-    // Create m3u8 that directly references the video URL
-    const m3u8Content = `#EXTM3U
-#EXT-X-VERSION:3
-#EXT-X-TARGETDURATION:10
-#EXTINF:10.0,
-${videoUrl}
-#EXT-X-ENDLIST`
-
-    const localM3u8Path = path.join(segmentDir, 'index.m3u8')
-    await fs.writeFile(localM3u8Path, m3u8Content, 'utf-8')
-
-    return {
-      m3u8Path: `embed-previews/${embedId}/index.m3u8`,
-      segmentDir: `embed-previews/${embedId}`,
-    }
-  } catch (error) {
-    console.error('[Preview] Error creating simple m3u8:', error)
-    return null
-  }
-}
-
-/**
  * Generate unique ID for preview
  */
 function generateEmbedPreviewId(): string {
