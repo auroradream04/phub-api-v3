@@ -44,19 +44,38 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
       )
     }
 
-    // Fetch video preview data
+    // Fetch video preview data (image and video)
     let preview = null
     try {
       const proxyInfo = getRandomProxy('Embed Widget')
       if (proxyInfo) {
         const pornhub = new PornHub()
         pornhub.setAgent(proxyInfo.agent)
+
+        // First get the video info for the image
         const videoInfo = await pornhub.video(embed.videoId)
 
-        // Extract preview image
-        if (videoInfo && videoInfo.preview) {
+        let previewVideo: string | undefined = undefined
+
+        // Then search to get the preview video URL
+        if (videoInfo && videoInfo.title) {
+          try {
+            const searchResults = await pornhub.searchVideo(videoInfo.title, { page: 1 })
+            const matchedVideo = searchResults.data.find((v: any) => v.id === embed.videoId)
+            if (matchedVideo?.previewVideo) {
+              previewVideo = matchedVideo.previewVideo
+            }
+          } catch (err) {
+            console.warn('Error searching for preview video:', err)
+            // Continue without preview video
+          }
+        }
+
+        // Return whatever preview data we have
+        if (videoInfo) {
           preview = {
-            image: videoInfo.preview,
+            image: videoInfo.preview || null,
+            video: previewVideo || null,
           }
         }
       }

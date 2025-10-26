@@ -67,8 +67,26 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
       // Display preview or placeholder
       let html = '';
 
-      if (data.preview && data.preview.image) {
-        // Show preview image with play button overlay
+      if (data.preview && data.preview.video) {
+        // Show video preview - autoplay muted
+        html = \`
+          <div style="position:relative;width:100%;height:100%;overflow:hidden;border-radius:8px;background:#000;">
+            <video
+              style="width:100%;height:100%;object-fit:cover;display:block;"
+              autoplay
+              muted
+              loop
+              playsinline
+            >
+              <source src="\${data.preview.video}" type="video/mp4" />
+            </video>
+            <div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.2);">
+              <div style="font-size:36px;color:white;text-shadow:0 2px 8px rgba(0,0,0,0.5);">▶</div>
+            </div>
+          </div>
+        \`;
+      } else if (data.preview && data.preview.image) {
+        // Fallback to image with play button
         html = \`
           <div style="position:relative;width:100%;height:100%;overflow:hidden;border-radius:8px;background:#000;">
             <img src="\${data.preview.image}" alt="\${data.title}" style="width:100%;height:100%;object-fit:cover;" />
@@ -78,7 +96,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
           </div>
         \`;
       } else {
-        // Fallback placeholder
+        // Final fallback - title only
         html = \`
           <div style="position:relative;width:100%;height:100%;background:#000;overflow:hidden;border-radius:8px;display:flex;align-items:center;justify-content:center;">
             <div style="text-align:center;color:#666;font-size:14px;">
