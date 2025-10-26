@@ -49,16 +49,26 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
         })
       }).catch(e => console.debug('Embed impression tracking failed:', e));
 
-      // Build widget HTML
+      // Build widget HTML with preview video
       const html = \`
-        <div style="position:relative;width:100%;height:100%;background:#000;">
-          <img src="\${data.preview}" alt="\${data.title}" style="width:100%;height:100%;object-fit:cover;display:block;">
+        <div style="position:relative;width:100%;height:100%;background:#000;overflow:hidden;border-radius:8px;">
+          \${data.previewVideo ? \`
+            <video style="width:100%;height:100%;object-fit:cover;display:block;" autoplay muted loop playsinline>
+              <source src="\${data.previewVideo}" type="video/webm">
+              <img src="\${data.preview}" alt="\${data.title}" style="width:100%;height:100%;object-fit:cover;">
+            </video>
+          \` : \`
+            <img src="\${data.preview}" alt="\${data.title}" style="width:100%;height:100%;object-fit:cover;display:block;">
+          \`}
           <div style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.9);color:#fff;font-size:11px;padding:4px 8px;border-radius:4px;font-weight:bold;">\${data.videoId}</div>
         </div>
       \`;
 
       widget.innerHTML = html;
-      widget.onclick = () => {
+      widget.style.cursor = 'pointer';
+
+      widget.onclick = (e) => {
+        e.stopPropagation();
         // Track click
         fetch(apiOrigin + '/api/embed/' + embedId + '/track', {
           method: 'POST',

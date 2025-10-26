@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { encryptEmbedId } from '@/lib/embed-encryption'
+import { Copy, Eye, Trash2 } from 'lucide-react'
 
 interface VideoEmbed {
   id: string
@@ -306,24 +307,27 @@ export default function EmbedsClient() {
                     <td className="px-6 py-4 text-sm text-muted-foreground">
                       {new Date(embed.createdAt).toLocaleDateString()}
                     </td>
-                    <td className="px-6 py-4 text-sm text-right space-x-2">
+                    <td className="px-6 py-4 text-sm text-right space-x-3 flex justify-end">
                       <button
                         onClick={() => copyEmbedCode(embed.id)}
+                        title="Copy embed code"
                         className="text-primary hover:text-primary/80 transition-colors"
                       >
-                        Copy Code
+                        <Copy size={18} />
                       </button>
                       <Link
                         href={`/admin/embeds/${embed.id}`}
+                        title="View details and analytics"
                         className="text-primary hover:text-primary/80 transition-colors"
                       >
-                        View
+                        <Eye size={18} />
                       </Link>
                       <button
                         onClick={() => handleDeleteEmbed(embed.id)}
+                        title="Delete embed"
                         className="text-destructive hover:text-destructive/80 transition-colors"
                       >
-                        Delete
+                        <Trash2 size={18} />
                       </button>
                     </td>
                   </tr>
