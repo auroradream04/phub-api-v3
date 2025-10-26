@@ -17,6 +17,8 @@ interface VideoEmbed {
   enabled: boolean
   createdAt: string
   _count?: { analytics: number }
+  impressions?: number
+  clicks?: number
 }
 
 interface SearchVideo {
@@ -280,6 +282,7 @@ export default function EmbedsClient() {
                   <th className="px-6 py-3 text-left text-sm font-semibold">Title</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold">Video ID</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold">Impressions</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold">Clicks</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold">Status</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold">Created</th>
                   <th className="px-6 py-3 text-right text-sm font-semibold">Actions</th>
@@ -293,7 +296,8 @@ export default function EmbedsClient() {
                       <div className="text-xs text-muted-foreground truncate">{embed.redirectUrl}</div>
                     </td>
                     <td className="px-6 py-4 text-sm font-mono text-muted-foreground">{embed.videoId}</td>
-                    <td className="px-6 py-4 text-sm text-foreground">{embed._count?.analytics || 0}</td>
+                    <td className="px-6 py-4 text-sm text-foreground">{embed.impressions || 0}</td>
+                    <td className="px-6 py-4 text-sm text-foreground">{embed.clicks || 0}</td>
                     <td className="px-6 py-4 text-sm">
                       <span
                         className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${

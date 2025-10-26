@@ -30,6 +30,24 @@ async function validateAdmin() {
   return { user }
 }
 
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params
+    const auth = await validateAdmin()
+    if ('error' in auth) return auth.error
+
+    const embed = await prisma.videoEmbed.findUnique({ where: { id } })
+    if (!embed) {
+      return NextResponse.json({ error: 'Embed not found' }, { status: 404 })
+    }
+
+    return NextResponse.json(embed)
+  } catch (error) {
+    console.error('Error fetching embed:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params

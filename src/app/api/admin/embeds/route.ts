@@ -60,8 +60,23 @@ export async function GET(req: NextRequest) {
       prisma.videoEmbed.count({ where }),
     ])
 
+    // Get click and impression counts for each embed
+    const embedsWithCounts = await Promise.all(
+      embeds.map(async (embed) => {
+        const [impressions, clicks] = await Promise.all([
+          prisma.embedAnalytics.count({
+            where: { embedId: embed.id, eventType: 'impression' },
+          }),
+          prisma.embedAnalytics.count({
+            where: { embedId: embed.id, eventType: 'click' },
+          }),
+        ])
+        return { ...embed, impressions, clicks }
+      })
+    )
+
     return NextResponse.json({
-      data: embeds,
+      data: embedsWithCounts,
       total,
       pages: Math.ceil(total / limit),
     })
