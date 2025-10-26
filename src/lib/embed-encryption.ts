@@ -1,30 +1,29 @@
 import crypto from 'crypto'
 
-const ENCRYPTION_KEY = process.env.EMBED_ENCRYPTION_KEY || 'default-unsafe-key-change-in-production'
+// Use a static key that's the same across all environments
+// This ensures the same ID always encrypts/decrypts the same way
+const ENCRYPTION_KEY = process.env.EMBED_ENCRYPTION_KEY || 'phub-embed-static-key-2024'
 
 // Ensure key is 32 bytes for aes-256-cbc
 const key = crypto.createHash('sha256').update(ENCRYPTION_KEY).digest()
 
+// Use a fixed IV (initialization vector) so the same ID always produces the same encrypted output
+// This is safe here because we're encrypting IDs, not sensitive data that needs randomness
+const FIXED_IV = crypto.createHash('sha256').update('phub-embed-iv-static').digest().slice(0, 16)
+
 export function encryptEmbedId(embedId: string): string {
-  const iv = crypto.randomBytes(16)
-  const cipher = crypto.createCipheriv('aes-256-cbc', key, iv)
+  const cipher = crypto.createCipheriv('aes-256-cbc', key, FIXED_IV)
   let encrypted = cipher.update(embedId, 'utf-8', 'hex')
   encrypted += cipher.final('hex')
 
-  // Combine IV and encrypted data, then base64 encode
-  const combined = iv.toString('hex') + ':' + encrypted
-  return Buffer.from(combined).toString('base64')
+  // Return just the encrypted data as base64 (no IV since it's fixed)
+  return Buffer.from(encrypted, 'hex').toString('base64')
 }
 
 export function decryptEmbedId(encryptedId: string): string | null {
   try {
-    const combined = Buffer.from(encryptedId, 'base64').toString('utf-8')
-    const [ivHex, encrypted] = combined.split(':')
-
-    if (!ivHex || !encrypted) return null
-
-    const iv = Buffer.from(ivHex, 'hex')
-    const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv)
+    const encrypted = Buffer.from(encryptedId, 'base64').toString('hex')
+    const decipher = crypto.createDecipheriv('aes-256-cbc', key, FIXED_IV)
     let decrypted = decipher.update(encrypted, 'hex', 'utf-8')
     decrypted += decipher.final('utf-8')
 
