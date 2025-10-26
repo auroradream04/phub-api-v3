@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { readSegment } from '@/lib/preview-downloader'
+import { readVideo } from '@/lib/preview-downloader'
 
 function getCorsHeaders() {
   return {
@@ -18,46 +18,41 @@ export async function OPTIONS() {
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ embedId: string; segment: string[] }> }
+  { params }: { params: Promise<{ embedId: string; filename: string }> }
 ) {
   try {
-    const { embedId, segment } = await params
+    const { embedId, filename } = await params
 
-    // Reconstruct filename from path segments (handles nested paths)
-    const filename = segment.join('/')
+    console.log('[Preview Video] Serving video:', embedId, filename)
 
-    console.log('[Preview Segment] Serving segment:', embedId, filename)
-
-    // Read the segment file from disk
-    const buffer = await readSegment(embedId, filename)
+    // Read the video file from disk
+    const buffer = await readVideo(embedId, filename)
 
     if (!buffer) {
       return NextResponse.json(
-        { error: 'Segment not found' },
+        { error: 'Video not found' },
         { status: 404, headers: getCorsHeaders() }
       )
     }
 
     // Determine content type based on file extension
     let contentType = 'application/octet-stream'
-    if (filename.endsWith('.ts')) {
-      contentType = 'video/mp2t'
+    if (filename.endsWith('.webm')) {
+      contentType = 'video/webm'
     } else if (filename.endsWith('.mp4')) {
       contentType = 'video/mp4'
-    } else if (filename.endsWith('.m4s')) {
-      contentType = 'video/iso.segment'
     }
 
     return new NextResponse(new Blob([new Uint8Array(buffer)]), {
       headers: {
         'Content-Type': contentType,
-        'Cache-Control': 'public, max-age=86400', // Cache segments for 24 hours
+        'Cache-Control': 'public, max-age=86400', // Cache for 24 hours
         'Content-Length': buffer.length.toString(),
         ...getCorsHeaders(),
       },
     })
   } catch (error) {
-    console.error('[Preview Segment] Error:', error)
+    console.error('[Preview Video] Error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500, headers: getCorsHeaders() }

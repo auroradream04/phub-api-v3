@@ -31,7 +31,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     if (!result) {
       return NextResponse.json(
-        { error: 'Failed to download preview' },
+        { error: 'Failed to download preview video' },
         { status: 500 }
       )
     }
@@ -40,8 +40,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const updated = await prisma.videoEmbed.update({
       where: { id },
       data: {
-        previewM3u8Path: result.m3u8Path,
-        previewSegmentDir: result.segmentDir,
+        previewM3u8Path: result.videoUrl, // Store the API URL for serving
+        previewSegmentDir: result.videoPath, // Store the file path
         previewDownloadedAt: new Date(),
         previewSourceUrl: source,
       },
@@ -52,8 +52,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({
       success: true,
       embedId: id,
-      m3u8Path: result.m3u8Path,
-      segmentDir: result.segmentDir,
+      videoUrl: result.videoUrl,
+      videoPath: result.videoPath,
       downloadedAt: updated.previewDownloadedAt,
     })
   } catch (error) {
