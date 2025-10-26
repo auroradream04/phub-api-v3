@@ -3,10 +3,10 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import Image from 'next/image'
 import { Eye, Star, Clock, ChevronLeft, User } from 'lucide-react'
 import Hls from 'hls.js'
 import HorizontalAdsSlider from '@/components/HorizontalAdsSlider'
+import VideoPreview from '@/components/VideoPreview'
 
 interface MediaDefinition {
   quality: number
@@ -29,6 +29,7 @@ interface RecommendedVideo {
   id: string
   title: string
   preview: string
+  previewVideo?: string
   duration: string
   views: string
   provider?: string
@@ -321,18 +322,13 @@ export default function WatchPage() {
                 href={`/watch/${video.id}${video.provider ? `?provider=${encodeURIComponent(video.provider)}` : ''}`}
                 className="bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-blue-300 transition-all group"
               >
-                <div className="relative w-full h-48 bg-gray-100 overflow-hidden">
-                  <Image
-                    src={video.preview}
-                    alt={video.title}
-                    fill
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    className="object-cover group-hover:scale-110 transition-transform duration-300"
-                  />
-                  <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded">
-                    {video.duration}
-                  </div>
-                </div>
+                <VideoPreview
+                  preview={video.preview}
+                  previewVideo={video.previewVideo}
+                  title={video.title}
+                  duration={video.duration}
+                  className="group-hover:scale-110 transition-transform duration-300"
+                />
                 <div className="p-4">
                   <h3 className="font-medium text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-300 transition-colors">
                     {video.title}

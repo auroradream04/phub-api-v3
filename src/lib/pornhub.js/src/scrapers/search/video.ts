@@ -1,6 +1,6 @@
 import urlcat from 'urlcat'
 import { Route } from '../../apis'
-import { getAttribute, getCheerio } from '../../utils/cheerio'
+import { getAttribute, getCheerio, getDataAttribute } from '../../utils/cheerio'
 import { BASE_URL } from '../../utils/constant'
 import { UrlParser } from '../../utils/url'
 import { nonNullable } from '../../utils/utils'
@@ -21,6 +21,7 @@ export interface VideoListResult {
     premium: boolean
     freePremium: boolean
     preview: string
+    previewVideo?: string
     provider?: string
 }
 
@@ -59,6 +60,18 @@ export function parseVideoResult($: CheerioAPI, container: string | Cheerio<Elem
         const img = item.find('img')
         const preview = getAttribute<string>(img, 'src', '')
 
+        // Extract preview video URL from data-mediabook attribute on the img element
+        // This is the WebM preview video that PornHub provides
+        const previewVideo = getAttribute<string>(img, 'data-mediabook', '') ||
+                            getDataAttribute<string>(img, 'mediabook', '')
+
+        // Debug: Log if we found a preview video
+        if (!previewVideo && preview) {
+            console.debug(`[VideoScraper] No preview video found for video ${id}`)
+        } else if (previewVideo) {
+            console.debug(`[VideoScraper] Found preview video for ${id}: ${previewVideo.substring(0, 80)}...`)
+        }
+
         // Extract provider information
         const providerLink = item.find('.usernameWrap a, .usernameBadgesWrapper a, a.bolded')
         const provider = providerLink.text().trim() || undefined
@@ -73,6 +86,7 @@ export function parseVideoResult($: CheerioAPI, container: string | Cheerio<Elem
             premium: !!item.find('.premiumIcon').length,
             freePremium: !!item.find('.marker-overlays .phpFreeBlock').length,
             preview,
+            previewVideo: previewVideo || undefined,
             provider,
         }
     }).get().filter(nonNullable)
