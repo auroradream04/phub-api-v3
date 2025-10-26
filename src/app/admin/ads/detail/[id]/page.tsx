@@ -205,12 +205,21 @@ export default function AdDetailPage() {
 
   const maxCount = Math.max(...data.chartData.map(d => d.count), 1)
 
-  // Dynamic y-axis scaling
+  // Dynamic y-axis scaling - round to nice numbers like Google Analytics
   const getScaledMax = (max: number) => {
     if (max === 0) return 10
+
     const magnitude = Math.pow(10, Math.floor(Math.log10(max)))
-    const scaled = Math.ceil(max / magnitude) * magnitude
-    return scaled
+    const normalized = max / magnitude
+
+    // Round up to nearest nice number (1, 2, 5, 10)
+    let rounded: number
+    if (normalized <= 1) rounded = 1
+    else if (normalized <= 2) rounded = 2
+    else if (normalized <= 5) rounded = 5
+    else rounded = 10
+
+    return rounded * magnitude
   }
 
   const scaledMax = getScaledMax(maxCount)
