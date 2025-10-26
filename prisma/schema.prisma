@@ -209,12 +209,20 @@ model CacheLog {
 
 // Video embed system for ad-network-style embeds
 model VideoEmbed {
-  id           String   @id @default(cuid())
-  videoId      String   // PornHub video ID
-  title        String   @db.VarChar(255) // Original title from API (for searching/fallback)
-  displayName  String?  @db.VarChar(255) // Custom display name for the embed (user-facing, optional)
-  redirectUrl  String   @db.Text // Custom destination URL
-  enabled      Boolean  @default(true)
+  id                    String   @id @default(cuid())
+  videoId               String   // PornHub video ID
+  title                 String   @db.VarChar(255) // Original title from API (for searching/fallback)
+  displayName           String?  @db.VarChar(255) // Custom display name for the embed (user-facing, optional)
+  redirectUrl           String   @db.Text // Custom destination URL
+  enabled               Boolean  @default(true)
+
+  // Local preview hosting
+  previewM3u8Path       String?  @db.VarChar(500) // Path to local m3u8 file (relative to data dir)
+  previewSegmentDir     String?  @db.VarChar(500) // Directory containing .ts segments
+  previewDownloadedAt   DateTime? // When preview was downloaded
+  previewExpiry         DateTime? // When preview download expires (optional for re-download)
+  previewSourceUrl      String?  @db.Text // Original source: video ID, m3u8 URL, or video link
+
   createdBy    String
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt

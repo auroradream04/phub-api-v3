@@ -70,29 +70,46 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
       // Display preview or placeholder
       let html = '';
 
-      if (data.preview && data.preview.video) {
+      if (data.previewUrl) {
         // Show video preview - autoplay muted with poster image
-        html = \`
-          <div style="position:relative;width:100%;height:100%;overflow:hidden;border-radius:8px;background:#000;">
-            <video
-              style="width:100%;height:100%;object-fit:cover;display:block;"
-              autoplay
-              muted
-              loop
-              playsinline
-              poster="\${data.preview.image || ''}"
-            >
-              <source src="\${data.preview.video}" type="video/mp4" />
-            </video>
-          </div>
-        \`;
-      } else if (data.preview && data.preview.image) {
-        // Fallback to image preview (no play button)
-        html = \`
-          <div style="position:relative;width:100%;height:100%;overflow:hidden;border-radius:8px;background:#000;">
-            <img src="\${data.preview.image}" alt="\${data.title}" style="width:100%;height:100%;object-fit:cover;" />
-          </div>
-        \`;
+        // Support both m3u8 playlists and direct video files
+        const isM3u8 = data.previewUrl.includes('.m3u8');
+
+        if (isM3u8) {
+          // M3U8 playlist - use HLS video player
+          html = \`
+            <div style="position:relative;width:100%;height:100%;overflow:hidden;border-radius:8px;background:#000;">
+              <video
+                style="width:100%;height:100%;object-fit:cover;display:block;"
+                autoplay
+                muted
+                loop
+                playsinline
+                controls="false"
+              >
+                <source src="\${data.previewUrl}" type="application/x-mpegURL" />
+                Your browser does not support HLS video playback.
+              </video>
+            </div>
+          \`;
+        } else {
+          // Direct video file
+          html = \`
+            <div style="position:relative;width:100%;height:100%;overflow:hidden;border-radius:8px;background:#000;">
+              <video
+                style="width:100%;height:100%;object-fit:cover;display:block;"
+                autoplay
+                muted
+                loop
+                playsinline
+                controls="false"
+              >
+                <source src="\${data.previewUrl}" type="video/mp4" />
+                Your browser does not support video playback.
+              </video>
+            </div>
+          \`;
+        }
       } else {
         // Final fallback - title only
         html = \`

@@ -59,33 +59,39 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
 
     console.log('[Embed] Widget route - Embed found and enabled', { embedId, dbTime })
 
+    // Check if we have a local self-hosted preview
+    let previewUrl = null
+    if (embed.previewM3u8Path) {
+      // Use local preview
+      previewUrl = `${req.nextUrl.origin}/api/${embed.previewM3u8Path}`
+      console.log('[Embed] Widget route - Using local preview:', previewUrl)
+    } else {
+      // Fall back to dynamic preview from search (cached with Next.js caching)
+      try {
+        const searchStart = Date.now()
+        const searchResponse = await fetch(`${req.nextUrl.origin}/api/embed/${encryptedId}/search`, {
+          next: {
+            revalidate: 7200, // Match search route's 2-hour cache
+            tags: ['embed-preview', encryptedId], // For on-demand revalidation
+          },
+        })
+        const searchTime = Date.now() - searchStart
 
-
-    // Fetch video preview from search route (cached with Next.js caching)
-    let preview = null
-    try {
-      const searchStart = Date.now()
-      const searchResponse = await fetch(`${req.nextUrl.origin}/api/embed/${encryptedId}/search`, {
-        next: {
-          revalidate: 7200, // Match search route's 2-hour cache
-          tags: ['embed-preview', encryptedId], // For on-demand revalidation
-        },
-      })
-      const searchTime = Date.now() - searchStart
-
-
-
-      if (searchResponse.ok) {
-        preview = await searchResponse.json()
+        if (searchResponse.ok) {
+          const preview = await searchResponse.json()
+          if (preview.video) {
+            previewUrl = preview.video
+            console.log('[Embed] Widget route - Using dynamic preview from search')
+          }
+        }
+      } catch (err) {
+        // Continue without preview - it's not critical
+        console.log('[Embed] Widget route - Failed to fetch dynamic preview, continuing without it')
       }
-    } catch (err) {
-
-      // Continue without preview - it's not critical
     }
 
     // Return widget data
     const totalTime = Date.now() - startTime
-
 
     return NextResponse.json(
       {
@@ -94,7 +100,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
         title: embed.title,
         redirectUrl: embed.redirectUrl,
         embedId: encryptedId, // Return encrypted ID for tracking
-        preview, // Include preview data
+        previewUrl, // Return preview URL (local or dynamic)
       },
       {
         headers: {
