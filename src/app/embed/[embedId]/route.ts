@@ -71,7 +71,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
       let html = '';
 
       if (data.preview && data.preview.video) {
-        // Show video preview - autoplay muted (no play button overlay)
+        // Show video preview - autoplay muted with poster image
         html = \`
           <div style="position:relative;width:100%;height:100%;overflow:hidden;border-radius:8px;background:#000;">
             <video
@@ -80,6 +80,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
               muted
               loop
               playsinline
+              poster="\${data.preview.image || ''}"
             >
               <source src="\${data.preview.video}" type="video/mp4" />
             </video>
