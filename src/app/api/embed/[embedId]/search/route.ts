@@ -35,23 +35,37 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
     // Decrypt the embed ID
     const embedId = decryptEmbedId(encryptedId)
     if (!embedId) {
+      console.error('[Embed] Search route - Failed to decrypt ID', { encryptedId: encryptedId.substring(0, 20) + '...' })
       return NextResponse.json(
         { error: 'Invalid embed ID' },
         { status: 400, headers: getCorsHeaders() }
       )
     }
 
+    console.log('[Embed] Search route - Decrypted ID successfully', { embedId })
+
     // Get embed from database to get title for search
     const embed = await prisma.videoEmbed.findUnique({
       where: { id: embedId },
     })
 
-    if (!embed || !embed.enabled) {
+    if (!embed) {
+      console.error('[Embed] Search route - Embed not found in database', { embedId })
       return NextResponse.json(
         { error: 'Embed not found or disabled' },
         { status: 404, headers: getCorsHeaders() }
       )
     }
+
+    if (!embed.enabled) {
+      console.warn('[Embed] Search route - Embed is disabled', { embedId })
+      return NextResponse.json(
+        { error: 'Embed not found or disabled' },
+        { status: 404, headers: getCorsHeaders() }
+      )
+    }
+
+    console.log('[Embed] Search route - Embed found and enabled', { embedId, title: embed.title })
 
     // Search PornHub using title
     const proxyInfo = getRandomProxy('Embed Search')

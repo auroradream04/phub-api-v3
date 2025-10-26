@@ -49,23 +49,37 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ emb
     // Decrypt the embed ID
     const embedId = decryptEmbedId(encryptedId)
     if (!embedId) {
+      console.error('[Embed] Track route - Failed to decrypt ID', { encryptedId: encryptedId.substring(0, 20) + '...' })
       return NextResponse.json(
         { error: 'Invalid embed ID' },
         { status: 400, headers: getCorsHeaders() }
       )
     }
 
+    console.log('[Embed] Track route - Decrypted ID successfully', { embedId })
+
     // Verify embed exists and is enabled
     const embed = await prisma.videoEmbed.findUnique({
       where: { id: embedId },
     })
 
-    if (!embed || !embed.enabled) {
+    if (!embed) {
+      console.error('[Embed] Track route - Embed not found in database', { embedId })
       return NextResponse.json(
         { error: 'Embed not found or disabled' },
         { status: 404, headers: getCorsHeaders() }
       )
     }
+
+    if (!embed.enabled) {
+      console.warn('[Embed] Track route - Embed is disabled', { embedId })
+      return NextResponse.json(
+        { error: 'Embed not found or disabled' },
+        { status: 404, headers: getCorsHeaders() }
+      )
+    }
+
+    console.log('[Embed] Track route - Embed found and enabled', { embedId })
 
     // Parse request body
     const body = await req.json()

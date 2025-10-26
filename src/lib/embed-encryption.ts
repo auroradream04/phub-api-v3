@@ -57,13 +57,20 @@ export function decryptEmbedId(encryptedId: string): string | null {
 
   // Try with env var key first (prod key)
   let decrypted = decryptWithKey(key)
-  if (decrypted) return decrypted
+  if (decrypted) {
+    console.log('[Embed] Successfully decrypted with env key', { encryptedId: encryptedId.substring(0, 20) + '...', decryptedId: decrypted })
+    return decrypted
+  }
 
   // Fallback to static key (allows local embeds to work on prod)
   const fallbackKey = crypto.createHash('sha256').update('phub-embed-static-key-2024').digest()
   decrypted = decryptWithKey(fallbackKey)
-  if (decrypted) return decrypted
+  if (decrypted) {
+    console.log('[Embed] Successfully decrypted with fallback key', { encryptedId: encryptedId.substring(0, 20) + '...', decryptedId: decrypted })
+    return decrypted
+  }
 
   // Both keys failed
+  console.warn('[Embed] Failed to decrypt ID with any key', { encryptedId: encryptedId.substring(0, 20) + '...' })
   return null
 }
