@@ -88,7 +88,7 @@ export default function AdDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [timeRange, setTimeRange] = useState(7)
   const [saving, setSaving] = useState(false)
-  const [chartMetric, setChartMetric] = useState<'impressions' | 'clicks'>('impressions')
+  const [chartMetric, setChartMetric] = useState<'impressions'>('impressions')
   const videoRef = useRef<HTMLVideoElement>(null)
   const hlsRef = useRef<Hls | null>(null)
 
@@ -456,28 +456,6 @@ export default function AdDetailPage() {
             <div className="bg-card rounded-lg border border-border p-6 mb-8">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-lg font-semibold text-foreground">Views Over Time</h2>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setChartMetric('impressions')}
-                    className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                      chartMetric === 'impressions'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-card text-foreground border border-border hover:border-primary'
-                    }`}
-                  >
-                    Impressions
-                  </button>
-                  <button
-                    onClick={() => setChartMetric('clicks')}
-                    className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                      chartMetric === 'clicks'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-card text-foreground border border-border hover:border-primary'
-                    }`}
-                  >
-                    Clicks
-                  </button>
-                </div>
               </div>
               <div className="flex gap-4">
                 {/* Y-axis labels */}
