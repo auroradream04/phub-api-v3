@@ -286,7 +286,7 @@ async function injectAds(m3u8Text: string, quality: string, baseUrl: string, vid
         // Add ad segment - serve through our API
         result.push(`#EXTINF:${segmentDuration}.0,`)
         // Create URL that will serve the specific segment with .ts extension
-        const adUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:4444'}/api/ads/serve/${selectedAd.id}/${randomSegment.quality}.ts`
+        const adUrl = `${process.env.NEXTAUTH_URL || 'http://md8av.com'}/api/ads/serve/${selectedAd.id}/${randomSegment.quality}.ts`
         result.push(adUrl)
 
         // Add discontinuity tag to signal timestamp reset after ad
@@ -360,7 +360,7 @@ async function injectAds(m3u8Text: string, quality: string, baseUrl: string, vid
       }
 
       // Prepend CORS proxy if enabled (for all external URLs, not our API)
-      const isOwnApi = segmentUrl.includes(process.env.NEXTAUTH_URL || 'localhost:4444')
+      const isOwnApi = segmentUrl.includes(process.env.NEXTAUTH_URL || 'md8av.com')
       if (corsProxyEnabled && !isOwnApi) {
         segmentUrl = `${corsProxyUrl}${segmentUrl}`
       }

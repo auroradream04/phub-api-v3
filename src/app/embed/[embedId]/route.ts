@@ -30,7 +30,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
     }
 
     // Get the origin from the request
-    const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const origin = process.env.NEXT_PUBLIC_APP_URL || 'https://md8av.com'
 
     // Generate the embed script
     const script = `

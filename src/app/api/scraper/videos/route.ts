@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
   try {
     const { page = 1, categoryId, categoryName } = await request.json()
 
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:4444'
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://md8av.com'
 
     // Fetch scraper filter settings from database
     const minViewsSetting = await prisma.siteSetting.findUnique({

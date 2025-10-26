@@ -3,7 +3,7 @@
 // Test script to demonstrate the API endpoints
 // Run with: node test-categories.js
 
-const baseUrl = 'http://localhost:4444';
+const baseUrl = 'http://md8av.com';
 
 async function testCategoriesEndpoint() {
   console.log('Testing GET /api/categories\n');

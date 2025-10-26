@@ -1,7 +1,7 @@
 // Test script for Maccms API endpoint
 // Run with: npx tsx test-maccms-api.ts
 
-const BASE_URL = 'http://localhost:4444'
+const BASE_URL = 'http://md8av.com'
 
 async function testEndpoint(path: string, params: Record<string, string>) {
   const url = new URL(`${BASE_URL}${path}`)

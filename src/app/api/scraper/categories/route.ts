@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
   try {
     const { pagesPerCategory = 5 } = await request.json()
 
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:4444'
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://md8av.com'
 
     // First, fetch all categories
     const categoriesResponse = await fetch(`${baseUrl}/api/categories`)

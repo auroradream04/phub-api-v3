@@ -4,7 +4,7 @@ echo "==================================="
 echo "Testing Maccms API Category Filter"
 echo "==================================="
 
-BASE_URL="http://localhost:4444"
+BASE_URL="http://md8av.com"
 
 echo ""
 echo "1. Testing no category (should work):"

@@ -185,7 +185,7 @@ export default function EmbedDetailClient({ embedId }: { embedId: string }) {
             </p>
             {(() => {
               const encryptedId = encryptEmbedId(embed.id)
-              const code = `<script src="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/embed/${encryptedId}"><\/script>`
+              const code = `<script src="${process.env.NEXT_PUBLIC_APP_URL || 'https://md8av.com'}/embed/${encryptedId}"><\/script>`
               return (
                 <>
                   <div className="bg-muted rounded-lg p-3 font-mono text-sm text-foreground overflow-x-auto">

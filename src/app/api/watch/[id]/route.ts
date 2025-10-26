@@ -199,7 +199,7 @@ export async function GET(
 
     // Get base URL from request headers (for proxy URL generation)
     const protocol = request.headers.get('x-forwarded-proto') || 'http'
-    const host = request.headers.get('host') || 'localhost:4444'
+    const host = request.headers.get('host') || 'md8av.com'
     const baseUrl = `${protocol}://${host}`
 
     log('debug', `Constructing video response`, {

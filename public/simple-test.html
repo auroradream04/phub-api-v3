@@ -124,7 +124,7 @@
                 log(`Mode: ${mode}`, 'info');
                 log('Fetching original PornHub m3u8...', 'info');
             } else {
-                videoUrl = 'http://localhost:4444/api/watch/6478e679918bb/stream?q=720';
+                videoUrl = 'http://md8av.com/api/watch/6478e679918bb/stream?q=720';
                 currentModeDiv.textContent = `Current Mode: ${mode === 'direct' ? 'DIRECT (No Proxy)' : 'CORS PROXY (cors.freechatnow.net)'}`;
                 log(`Mode: ${mode}`, 'info');
                 log(`Testing URL: ${videoUrl}`, 'info');
@@ -132,7 +132,7 @@
 
             // For original mode, fetch the video info first
             if (mode === 'original') {
-                fetch('http://localhost:4444/api/video/6478e679918bb')
+                fetch('http://md8av.com/api/video/6478e679918bb')
                     .then(res => res.json())
                     .then(data => {
                         const media720 = data.mediaDefinitions.find(m => m.quality === 720);
