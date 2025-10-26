@@ -205,6 +205,17 @@ export default function AdDetailPage() {
 
   const maxCount = Math.max(...data.chartData.map(d => d.count), 1)
 
+  // Dynamic y-axis scaling
+  const getScaledMax = (max: number) => {
+    if (max === 0) return 10
+    const magnitude = Math.pow(10, Math.floor(Math.log10(max)))
+    const scaled = Math.ceil(max / magnitude) * magnitude
+    return scaled
+  }
+
+  const scaledMax = getScaledMax(maxCount)
+  const yAxisValues = [scaledMax, scaledMax * 0.75, scaledMax * 0.5, scaledMax * 0.25, 0]
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -458,12 +469,12 @@ export default function AdDetailPage() {
               </div>
               <div className="flex gap-4">
                 {/* Y-axis labels */}
-                <div className="flex flex-col justify-between items-end text-xs text-muted-foreground w-12">
-                  <span>{maxCount.toLocaleString()}</span>
-                  <span>{(maxCount * 0.75).toFixed(0)}</span>
-                  <span>{(maxCount * 0.5).toFixed(0)}</span>
-                  <span>{(maxCount * 0.25).toFixed(0)}</span>
-                  <span>0</span>
+                <div className="flex flex-col justify-between items-end text-xs text-muted-foreground w-16">
+                  <span>{yAxisValues[0].toLocaleString()}</span>
+                  <span>{yAxisValues[1].toLocaleString()}</span>
+                  <span>{yAxisValues[2].toLocaleString()}</span>
+                  <span>{yAxisValues[3].toLocaleString()}</span>
+                  <span>{yAxisValues[4].toLocaleString()}</span>
                 </div>
                 {/* Chart area with grid */}
                 <div className="flex-1">
@@ -478,7 +489,7 @@ export default function AdDetailPage() {
                     {/* Bars */}
                     {data.chartData.length > 0 ? (
                       data.chartData.map((point) => {
-                        const height = (point.count / maxCount) * 100
+                        const height = (point.count / scaledMax) * 100
                         return (
                           <div
                             key={point.date}
