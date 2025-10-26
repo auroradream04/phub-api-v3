@@ -48,6 +48,8 @@ export default function EmbedsClient() {
   const [searchResults, setSearchResults] = useState<SearchVideo[]>([])
   const [searching, setSearching] = useState(false)
   const [selectedVideo, setSelectedVideo] = useState<SearchVideo | null>(null)
+  const [manualVideoInput, setManualVideoInput] = useState('')
+  const [fetchingManualVideo, setFetchingManualVideo] = useState(false)
   const [formData, setFormData] = useState({
     videoId: '',
     title: '',
@@ -123,6 +125,36 @@ export default function EmbedsClient() {
     })
   }
 
+  async function handleFetchManualVideo() {
+    if (!manualVideoInput || manualVideoInput.length < 2) {
+      alert('Please enter a video ID or link')
+      return
+    }
+
+    try {
+      setFetchingManualVideo(true)
+      const params = new URLSearchParams({
+        q: manualVideoInput,
+      })
+
+      const res = await fetch(`/api/admin/embeds/fetch-video?${params}`)
+      if (!res.ok) {
+        const error = await res.json()
+        alert(error.error || 'Failed to fetch video')
+        return
+      }
+
+      const video: SearchVideo = await res.json()
+      handleSelectVideo(video)
+      setManualVideoInput('')
+    } catch (error) {
+      console.error('Error fetching video:', error)
+      alert('Error fetching video details')
+    } finally {
+      setFetchingManualVideo(false)
+    }
+  }
+
   async function handleCreateEmbed() {
     if (!formData.redirectUrl) {
       alert('Please enter a redirect URL')
@@ -155,6 +187,7 @@ export default function EmbedsClient() {
     setSelectedVideo(null)
     setVideoSearch('')
     setSearchResults([])
+    setManualVideoInput('')
     setShowCreateModal(false)
   }
 
@@ -373,70 +406,27 @@ export default function EmbedsClient() {
                 {/* Manual Entry Option */}
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">Option 2: Enter Video ID or Link</label>
-                  <input
-                    type="text"
-                    value={formData.videoId}
-                    onChange={(e) => setFormData({ ...formData, videoId: e.target.value })}
-                    placeholder="e.g., ph123456 or https://pornhub.com/view_video.php?viewkey=ph123456"
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    You can paste a PornHub link or just the video ID
-                  </p>
-                </div>
-
-                {/* Manual Entry with Redirect */}
-                {formData.videoId && !selectedVideo && (
-                  <div className="space-y-3 p-3 bg-muted/50 rounded">
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-1">Title</label>
-                      <input
-                        type="text"
-                        value={formData.title}
-                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                        placeholder="Video title"
-                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-1">Preview Image URL</label>
-                      <input
-                        type="url"
-                        value={formData.preview}
-                        onChange={(e) => setFormData({ ...formData, preview: e.target.value })}
-                        placeholder="https://..."
-                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-1">Preview Video URL (Optional)</label>
-                      <input
-                        type="url"
-                        value={formData.previewVideo}
-                        onChange={(e) => setFormData({ ...formData, previewVideo: e.target.value })}
-                        placeholder="https://..."
-                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-1">Redirect URL *</label>
-                      <input
-                        type="url"
-                        value={formData.redirectUrl}
-                        onChange={(e) => setFormData({ ...formData, redirectUrl: e.target.value })}
-                        placeholder="https://yoursite.com or https://affiliate-link.com"
-                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                      />
-                    </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={manualVideoInput}
+                      onChange={(e) => setManualVideoInput(e.target.value)}
+                      placeholder="e.g., ph123456 or https://pornhub.com/view_video.php?viewkey=ph123456"
+                      onKeyDown={(e) => e.key === 'Enter' && handleFetchManualVideo()}
+                      className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
                     <button
-                      onClick={handleCreateEmbed}
-                      disabled={!formData.title || !formData.preview || !formData.redirectUrl}
-                      className="w-full rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      onClick={handleFetchManualVideo}
+                      disabled={fetchingManualVideo}
+                      className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
                     >
-                      Create Embed
+                      {fetchingManualVideo ? 'Fetching...' : 'Fetch'}
                     </button>
                   </div>
-                )}
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Paste a PornHub link or just the video ID - we&apos;ll auto-fetch all details
+                  </p>
+                </div>
               </div>
             ) : (
               // Details Step (from search)
