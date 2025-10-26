@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { decryptEmbedId } from '@/lib/embed-encryption'
-import { PornHub } from 'pornhub.js'
-import { getRandomProxy } from '@/lib/proxy'
 
 function getCorsHeaders() {
   return {
@@ -49,43 +47,20 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
 
     console.log(`[Widget] DB query took ${dbTime}ms`)
 
-    // Fetch video preview from search using title (already in database)
+    // Fetch video preview from search route (cached)
     let preview = null
     try {
-      const proxyStart = Date.now()
-      const proxyInfo = getRandomProxy('Embed Widget')
-      const proxyTime = Date.now() - proxyStart
+      const searchStart = Date.now()
+      const searchResponse = await fetch(`${req.nextUrl.origin}/api/embed/${encryptedId}/search`)
+      const searchTime = Date.now() - searchStart
 
-      if (proxyInfo) {
-        const pornhub = new PornHub()
-        pornhub.setAgent(proxyInfo.agent)
+      console.log(`[Widget] Search route took ${searchTime}ms`)
 
-        console.log(`[Widget] Proxy selection took ${proxyTime}ms`)
-
-        // Search by title (which we have in database) to get preview image and video
-        const searchStart = Date.now()
-        const searchResults = await pornhub.searchVideo(embed.title, { page: 1 })
-        const searchTime = Date.now() - searchStart
-
-        console.log(`[Widget] PornHub search took ${searchTime}ms`)
-
-        interface SearchResult {
-          id: string
-          preview?: string
-          previewVideo?: string
-        }
-
-        const matchedVideo = searchResults.data.find((v: SearchResult) => v.id === embed.videoId)
-
-        if (matchedVideo) {
-          preview = {
-            image: matchedVideo.preview || null,
-            video: matchedVideo.previewVideo || null,
-          }
-        }
+      if (searchResponse.ok) {
+        preview = await searchResponse.json()
       }
     } catch (err) {
-      console.error('Error fetching video preview for widget:', err)
+      console.error('Error fetching video preview from search route:', err)
       // Continue without preview - it's not critical
     }
 
