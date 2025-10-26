@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import VideoPreview from '@/components/VideoPreview'
+import { getVideoWithPreviews } from '@/lib/video'
 
 interface Analytics {
   embedId: string
@@ -10,8 +11,6 @@ interface Analytics {
     title: string
     displayName?: string
     videoId: string
-    preview: string
-    previewVideo?: string
     redirectUrl: string
   }
   impressions: number
@@ -36,6 +35,11 @@ export default function EmbedDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [timeRange, setTimeRange] = useState(7)
   const [chartMetric, setChartMetric] = useState<'impressions' | 'clicks'>('impressions')
+  const [previewData, setPreviewData] = useState<{
+    previewImage?: string
+    previewVideo?: string
+  } | null>(null)
+  const [previewLoading, setPreviewLoading] = useState(true)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -58,6 +62,32 @@ export default function EmbedDetailPage() {
 
     fetchData()
   }, [embedId, timeRange])
+
+  // Fetch preview data dynamically (with 2-hour caching)
+  useEffect(() => {
+    const fetchPreview = async () => {
+      if (!data?.embed) return
+
+      try {
+        setPreviewLoading(true)
+        const preview = await getVideoWithPreviews(data.embed.videoId)
+
+        if (preview) {
+          setPreviewData({
+            previewImage: preview.previewImage,
+            previewVideo: preview.previewVideo,
+          })
+        }
+      } catch (err) {
+        console.error('Failed to fetch preview:', err)
+        // Silently fail - preview is optional
+      } finally {
+        setPreviewLoading(false)
+      }
+    }
+
+    fetchPreview()
+  }, [data])
 
   if (loading) {
     return (
@@ -202,12 +232,22 @@ export default function EmbedDetailPage() {
           <h2 className="text-lg font-semibold text-foreground mb-4">Preview</h2>
           <div className="flex justify-center">
             <div className="w-full max-w-2xl aspect-video bg-background rounded-lg overflow-hidden border border-border">
-              <VideoPreview
-                preview={data.embed.preview}
-                previewVideo={data.embed.previewVideo}
-                title={data.embed.title}
-                duration=""
-              />
+              {previewLoading ? (
+                <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                  Loading preview...
+                </div>
+              ) : previewData ? (
+                <VideoPreview
+                  preview={previewData.previewImage}
+                  previewVideo={previewData.previewVideo}
+                  title={data.embed.displayName || data.embed.title}
+                  duration=""
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                  Preview unavailable
+                </div>
+              )}
             </div>
           </div>
         </div>
