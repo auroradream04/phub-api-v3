@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { encryptEmbedId } from '@/lib/embed-encryption'
-import { Copy, Eye, Trash2, Edit, Download, CheckCircle } from 'lucide-react'
+import { Copy, Eye, Trash2, Edit } from 'lucide-react'
 
 interface VideoEmbed {
   id: string
@@ -64,9 +64,9 @@ export default function EmbedsClient() {
     title: '',
     redirectUrl: '',
     displayName: '',
-    previewSourceUrl: '',
+    previewSourceUrl: '', // Can be video ID, m3u8 URL, or webm URL
+    m3u8Url: '', // Direct m3u8/video URL input (Option 3)
   })
-  const [downloadingPreviews, setDownloadingPreviews] = useState<Record<string, boolean>>({})
 
 
   // Fetch embeds
@@ -143,7 +143,8 @@ export default function EmbedsClient() {
       title: video.title,
       redirectUrl: '',
       displayName: '',
-      previewSourceUrl: '',
+      previewSourceUrl: video.videoId, // Auto-set to video ID for auto-download
+      m3u8Url: '',
     })
   }
 
@@ -231,7 +232,7 @@ export default function EmbedsClient() {
   }
 
   function resetCreateModal() {
-    setFormData({ videoId: '', title: '', redirectUrl: '', displayName: '', previewSourceUrl: '' })
+    setFormData({ videoId: '', title: '', redirectUrl: '', displayName: '', previewSourceUrl: '', m3u8Url: '' })
     setSelectedVideo(null)
     setVideoSearch('')
     setSearchResults([])
@@ -257,8 +258,6 @@ export default function EmbedsClient() {
 
   async function handleDownloadPreview(embedId: string, customSource?: string) {
     try {
-      setDownloadingPreviews((prev) => ({ ...prev, [embedId]: true }))
-
       const res = await fetch(`/api/admin/embeds/${embedId}/download-preview`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -268,16 +267,13 @@ export default function EmbedsClient() {
       const data = await res.json()
 
       if (!res.ok) {
-        alert(data.error || 'Failed to download preview')
+        console.error('Failed to download preview:', data.error)
         return
       }
 
-      alert('Preview downloaded successfully!')
-      fetchEmbeds() // Refresh to show updated status
+      console.log('Preview downloaded successfully for embed:', embedId)
     } catch (error) {
-      alert('Error downloading preview')
-    } finally {
-      setDownloadingPreviews((prev) => ({ ...prev, [embedId]: false }))
+      console.error('Error downloading preview:', error)
     }
   }
 
@@ -330,7 +326,6 @@ export default function EmbedsClient() {
                   <th className="px-6 py-3 text-left text-sm font-semibold">Video ID</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold">Impressions</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold">Clicks</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">Preview</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold">Status</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold">Created</th>
                   <th className="px-6 py-3 text-right text-sm font-semibold">Actions</th>
@@ -346,24 +341,6 @@ export default function EmbedsClient() {
                     <td className="px-6 py-4 text-sm font-mono text-muted-foreground">{embed.videoId}</td>
                     <td className="px-6 py-4 text-sm text-foreground">{embed.impressions || 0}</td>
                     <td className="px-6 py-4 text-sm text-foreground">{embed.clicks || 0}</td>
-                    <td className="px-6 py-4 text-sm">
-                      {embed.previewM3u8Path ? (
-                        <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                          <CheckCircle size={16} />
-                          <span className="text-xs">Self-hosted</span>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => handleDownloadPreview(embed.id)}
-                          disabled={downloadingPreviews[embed.id]}
-                          className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Download preview to self-host"
-                        >
-                          <Download size={16} />
-                          <span className="text-xs">{downloadingPreviews[embed.id] ? 'Downloading...' : 'Download'}</span>
-                        </button>
-                      )}
-                    </td>
                     <td className="px-6 py-4 text-sm">
                       <span
                         className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
@@ -534,6 +511,74 @@ export default function EmbedsClient() {
                   <p className="text-xs text-muted-foreground mt-1">
                     Paste a PornHub link or just the video ID - we&apos;ll auto-fetch all details
                   </p>
+                </div>
+
+                {/* Divider */}
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 border-t border-border"></div>
+                  <span className="text-xs text-muted-foreground">OR</span>
+                  <div className="flex-1 border-t border-border"></div>
+                </div>
+
+                {/* Option 3: Direct M3U8/Video URL */}
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">Option 3: Direct Video/M3U8 URL</label>
+                  <input
+                    type="text"
+                    value={formData.m3u8Url}
+                    onChange={(e) => setFormData({ ...formData, m3u8Url: e.target.value, previewSourceUrl: e.target.value })}
+                    placeholder="https://example.com/preview.webm or https://example.com/playlist.m3u8"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary mb-1"
+                  />
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Provide a direct .webm, .mp4, or .m3u8 URL to download and self-host
+                  </p>
+
+                  {/* Additional fields for Option 3 */}
+                  {formData.m3u8Url && (
+                    <div className="space-y-3 pt-3 border-t border-border">
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-1">Title *</label>
+                        <input
+                          type="text"
+                          value={formData.title}
+                          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                          placeholder="e.g., Premium Video Title"
+                          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-1">Video ID *</label>
+                        <input
+                          type="text"
+                          value={formData.videoId}
+                          onChange={(e) => setFormData({ ...formData, videoId: e.target.value })}
+                          placeholder="e.g., ph123456"
+                          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-1">Redirect URL *</label>
+                        <input
+                          type="url"
+                          value={formData.redirectUrl}
+                          onChange={(e) => setFormData({ ...formData, redirectUrl: e.target.value })}
+                          placeholder="https://yoursite.com or https://affiliate-link.com"
+                          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-1">Custom Display Name (Optional)</label>
+                        <input
+                          type="text"
+                          value={formData.displayName}
+                          onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
+                          placeholder="e.g., Premium Video 1, Featured Content"
+                          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (

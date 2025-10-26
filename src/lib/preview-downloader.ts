@@ -18,8 +18,8 @@ export async function ensurePreviewDir() {
 }
 
 /**
- * Download preview m3u8 and segments locally
- * Supports: PornHub video ID, m3u8 URL, or direct video link
+ * Download preview video locally
+ * Supports: PornHub video ID, m3u8 URL, or direct video file (.webm, .mp4)
  */
 export async function downloadPreview(source: string): Promise<{
   m3u8Path: string
@@ -28,63 +28,87 @@ export async function downloadPreview(source: string): Promise<{
   try {
     await ensurePreviewDir()
 
-    let m3u8Url: string | null = null
+    let videoUrl: string | null = null
+    let isM3u8 = false
 
-    // If it's a full URL (m3u8 or video file)
+    // If it's a full URL
     if (source.startsWith('http')) {
       if (source.includes('.m3u8')) {
-        m3u8Url = source
-      } else if (source.includes('.mp4') || source.includes('.m4s')) {
-        // It's a direct video file, wrap it in m3u8
-        return await createSimpleM3u8(source)
+        // It's an m3u8 playlist - download all segments
+        isM3u8 = true
+        videoUrl = source
+      } else if (source.includes('.webm') || source.includes('.mp4') || source.includes('.m4v')) {
+        // It's a direct video file
+        videoUrl = source
+      } else {
+        console.error('[Preview] URL provided but not a recognized format:', source)
+        return null
       }
     } else {
-      // Assume it's a PornHub video ID, fetch the preview using search
-      m3u8Url = await fetchPornHubPreview(source)
+      // Assume it's a PornHub video ID - fetch the preview video using search API
+      videoUrl = await fetchPornHubPreview(source)
     }
 
-    if (!m3u8Url) {
-      console.error('[Preview] Could not determine m3u8 URL from source:', source)
+    if (!videoUrl) {
+      console.error('[Preview] Could not determine video URL from source:', source)
       return null
     }
 
-    console.log('[Preview] Downloading from m3u8:', m3u8Url.substring(0, 100) + '...')
-
     // Create unique directory for this embed
     const embedId = generateEmbedPreviewId()
-    const segmentDir = path.join(PREVIEW_DATA_DIR, embedId)
-    await mkdir(segmentDir, { recursive: true })
+    const embedDir = path.join(PREVIEW_DATA_DIR, embedId)
+    await mkdir(embedDir, { recursive: true })
 
-    // Download m3u8 and segments
-    const m3u8Content = await downloadM3u8(m3u8Url)
-    const segments = parseM3u8Segments(m3u8Content, m3u8Url)
+    if (isM3u8) {
+      // Download m3u8 and all segments
+      console.log('[Preview] Downloading m3u8 playlist:', videoUrl.substring(0, 100) + '...')
 
-    console.log('[Preview] Found', segments.length, 'segments to download')
+      const m3u8Content = await downloadM3u8(videoUrl)
+      const segments = parseM3u8Segments(m3u8Content, videoUrl)
 
-    // Download all segments
-    const downloadedSegments: string[] = []
-    for (const segment of segments) {
-      try {
-        const filename = path.basename(segment.url)
-        const filepath = path.join(segmentDir, filename)
-        await downloadSegment(segment.url, filepath)
-        downloadedSegments.push(filename)
-        console.log('[Preview] Downloaded segment:', filename)
-      } catch (err) {
-        console.error('[Preview] Failed to download segment:', segment.url, err)
+      console.log('[Preview] Found', segments.length, 'segments to download')
+
+      // Download all segments
+      const downloadedSegments: string[] = []
+      for (const segment of segments) {
+        try {
+          const filename = path.basename(segment.url)
+          const filepath = path.join(embedDir, filename)
+          await downloadSegment(segment.url, filepath)
+          downloadedSegments.push(filename)
+          console.log('[Preview] Downloaded segment:', filename)
+        } catch (err) {
+          console.error('[Preview] Failed to download segment:', segment.url, err)
+        }
       }
-    }
 
-    // Create local m3u8 that references our hosted segments
-    const localM3u8Path = path.join(segmentDir, 'index.m3u8')
-    const localM3u8Content = createLocalM3u8(m3u8Content, downloadedSegments, embedId)
-    await fs.writeFile(localM3u8Path, localM3u8Content, 'utf-8')
+      // Create local m3u8 that references our hosted segments
+      const localM3u8Path = path.join(embedDir, 'index.m3u8')
+      const localM3u8Content = createLocalM3u8(m3u8Content, downloadedSegments, embedId)
+      await fs.writeFile(localM3u8Path, localM3u8Content, 'utf-8')
 
-    console.log('[Preview] Successfully downloaded preview:', embedId)
+      console.log('[Preview] Successfully downloaded m3u8 preview:', embedId)
 
-    return {
-      m3u8Path: `embed-previews/${embedId}/index.m3u8`,
-      segmentDir: `embed-previews/${embedId}`,
+      return {
+        m3u8Path: `embed-previews/${embedId}/index.m3u8`,
+        segmentDir: `embed-previews/${embedId}`,
+      }
+    } else {
+      // Download single video file (.webm, .mp4)
+      console.log('[Preview] Downloading video file:', videoUrl.substring(0, 100) + '...')
+
+      const extension = videoUrl.includes('.webm') ? 'webm' : 'mp4'
+      const filename = `preview.${extension}`
+      const filepath = path.join(embedDir, filename)
+
+      await downloadVideoFile(videoUrl, filepath)
+
+      console.log('[Preview] Successfully downloaded video:', embedId)
+
+      return {
+        m3u8Path: `embed-previews/${embedId}/${filename}`, // Store path to video file
+        segmentDir: `embed-previews/${embedId}`,
+      }
     }
   } catch (error) {
     console.error('[Preview] Error downloading preview:', error)
@@ -186,6 +210,23 @@ async function downloadSegment(url: string, filepath: string): Promise<void> {
 
   const buffer = await response.arrayBuffer()
   await fs.writeFile(filepath, Buffer.from(buffer))
+}
+
+/**
+ * Download a video file
+ */
+async function downloadVideoFile(url: string, filepath: string): Promise<void> {
+  console.log('[Preview] Fetching video file...')
+
+  const response = await fetch(url)
+  if (!response.ok) {
+    throw new Error(`Failed to download video: ${response.statusText}`)
+  }
+
+  const buffer = await response.arrayBuffer()
+  await fs.writeFile(filepath, Buffer.from(buffer))
+
+  console.log('[Preview] Video file saved:', filepath, `(${(buffer.byteLength / 1024 / 1024).toFixed(2)} MB)`)
 }
 
 /**

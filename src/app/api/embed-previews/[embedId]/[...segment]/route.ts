@@ -46,6 +46,8 @@ export async function GET(
       contentType = 'video/mp4'
     } else if (filename.endsWith('.m4s')) {
       contentType = 'video/iso.segment'
+    } else if (filename.endsWith('.webm')) {
+      contentType = 'video/webm'
     }
 
     return new NextResponse(new Blob([new Uint8Array(buffer)]), {
