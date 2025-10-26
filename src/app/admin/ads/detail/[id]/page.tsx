@@ -88,7 +88,6 @@ export default function AdDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [timeRange, setTimeRange] = useState(7)
   const [saving, setSaving] = useState(false)
-  const [chartMetric, setChartMetric] = useState<'impressions'>('impressions')
   const videoRef = useRef<HTMLVideoElement>(null)
   const hlsRef = useRef<Hls | null>(null)
 
