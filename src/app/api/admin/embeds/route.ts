@@ -8,8 +8,6 @@ const createEmbedSchema = z.object({
   videoId: z.string().min(1, 'Video ID is required'),
   title: z.string().min(1, 'Title is required').max(255),
   displayName: z.string().max(255).optional().nullable().transform(val => val || null),
-  preview: z.string().url('Preview must be valid URL'),
-  previewVideo: z.string().url('Preview video must be valid URL').optional().nullable(),
   redirectUrl: z.string().url('Redirect URL must be valid'),
 })
 
@@ -111,8 +109,6 @@ export async function POST(req: NextRequest) {
         videoId: data.videoId,
         title: data.title,
         displayName: data.displayName,
-        preview: data.preview,
-        previewVideo: data.previewVideo,
         redirectUrl: data.redirectUrl,
         createdBy: user!.id,
       },

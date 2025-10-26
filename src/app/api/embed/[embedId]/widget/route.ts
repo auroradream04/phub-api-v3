@@ -48,8 +48,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
         id: embed.id,
         videoId: embed.videoId,
         title: embed.title,
-        preview: embed.preview,
-        previewVideo: embed.previewVideo,
         redirectUrl: embed.redirectUrl,
         embedId: encryptedId, // Return encrypted ID for tracking
       },

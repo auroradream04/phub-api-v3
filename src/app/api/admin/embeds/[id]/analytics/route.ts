@@ -173,8 +173,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         title: embed.title,
         displayName: embed.displayName,
         videoId: embed.videoId,
-        preview: embed.preview,
-        previewVideo: embed.previewVideo,
         redirectUrl: embed.redirectUrl,
       },
       impressions,

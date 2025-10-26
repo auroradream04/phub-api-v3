@@ -236,7 +236,7 @@ export default function EmbedDetailPage() {
                 <div className="w-full h-full flex items-center justify-center text-muted-foreground">
                   Loading preview...
                 </div>
-              ) : previewData ? (
+              ) : previewData?.previewImage ? (
                 <VideoPreview
                   preview={previewData.previewImage}
                   previewVideo={previewData.previewVideo}
