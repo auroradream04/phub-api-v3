@@ -45,12 +45,26 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Video not found' }, { status: 404 })
     }
 
+    // Now search for the video by title to get previewVideo
+    let previewVideo: string | undefined = undefined
+    try {
+      const searchResults = await pornhub.searchVideo(video.title, { page: 1 })
+      // Find the matching video in search results
+      const matchedVideo = searchResults.data.find(v => v.id === videoId)
+      if (matchedVideo?.previewVideo) {
+        previewVideo = matchedVideo.previewVideo
+      }
+    } catch (error) {
+      console.warn('Failed to fetch preview video from search:', error)
+      // Continue without previewVideo if search fails
+    }
+
     return NextResponse.json({
       id: video.id,
       videoId: video.id,
       title: video.title,
       preview: video.preview,
-      previewVideo: undefined,
+      previewVideo,
       url: video.url,
     })
   } catch (error) {
