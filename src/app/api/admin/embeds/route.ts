@@ -1,0 +1,112 @@
+import { getServerSession } from 'next-auth/next'
+import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
+import { prisma } from '@/lib/prisma'
+import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+
+const createEmbedSchema = z.object({
+  videoId: z.string().min(1, 'Video ID is required'),
+  title: z.string().min(1, 'Title is required').max(255),
+  preview: z.string().url('Preview must be valid URL'),
+  previewVideo: z.string().url('Preview video must be valid URL').optional(),
+  redirectUrl: z.string().url('Redirect URL must be valid'),
+})
+
+export async function GET(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Check if user is admin
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email! },
+    })
+
+    if (user?.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    const { searchParams } = new URL(req.url)
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '20')
+    const search = searchParams.get('search') || ''
+
+    const skip = (page - 1) * limit
+
+    const where = search ? {
+      OR: [
+        { title: { contains: search } },
+        { videoId: { contains: search } },
+      ],
+    } : {}
+
+    const [embeds, total] = await Promise.all([
+      prisma.videoEmbed.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          _count: {
+            select: {
+              analytics: true,
+            },
+          },
+        },
+      }),
+      prisma.videoEmbed.count({ where }),
+    ])
+
+    return NextResponse.json({
+      data: embeds,
+      total,
+      pages: Math.ceil(total / limit),
+    })
+  } catch (error) {
+    console.error('Error fetching embeds:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email! },
+    })
+
+    if (user?.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    const body = await req.json()
+    const data = createEmbedSchema.parse(body)
+
+    const embed = await prisma.videoEmbed.create({
+      data: {
+        videoId: data.videoId,
+        title: data.title,
+        preview: data.preview,
+        previewVideo: data.previewVideo,
+        redirectUrl: data.redirectUrl,
+        createdBy: user!.id,
+      },
+    })
+
+    return NextResponse.json(embed, { status: 201 })
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: error.flatten() }, { status: 400 })
+    }
+    console.error('Error creating embed:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}

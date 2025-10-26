@@ -26,6 +26,7 @@ model User {
   ads      Ad[]
   sessions Session[]
   accounts Account[]
+  embeds   VideoEmbed[]
 }
 
 model Account {
@@ -204,4 +205,43 @@ model CacheLog {
   @@index([target])
   @@index([timestamp])
   @@index([videoId])
+}
+
+// Video embed system for ad-network-style embeds
+model VideoEmbed {
+  id           String   @id @default(cuid())
+  videoId      String   // PornHub video ID
+  title        String   @db.VarChar(255)
+  preview      String   @db.Text // Preview image URL
+  previewVideo String?  @db.Text // Preview video URL
+  redirectUrl  String   @db.Text // Custom destination URL
+  enabled      Boolean  @default(true)
+  createdBy    String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user       User                @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  analytics  EmbedAnalytics[]
+
+  @@index([videoId])
+  @@index([createdBy])
+  @@index([createdAt])
+}
+
+// Analytics for embed impressions and clicks
+model EmbedAnalytics {
+  id             String   @id @default(cuid())
+  embedId        String
+  eventType      String   @db.VarChar(20) // "impression" or "click"
+  referrerDomain String?  @db.VarChar(255) // Domain where embed was used
+  userAgent      String?  @db.Text
+  ipHash        String?  @db.VarChar(64) // SHA256 hash of IP for privacy
+  timestamp      DateTime @default(now())
+
+  embed VideoEmbed @relation(fields: [embedId], references: [id], onDelete: Cascade)
+
+  @@index([embedId])
+  @@index([eventType])
+  @@index([referrerDomain])
+  @@index([timestamp])
 }

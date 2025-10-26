@@ -43,6 +43,7 @@ export default function AdminLayout({
   const navigation = [
     { name: 'Dashboard', href: '/admin' },
     { name: 'Ads', href: '/admin/ads' },
+    { name: 'Embeds', href: '/admin/embeds' },
     { name: 'Domains', href: '/admin/domains' },
     { name: 'Settings', href: '/admin/settings' }
   ]
