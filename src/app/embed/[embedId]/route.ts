@@ -68,7 +68,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
       let html = '';
 
       if (data.preview && data.preview.video) {
-        // Show video preview - autoplay muted
+        // Show video preview - autoplay muted (no play button overlay)
         html = \`
           <div style="position:relative;width:100%;height:100%;overflow:hidden;border-radius:8px;background:#000;">
             <video
@@ -80,19 +80,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
             >
               <source src="\${data.preview.video}" type="video/mp4" />
             </video>
-            <div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.2);">
-              <div style="font-size:36px;color:white;text-shadow:0 2px 8px rgba(0,0,0,0.5);">▶</div>
-            </div>
           </div>
         \`;
       } else if (data.preview && data.preview.image) {
-        // Fallback to image with play button
+        // Fallback to image preview (no play button)
         html = \`
           <div style="position:relative;width:100%;height:100%;overflow:hidden;border-radius:8px;background:#000;">
             <img src="\${data.preview.image}" alt="\${data.title}" style="width:100%;height:100%;object-fit:cover;" />
-            <div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.3);">
-              <div style="font-size:36px;color:white;text-shadow:0 2px 8px rgba(0,0,0,0.5);">▶</div>
-            </div>
           </div>
         \`;
       } else {
