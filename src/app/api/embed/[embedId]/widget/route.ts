@@ -20,6 +20,7 @@ export async function OPTIONS() {
 }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ embedId: string }> }) {
+  const startTime = Date.now()
   try {
     const { embedId: encryptedId } = await params
 
@@ -33,9 +34,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
     }
 
     // Get embed from database
+    const dbStart = Date.now()
     const embed = await prisma.videoEmbed.findUnique({
       where: { id: embedId },
     })
+    const dbTime = Date.now() - dbStart
 
     if (!embed || !embed.enabled) {
       return NextResponse.json(
@@ -44,38 +47,34 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
       )
     }
 
-    // Fetch video preview data (image and video)
+    console.log(`[Widget] DB query took ${dbTime}ms`)
+
+    // Fetch video preview from search using title (already in database)
     let preview = null
     try {
+      const proxyStart = Date.now()
       const proxyInfo = getRandomProxy('Embed Widget')
+      const proxyTime = Date.now() - proxyStart
+
       if (proxyInfo) {
         const pornhub = new PornHub()
         pornhub.setAgent(proxyInfo.agent)
 
-        // First get the video info for the image
-        const videoInfo = await pornhub.video(embed.videoId)
+        console.log(`[Widget] Proxy selection took ${proxyTime}ms`)
 
-        let previewVideo: string | undefined = undefined
+        // Search by title (which we have in database) to get preview image and video
+        const searchStart = Date.now()
+        const searchResults = await pornhub.searchVideo(embed.title, { page: 1 })
+        const searchTime = Date.now() - searchStart
 
-        // Then search to get the preview video URL
-        if (videoInfo && videoInfo.title) {
-          try {
-            const searchResults = await pornhub.searchVideo(videoInfo.title, { page: 1 })
-            const matchedVideo = searchResults.data.find((v) => (v as any).id === embed.videoId)
-            if (matchedVideo?.previewVideo) {
-              previewVideo = matchedVideo.previewVideo
-            }
-          } catch (err) {
-            console.warn('Error searching for preview video:', err)
-            // Continue without preview video
-          }
-        }
+        console.log(`[Widget] PornHub search took ${searchTime}ms`)
 
-        // Return whatever preview data we have
-        if (videoInfo) {
+        const matchedVideo = searchResults.data.find((v) => (v as any).id === embed.videoId)
+
+        if (matchedVideo) {
           preview = {
-            image: videoInfo.preview || null,
-            video: previewVideo || null,
+            image: (matchedVideo as any).preview || null,
+            video: (matchedVideo as any).previewVideo || null,
           }
         }
       }
@@ -85,6 +84,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
     }
 
     // Return widget data
+    const totalTime = Date.now() - startTime
+    console.log(`[Widget] Total time: ${totalTime}ms`)
+
     return NextResponse.json(
       {
         id: embed.id,

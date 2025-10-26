@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { decryptEmbedId } from '@/lib/embed-encryption'
 
+// Cache script for 1 hour (users will cache it in their browser anyway)
+export const revalidate = 3600
+
 function getCorsHeaders() {
   return {
     'Access-Control-Allow-Origin': '*',
