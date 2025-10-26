@@ -1,7 +1,7 @@
 import crypto from 'crypto'
 
-// Use a static key that's the same across all environments
-// This ensures the same ID always encrypts/decrypts the same way
+// Use env var on prod for extra security, but fallback to static key everywhere else
+// This allows embeds to work across all environments without requiring matching env vars
 const ENCRYPTION_KEY = process.env.EMBED_ENCRYPTION_KEY || 'phub-embed-static-key-2024'
 
 // Ensure key is 32 bytes for aes-256-cbc
