@@ -88,6 +88,7 @@ export default function AdDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [timeRange, setTimeRange] = useState(7)
   const [saving, setSaving] = useState(false)
+  const [chartMetric, setChartMetric] = useState<'impressions' | 'clicks'>('impressions')
   const videoRef = useRef<HTMLVideoElement>(null)
   const hlsRef = useRef<Hls | null>(null)
 
@@ -453,48 +454,92 @@ export default function AdDetailPage() {
 
             {/* Chart - Dark Theme */}
             <div className="bg-card rounded-lg border border-border p-6 mb-8">
-              <h2 className="text-lg font-semibold text-foreground mb-6">Views Over Time</h2>
-              <div className="h-80 flex items-end gap-1">
-                {data.chartData.length > 0 ? (
-                  data.chartData.map((point) => {
-                    const height = (point.count / maxCount) * 100
-                    return (
-                      <div
-                        key={point.date}
-                        className="flex-1 group relative cursor-pointer"
-                      >
-                        <div
-                          className="bg-primary group-hover:bg-primary/80 rounded-t transition-colors w-full"
-                          style={{ height: `${height}%`, minHeight: point.count > 0 ? '4px' : '0' }}
-                        />
-                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                          <div className="bg-card text-foreground text-xs px-3 py-2 rounded-lg shadow-lg whitespace-nowrap border border-border">
-                            <div className="font-semibold">{point.count.toLocaleString()} views</div>
-                            <div className="text-muted-foreground text-xs mt-1">
-                              {new Date(point.date).toLocaleDateString('en-US', {
-                                month: 'short',
-                                day: 'numeric',
-                                year: 'numeric'
-                              })}
-                            </div>
-                            <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 rotate-45 w-2 h-2 bg-card border-r border-b border-border"></div>
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })
-                ) : (
-                  <div className="flex items-center justify-center w-full text-muted-foreground">
-                    No data for this period
-                  </div>
-                )}
-              </div>
-              {data.chartData.length > 0 && (
-                <div className="flex justify-between mt-4 text-xs text-muted-foreground border-t border-border pt-4">
-                  <span>{new Date(data.chartData[0].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                  <span>{new Date(data.chartData[data.chartData.length - 1].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-semibold text-foreground">Views Over Time</h2>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setChartMetric('impressions')}
+                    className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                      chartMetric === 'impressions'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-card text-foreground border border-border hover:border-primary'
+                    }`}
+                  >
+                    Impressions
+                  </button>
+                  <button
+                    onClick={() => setChartMetric('clicks')}
+                    className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                      chartMetric === 'clicks'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-card text-foreground border border-border hover:border-primary'
+                    }`}
+                  >
+                    Clicks
+                  </button>
                 </div>
-              )}
+              </div>
+              <div className="flex gap-4">
+                {/* Y-axis labels */}
+                <div className="flex flex-col justify-between items-end text-xs text-muted-foreground w-12">
+                  <span>{maxCount.toLocaleString()}</span>
+                  <span>{(maxCount * 0.75).toFixed(0)}</span>
+                  <span>{(maxCount * 0.5).toFixed(0)}</span>
+                  <span>{(maxCount * 0.25).toFixed(0)}</span>
+                  <span>0</span>
+                </div>
+                {/* Chart area with grid */}
+                <div className="flex-1">
+                  <div className="relative h-80 flex items-end gap-1 border-l border-b border-border">
+                    {/* Grid lines */}
+                    <div className="absolute inset-0 flex flex-col pointer-events-none">
+                      <div className="flex-1 border-t border-border/30"></div>
+                      <div className="flex-1 border-t border-border/30"></div>
+                      <div className="flex-1 border-t border-border/30"></div>
+                      <div className="flex-1 border-t border-border/30"></div>
+                    </div>
+                    {/* Bars */}
+                    {data.chartData.length > 0 ? (
+                      data.chartData.map((point) => {
+                        const height = (point.count / maxCount) * 100
+                        return (
+                          <div
+                            key={point.date}
+                            className="flex-1 group relative cursor-pointer flex flex-col justify-end"
+                          >
+                            <div
+                              className="bg-primary group-hover:bg-primary/80 transition-colors w-full"
+                              style={{ height: `${height}%`, minHeight: point.count > 0 ? '2px' : '0' }}
+                            />
+                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                              <div className="bg-card text-foreground text-xs px-3 py-2 rounded-lg shadow-lg whitespace-nowrap border border-border">
+                                <div className="font-semibold">{point.count.toLocaleString()} {chartMetric}</div>
+                                <div className="text-muted-foreground text-xs mt-1">
+                                  {new Date(point.date).toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric'
+                                  })}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })
+                    ) : (
+                      <div className="flex items-center justify-center w-full text-muted-foreground">
+                        No data for this period
+                      </div>
+                    )}
+                  </div>
+                  {data.chartData.length > 0 && (
+                    <div className="flex justify-between mt-4 text-xs text-muted-foreground">
+                      <span>{new Date(data.chartData[0].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                      <span>{new Date(data.chartData[data.chartData.length - 1].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Bottom Grid Layout - Dark Theme */}
