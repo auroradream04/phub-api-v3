@@ -11,18 +11,41 @@ const key = crypto.createHash('sha256').update(ENCRYPTION_KEY).digest()
 // This is safe here because we're encrypting IDs, not sensitive data that needs randomness
 const FIXED_IV = crypto.createHash('sha256').update('phub-embed-iv-static').digest().slice(0, 16)
 
+function toUrlSafeBase64(base64: string): string {
+  return base64
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '')
+}
+
+function fromUrlSafeBase64(urlSafeBase64: string): string {
+  // Add back padding
+  const padding = 4 - (urlSafeBase64.length % 4)
+  let base64 = urlSafeBase64
+    .replace(/-/g, '+')
+    .replace(/_/g, '/')
+
+  if (padding !== 4) {
+    base64 += '='.repeat(padding)
+  }
+  return base64
+}
+
 export function encryptEmbedId(embedId: string): string {
   const cipher = crypto.createCipheriv('aes-256-cbc', key, FIXED_IV)
   let encrypted = cipher.update(embedId, 'utf-8', 'hex')
   encrypted += cipher.final('hex')
 
-  // Return just the encrypted data as base64 (no IV since it's fixed)
-  return Buffer.from(encrypted, 'hex').toString('base64')
+  // Return URL-safe base64 (no IV since it's fixed)
+  const base64 = Buffer.from(encrypted, 'hex').toString('base64')
+  return toUrlSafeBase64(base64)
 }
 
 export function decryptEmbedId(encryptedId: string): string | null {
   try {
-    const encrypted = Buffer.from(encryptedId, 'base64').toString('hex')
+    // Convert from URL-safe base64 back to standard base64
+    const base64 = fromUrlSafeBase64(encryptedId)
+    const encrypted = Buffer.from(base64, 'base64').toString('hex')
     const decipher = crypto.createDecipheriv('aes-256-cbc', key, FIXED_IV)
     let decrypted = decipher.update(encrypted, 'hex', 'utf-8')
     decrypted += decipher.final('utf-8')
