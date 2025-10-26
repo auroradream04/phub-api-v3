@@ -136,7 +136,7 @@ export default function EmbedDetailPage() {
       </div>
 
       {/* Main Content - Full Width */}
-      <div className="px-4 sm:px-6 lg:px-8 py-8">
+      <div className="py-8">
         {/* Stats Cards - Plausible Style */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3 mb-8">
           {/* Impressions */}
@@ -194,7 +194,7 @@ export default function EmbedDetailPage() {
         {/* Chart Section */}
         <div className="bg-card rounded-lg border border-border p-6 mb-8">
           <h2 className="text-lg font-semibold text-foreground mb-6">Activity Over Time</h2>
-          <div className="h-64 flex items-end gap-1">
+          <div className="h-80 flex items-end gap-1">
             {data.chartData.length > 0 ? (
               data.chartData.map((point) => {
                 const height = (point.count / maxCount) * 100

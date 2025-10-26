@@ -350,7 +350,7 @@ export default function AdDetailPage() {
         </div>
       </div>
 
-      <div className="px-4 sm:px-6 lg:px-8 py-8">
+      <div className="py-8">
         {activeTab === 'analytics' ? (
           <>
             {/* Ad Preview */}
@@ -454,7 +454,7 @@ export default function AdDetailPage() {
             {/* Chart - Dark Theme */}
             <div className="bg-card rounded-lg border border-border p-6 mb-8">
               <h2 className="text-lg font-semibold text-foreground mb-6">Views Over Time</h2>
-              <div className="h-64 flex items-end gap-1">
+              <div className="h-80 flex items-end gap-1">
                 {data.chartData.length > 0 ? (
                   data.chartData.map((point) => {
                     const height = (point.count / maxCount) * 100
