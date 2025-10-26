@@ -200,11 +200,16 @@ export default function EmbedsClient() {
       const res = await fetch('/api/admin/embeds', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          displayName: formData.displayName || null,
+        }),
       })
 
       if (!res.ok) {
-        alert('Failed to create embed')
+        const errorData = await res.json()
+        console.error('API error:', errorData)
+        alert(`Failed to create embed: ${JSON.stringify(errorData.error || errorData)}`)
         return
       }
 
