@@ -110,6 +110,7 @@ export async function POST(req: NextRequest) {
       data: {
         videoId: data.videoId,
         title: data.title,
+        displayName: data.displayName,
         preview: data.preview,
         previewVideo: data.previewVideo,
         redirectUrl: data.redirectUrl,
