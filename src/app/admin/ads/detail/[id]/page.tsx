@@ -490,7 +490,7 @@ export default function AdDetailPage() {
                             />
                             <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
                               <div className="bg-card text-foreground text-xs px-3 py-2 rounded-lg shadow-lg whitespace-nowrap border border-border">
-                                <div className="font-semibold">{point.count.toLocaleString()} {chartMetric}</div>
+                                <div className="font-semibold">{point.count.toLocaleString()} impressions</div>
                                 <div className="text-muted-foreground text-xs mt-1">
                                   {new Date(point.date).toLocaleDateString('en-US', {
                                     month: 'short',
