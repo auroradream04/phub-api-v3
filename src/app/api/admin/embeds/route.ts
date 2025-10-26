@@ -7,6 +7,7 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 const createEmbedSchema = z.object({
   videoId: z.string().min(1, 'Video ID is required'),
   title: z.string().min(1, 'Title is required').max(255),
+  displayName: z.string().max(255).optional().nullable(),
   preview: z.string().url('Preview must be valid URL'),
   previewVideo: z.string().url('Preview video must be valid URL').optional(),
   redirectUrl: z.string().url('Redirect URL must be valid'),

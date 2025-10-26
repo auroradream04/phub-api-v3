@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { encryptEmbedId } from '@/lib/embed-encryption'
 import { Copy, Eye, Trash2, Edit } from 'lucide-react'
+import EmbedModal from './embed-modal'
 
 interface VideoEmbed {
   id: string
@@ -63,7 +64,13 @@ export default function EmbedsClient() {
     preview: '',
     previewVideo: '',
     redirectUrl: '',
+    displayName: '',
   })
+
+  // Modal states
+  const [modalEmbedId, setModalEmbedId] = useState<string | null>(null)
+  const [modalMode, setModalMode] = useState<'view' | 'edit'>('view')
+  const [showModal, setShowModal] = useState(false)
 
   // Fetch embeds
   useEffect(() => {
@@ -140,6 +147,7 @@ export default function EmbedsClient() {
       preview: video.preview,
       previewVideo: video.previewVideo || '',
       redirectUrl: '',
+      displayName: '',
     })
   }
 
@@ -210,7 +218,7 @@ export default function EmbedsClient() {
   }
 
   function resetCreateModal() {
-    setFormData({ videoId: '', title: '', preview: '', previewVideo: '', redirectUrl: '' })
+    setFormData({ videoId: '', title: '', preview: '', previewVideo: '', redirectUrl: '', displayName: '' })
     setSelectedVideo(null)
     setVideoSearch('')
     setSearchResults([])
@@ -312,35 +320,45 @@ export default function EmbedsClient() {
                     <td className="px-6 py-4 text-sm text-muted-foreground">
                       {new Date(embed.createdAt).toLocaleDateString()}
                     </td>
-                    <td className="px-6 py-4 text-sm text-right space-x-3 flex justify-end">
-                      <button
-                        onClick={() => copyEmbedCode(embed.id)}
-                        title="Copy embed code"
-                        className="text-primary hover:text-primary/80 transition-colors"
-                      >
-                        <Copy size={18} />
-                      </button>
-                      <Link
-                        href={`/admin/embeds/${embed.id}/edit`}
-                        title="Edit embed settings"
-                        className="text-primary hover:text-primary/80 transition-colors"
-                      >
-                        <Edit size={18} />
-                      </Link>
-                      <Link
-                        href={`/admin/embeds/${embed.id}`}
-                        title="View details and analytics"
-                        className="text-primary hover:text-primary/80 transition-colors"
-                      >
-                        <Eye size={18} />
-                      </Link>
-                      <button
-                        onClick={() => handleDeleteEmbed(embed.id)}
-                        title="Delete embed"
-                        className="text-destructive hover:text-destructive/80 transition-colors"
-                      >
-                        <Trash2 size={18} />
-                      </button>
+                    <td className="px-6 py-4 text-sm">
+                      <div className="flex items-center gap-3 justify-end">
+                        <button
+                          onClick={() => copyEmbedCode(embed.id)}
+                          title="Copy embed code"
+                          className="text-primary hover:text-primary/80 transition-colors"
+                        >
+                          <Copy size={18} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setModalEmbedId(embed.id)
+                            setModalMode('edit')
+                            setShowModal(true)
+                          }}
+                          title="Edit embed settings"
+                          className="text-primary hover:text-primary/80 transition-colors"
+                        >
+                          <Edit size={18} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setModalEmbedId(embed.id)
+                            setModalMode('view')
+                            setShowModal(true)
+                          }}
+                          title="View details and analytics"
+                          className="text-primary hover:text-primary/80 transition-colors"
+                        >
+                          <Eye size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteEmbed(embed.id)}
+                          title="Delete embed"
+                          className="text-destructive hover:text-destructive/80 transition-colors"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -500,6 +518,21 @@ export default function EmbedsClient() {
                   </div>
                 </div>
 
+                {/* Display Name */}
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">Custom Display Name (Optional)</label>
+                  <input
+                    type="text"
+                    value={formData.displayName}
+                    onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
+                    placeholder="e.g., Premium Video 1, Featured Content"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Optional name to identify this embed in your dashboard (shows title if empty)
+                  </p>
+                </div>
+
                 {/* Redirect URL */}
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1">Redirect URL *</label>
@@ -549,6 +582,18 @@ export default function EmbedsClient() {
           </div>
         </div>
       )}
+
+      {/* Edit/View Modal */}
+      <EmbedModal
+        embedId={modalEmbedId}
+        mode={modalMode}
+        isOpen={showModal}
+        onClose={() => {
+          setShowModal(false)
+          setModalEmbedId(null)
+        }}
+        onSave={fetchEmbeds}
+      />
     </div>
   )
 }
