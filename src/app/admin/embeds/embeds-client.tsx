@@ -312,10 +312,11 @@ export default function EmbedsClient() {
             <h2 className="text-lg font-bold text-foreground mb-4">Create New Embed</h2>
 
             {!selectedVideo ? (
-              // Search Step
+              // Video Selection Step
               <div className="space-y-4">
+                {/* Search Option */}
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">Search for a Video</label>
+                  <label className="block text-sm font-medium text-foreground mb-2">Option 1: Search for a Video</label>
                   <div className="flex gap-2">
                     <input
                       type="text"
@@ -361,9 +362,84 @@ export default function EmbedsClient() {
                     </div>
                   </div>
                 )}
+
+                {/* Divider */}
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 border-t border-border"></div>
+                  <span className="text-xs text-muted-foreground">OR</span>
+                  <div className="flex-1 border-t border-border"></div>
+                </div>
+
+                {/* Manual Entry Option */}
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">Option 2: Enter Video ID or Link</label>
+                  <input
+                    type="text"
+                    value={formData.videoId}
+                    onChange={(e) => setFormData({ ...formData, videoId: e.target.value })}
+                    placeholder="e.g., ph123456 or https://pornhub.com/view_video.php?viewkey=ph123456"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    You can paste a PornHub link or just the video ID
+                  </p>
+                </div>
+
+                {/* Manual Entry with Redirect */}
+                {formData.videoId && !selectedVideo && (
+                  <div className="space-y-3 p-3 bg-muted/50 rounded">
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-1">Title</label>
+                      <input
+                        type="text"
+                        value={formData.title}
+                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                        placeholder="Video title"
+                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-1">Preview Image URL</label>
+                      <input
+                        type="url"
+                        value={formData.preview}
+                        onChange={(e) => setFormData({ ...formData, preview: e.target.value })}
+                        placeholder="https://..."
+                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-1">Preview Video URL (Optional)</label>
+                      <input
+                        type="url"
+                        value={formData.previewVideo}
+                        onChange={(e) => setFormData({ ...formData, previewVideo: e.target.value })}
+                        placeholder="https://..."
+                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-1">Redirect URL *</label>
+                      <input
+                        type="url"
+                        value={formData.redirectUrl}
+                        onChange={(e) => setFormData({ ...formData, redirectUrl: e.target.value })}
+                        placeholder="https://yoursite.com or https://affiliate-link.com"
+                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                    <button
+                      onClick={handleCreateEmbed}
+                      disabled={!formData.title || !formData.preview || !formData.redirectUrl}
+                      className="w-full rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Create Embed
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
-              // Details Step
+              // Details Step (from search)
               <div className="space-y-4">
                 {/* Selected Video Preview */}
                 <div className="bg-muted rounded-lg p-4">
