@@ -51,6 +51,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
   fetch(apiOrigin + '/api/embed/' + embedId + '/widget')
     .then(r => r.json())
     .then(data => {
+      console.log('[Phub Embed] Widget data received:', data);
+
       if (!data.id) {
         widget.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#999;font-size:12px;">Embed not found</div>';
         return;
@@ -71,45 +73,32 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
       let html = '';
 
       if (data.previewUrl) {
-        // Show video preview - autoplay muted with poster image
-        // Support both m3u8 playlists and direct video files
+        // Show video preview - autoplay muted looping
+        // Support both m3u8 playlists and direct video files (.webm, .mp4)
         const isM3u8 = data.previewUrl.includes('.m3u8');
+        const isWebm = data.previewUrl.includes('.webm');
 
+        let videoType = 'video/mp4';
         if (isM3u8) {
-          // M3U8 playlist - use HLS video player
-          html = \`
-            <div style="position:relative;width:100%;height:100%;overflow:hidden;border-radius:8px;background:#000;">
-              <video
-                style="width:100%;height:100%;object-fit:cover;display:block;"
-                autoplay
-                muted
-                loop
-                playsinline
-                controls="false"
-              >
-                <source src="\${data.previewUrl}" type="application/x-mpegURL" />
-                Your browser does not support HLS video playback.
-              </video>
-            </div>
-          \`;
-        } else {
-          // Direct video file
-          html = \`
-            <div style="position:relative;width:100%;height:100%;overflow:hidden;border-radius:8px;background:#000;">
-              <video
-                style="width:100%;height:100%;object-fit:cover;display:block;"
-                autoplay
-                muted
-                loop
-                playsinline
-                controls="false"
-              >
-                <source src="\${data.previewUrl}" type="video/mp4" />
-                Your browser does not support video playback.
-              </video>
-            </div>
-          \`;
+          videoType = 'application/x-mpegURL';
+        } else if (isWebm) {
+          videoType = 'video/webm';
         }
+
+        html = \`
+          <div style="position:relative;width:100%;height:100%;overflow:hidden;border-radius:8px;background:#000;">
+            <video
+              style="width:100%;height:100%;object-fit:cover;display:block;"
+              autoplay
+              muted
+              loop
+              playsinline
+            >
+              <source src="\${data.previewUrl}" type="\${videoType}" />
+              Your browser does not support video playback.
+            </video>
+          </div>
+        \`;
       } else {
         // Final fallback - title only
         html = \`
@@ -124,6 +113,18 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
 
       widget.innerHTML = html;
       widget.style.cursor = 'pointer';
+
+      // Add video error handling
+      const videoEl = widget.querySelector('video');
+      if (videoEl) {
+        videoEl.onerror = (e) => {
+          console.error('[Phub Embed] Video load error:', e);
+          widget.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#999;font-size:12px;">Video load error</div>';
+        };
+        videoEl.onloadeddata = () => {
+          console.log('[Phub Embed] Video loaded successfully');
+        };
+      }
 
       widget.onclick = (e) => {
         e.stopPropagation();
