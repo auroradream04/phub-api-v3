@@ -42,17 +42,29 @@ export function encryptEmbedId(embedId: string): string {
 }
 
 export function decryptEmbedId(encryptedId: string): string | null {
-  try {
-    // Convert from URL-safe base64 back to standard base64
-    const base64 = fromUrlSafeBase64(encryptedId)
-    const encrypted = Buffer.from(base64, 'base64').toString('hex')
-    const decipher = crypto.createDecipheriv('aes-256-cbc', key, FIXED_IV)
-    let decrypted = decipher.update(encrypted, 'hex', 'utf-8')
-    decrypted += decipher.final('utf-8')
-
-    return decrypted
-  } catch (error) {
-    console.error('Error decrypting embed ID:', error)
-    return null
+  const decryptWithKey = (keyToUse: Buffer): string | null => {
+    try {
+      const base64 = fromUrlSafeBase64(encryptedId)
+      const encrypted = Buffer.from(base64, 'base64').toString('hex')
+      const decipher = crypto.createDecipheriv('aes-256-cbc', keyToUse, FIXED_IV)
+      let decrypted = decipher.update(encrypted, 'hex', 'utf-8')
+      decrypted += decipher.final('utf-8')
+      return decrypted
+    } catch {
+      return null
+    }
   }
+
+  // Try with env var key first (prod key)
+  let decrypted = decryptWithKey(key)
+  if (decrypted) return decrypted
+
+  // Fallback to static key (allows local embeds to work on prod)
+  const fallbackKey = crypto.createHash('sha256').update('phub-embed-static-key-2024').digest()
+  decrypted = decryptWithKey(fallbackKey)
+  if (decrypted) return decrypted
+
+  // Both keys failed
+  console.error('Error decrypting embed ID with both keys')
+  return null
 }
