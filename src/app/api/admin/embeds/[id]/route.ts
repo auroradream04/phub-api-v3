@@ -6,6 +6,7 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 
 const updateEmbedSchema = z.object({
   title: z.string().min(1).max(255).optional(),
+  displayName: z.string().max(255).optional().nullable(),
   redirectUrl: z.string().url().optional(),
   enabled: z.boolean().optional(),
   preview: z.string().url().optional(),

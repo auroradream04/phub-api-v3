@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { encryptEmbedId } from '@/lib/embed-encryption'
 
 interface VideoEmbed {
   id: string
@@ -182,19 +183,26 @@ export default function EmbedDetailClient({ embedId }: { embedId: string }) {
             <p className="text-sm text-muted-foreground mb-3">
               Copy and paste this code on any website to embed this widget:
             </p>
-            <div className="bg-muted rounded-lg p-3 font-mono text-sm text-foreground overflow-x-auto">
-              <code>{`<script src="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/embed/${embed.id}/script"><\/script>`}</code>
-            </div>
-            <button
-              onClick={() => {
-                const code = `<script src="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/embed/${embed.id}/script"><\/script>`
-                navigator.clipboard.writeText(code)
-                alert('Copied to clipboard!')
-              }}
-              className="mt-3 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
-            >
-              Copy Code
-            </button>
+            {(() => {
+              const encryptedId = encryptEmbedId(embed.id)
+              const code = `<script src="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/embed/${encryptedId}/script"><\/script>`
+              return (
+                <>
+                  <div className="bg-muted rounded-lg p-3 font-mono text-sm text-foreground overflow-x-auto">
+                    <code>{code}</code>
+                  </div>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(code)
+                      alert('Copied to clipboard!')
+                    }}
+                    className="mt-3 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+                  >
+                    Copy Code
+                  </button>
+                </>
+              )
+            })()}
           </div>
         </div>
 
