@@ -5,7 +5,6 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { encryptEmbedId } from '@/lib/embed-encryption'
 import { Copy, Eye, Trash2, Edit } from 'lucide-react'
-import EmbedModal from './embed-modal'
 
 interface VideoEmbed {
   id: string
@@ -67,10 +66,6 @@ export default function EmbedsClient() {
     displayName: '',
   })
 
-  // Modal states
-  const [modalEmbedId, setModalEmbedId] = useState<string | null>(null)
-  const [modalMode, setModalMode] = useState<'view' | 'edit'>('view')
-  const [showModal, setShowModal] = useState(false)
 
   // Fetch embeds
   useEffect(() => {
@@ -334,28 +329,20 @@ export default function EmbedsClient() {
                         >
                           <Copy size={18} />
                         </button>
-                        <button
-                          onClick={() => {
-                            setModalEmbedId(embed.id)
-                            setModalMode('edit')
-                            setShowModal(true)
-                          }}
+                        <Link
+                          href={`/admin/embeds/${embed.id}/edit`}
                           title="Edit embed settings"
                           className="text-primary hover:text-primary/80 transition-colors"
                         >
                           <Edit size={18} />
-                        </button>
-                        <button
-                          onClick={() => {
-                            setModalEmbedId(embed.id)
-                            setModalMode('view')
-                            setShowModal(true)
-                          }}
+                        </Link>
+                        <Link
+                          href={`/admin/embeds/${embed.id}`}
                           title="View details and analytics"
                           className="text-primary hover:text-primary/80 transition-colors"
                         >
                           <Eye size={18} />
-                        </button>
+                        </Link>
                         <button
                           onClick={() => handleDeleteEmbed(embed.id)}
                           title="Delete embed"
@@ -588,17 +575,6 @@ export default function EmbedsClient() {
         </div>
       )}
 
-      {/* Edit/View Modal */}
-      <EmbedModal
-        embedId={modalEmbedId}
-        mode={modalMode}
-        isOpen={showModal}
-        onClose={() => {
-          setShowModal(false)
-          setModalEmbedId(null)
-        }}
-        onSave={fetchEmbeds}
-      />
     </div>
   )
 }
