@@ -60,10 +60,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
     console.log('[Embed] Widget route - Embed found and enabled', { embedId, dbTime })
 
     // Check if we have a local self-hosted preview
+    const origin = process.env.NEXT_PUBLIC_APP_URL || 'https://md8av.com'
     let previewUrl = null
     if (embed.previewM3u8Path) {
       // Use local preview
-      previewUrl = `${req.nextUrl.origin}/api/${embed.previewM3u8Path}`
+      previewUrl = `${origin}/api/${embed.previewM3u8Path}`
       console.log('[Embed] Widget route - Embed has previewM3u8Path:', embed.previewM3u8Path)
       console.log('[Embed] Widget route - Constructed preview URL:', previewUrl)
     } else {
@@ -71,7 +72,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
       // Fall back to dynamic preview from search (cached with Next.js caching)
       try {
         const searchStart = Date.now()
-        const searchResponse = await fetch(`${req.nextUrl.origin}/api/embed/${encryptedId}/search`, {
+        const searchResponse = await fetch(`${origin}/api/embed/${encryptedId}/search`, {
           next: {
             revalidate: 7200, // Match search route's 2-hour cache
             tags: ['embed-preview', encryptedId], // For on-demand revalidation
