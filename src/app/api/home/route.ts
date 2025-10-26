@@ -51,11 +51,11 @@ export async function GET(request: NextRequest) {
       const proxyInfo = getRandomProxy('Home API')
 
       if (!proxyInfo) {
-        console.warn('[Home] No proxies available. Cannot make request.')
+
         break
       }
 
-      console.log(`[Home] Attempt ${attemptNum}/3 using proxy ${proxyInfo.proxyUrl}`)
+
       pornhub.setAgent(proxyInfo.agent)
 
       const startTime = Date.now()
@@ -69,14 +69,14 @@ export async function GET(request: NextRequest) {
 
         // Check for soft blocking (empty results)
         if (!response.data || response.data.length === 0) {
-          console.log(`[Home] ⚠️  Proxy ${proxyInfo.proxyUrl} returned empty results (soft block) after ${duration}ms - trying different proxy...`)
+
         } else {
-          console.log(`[Home] ✅ Proxy ${proxyInfo.proxyUrl} successful! Got ${response.data.length} videos in ${duration}ms`)
+
           result = response
         }
       } catch (error: unknown) {
         const duration = Date.now() - startTime
-        console.error(`[Home] ❌ Proxy ${proxyInfo.proxyUrl} failed after ${duration}ms:`, error instanceof Error ? error.message : 'Unknown error')
+
       }
 
       retries--
@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(result, { status: 200 })
 
   } catch (error) {
-    console.error('[API] Error fetching video list:', error)
+
 
     return NextResponse.json(
       {

@@ -58,7 +58,7 @@ export async function GET(
       }
     })
   } catch (error) {
-    console.error('[Playlist API] Error:', error)
+
     return NextResponse.json(
       { error: 'Failed to generate playlist' },
       { status: 500 }

@@ -65,6 +65,5 @@ export function decryptEmbedId(encryptedId: string): string | null {
   if (decrypted) return decrypted
 
   // Both keys failed
-  console.error('Error decrypting embed ID with both keys')
   return null
 }

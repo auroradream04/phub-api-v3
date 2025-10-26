@@ -22,7 +22,7 @@ export default function HorizontalAds() {
         setAds(adsData.horizontalAds?.slice(0, 3) || [])
       })
       .catch(error => {
-        console.error('Failed to fetch ads:', error)
+
       })
   }, [])
 

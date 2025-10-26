@@ -80,7 +80,7 @@ export async function GET(req: NextRequest) {
       pages: Math.ceil(total / limit),
     })
   } catch (error) {
-    console.error('Error fetching embeds:', error)
+
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -119,7 +119,7 @@ export async function POST(req: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.flatten() }, { status: 400 })
     }
-    console.error('Error creating embed:', error)
+
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

@@ -20,7 +20,7 @@ export async function GET() {
 
     return NextResponse.json(settings)
   } catch (error) {
-    console.error('Failed to fetch settings:', error)
+
     return NextResponse.json({ error: 'Failed to fetch settings' }, { status: 500 })
   }
 }
@@ -52,7 +52,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Failed to update settings:', error)
+
     return NextResponse.json({ error: 'Failed to update settings' }, { status: 500 })
   }
 }

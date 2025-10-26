@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
         previewVideo = matchedVideo.previewVideo
       }
     } catch (error) {
-      console.warn('Failed to fetch preview video from search:', error)
+
       // Continue without previewVideo if search fails
     }
 
@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
       url: video.url,
     })
   } catch (error) {
-    console.error('Error fetching video:', error)
+
     return NextResponse.json({ error: 'Failed to fetch video details' }, { status: 500 })
   }
 }

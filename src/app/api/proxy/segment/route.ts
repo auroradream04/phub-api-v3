@@ -15,7 +15,6 @@ export async function GET(request: NextRequest) {
 
     // Decode the URL
     const segmentUrl = decodeURIComponent(url)
-    console.log(`[Proxy] Fetching segment: ${segmentUrl.split('/').pop()}`)
 
     // Fetch the segment from the original URL with proper headers
     const response = await fetch(segmentUrl, {
@@ -32,7 +31,6 @@ export async function GET(request: NextRequest) {
     })
 
     if (!response.ok) {
-      console.error(`[Proxy] Failed to fetch segment: ${response.status} ${response.statusText}`)
       return NextResponse.json(
         { error: `Failed to fetch segment: ${response.status}` },
         { status: response.status }
@@ -57,7 +55,6 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('[Proxy] Error fetching segment:', error)
     return NextResponse.json(
       { error: 'Failed to proxy segment' },
       { status: 500 }

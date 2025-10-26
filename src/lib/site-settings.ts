@@ -25,7 +25,6 @@ export async function getSiteSetting(key: string, defaultValue: string = ''): Pr
 
     return value
   } catch (error) {
-    console.error(`[SiteSettings] Error fetching setting "${key}":`, error)
     return defaultValue
   }
 }
@@ -40,17 +39,13 @@ export async function setSiteSetting(key: string, value: string): Promise<void> 
 
     // Update cache
     settingsCache.set(key, { value, timestamp: Date.now() })
-
-    console.log(`[SiteSettings] Updated setting "${key}"`)
   } catch (error) {
-    console.error(`[SiteSettings] Error setting "${key}":`, error)
     throw error
   }
 }
 
 export function clearSettingsCache(): void {
   settingsCache.clear()
-  console.log('[SiteSettings] Cache cleared')
 }
 
 // Predefined setting keys

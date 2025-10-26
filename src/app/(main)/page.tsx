@@ -54,7 +54,7 @@ export default function Home() {
       // Check if there are more pages
       setHasMore(!data.paging?.isEnd)
     } catch (error) {
-      console.error('Failed to fetch videos:', error)
+
     } finally {
       setLoading(false)
     }

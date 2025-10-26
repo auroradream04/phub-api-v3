@@ -95,7 +95,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ emb
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.flatten() }, { status: 400, headers: getCorsHeaders() })
     }
-    console.error('Error tracking embed event:', error)
+
     return NextResponse.json({ error: 'Internal server error' }, { status: 500, headers: getCorsHeaders() })
   }
 }

@@ -27,7 +27,7 @@ export async function video_embed_code(engine: Engine, urlOrId: string): Promise
             .replace(/&quot;/g, '"')
     }
     catch (err) {
-        console.error(err)
+
         return null
     }
 }

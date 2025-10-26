@@ -62,7 +62,7 @@ function SearchResults() {
         const data = await response.json()
         setCategories(data.categories || [])
       } catch (error) {
-        console.error('Failed to fetch categories:', error)
+
       } finally {
         setCategoriesLoading(false)
       }
@@ -97,7 +97,7 @@ function SearchResults() {
       setSearchResults(data.data || [])
       setHasMore(data.data && data.data.length > 0)
     } catch (error) {
-      console.error('Failed to fetch search results:', error)
+
     } finally {
       setLoading(false)
     }
@@ -118,7 +118,7 @@ function SearchResults() {
         setSelectedCategoryName(data.category.name)
       }
     } catch (error) {
-      console.error('Failed to fetch category videos:', error)
+
     } finally {
       setLoading(false)
     }

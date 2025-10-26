@@ -22,9 +22,9 @@ export default function VideoPreview({
   const videoRef = useRef<HTMLVideoElement>(null)
 
   const handleMouseEnter = () => {
-    console.log('[VideoPreview] Mouse entered, previewVideo:', previewVideo ? 'YES' : 'NO')
+
     if (!previewVideo) {
-      console.warn('[VideoPreview] No preview video available for:', title)
+
       return
     }
     setIsHovering(true)
@@ -32,7 +32,7 @@ export default function VideoPreview({
       videoRef.current.currentTime = 0
       videoRef.current.play().catch((err) => {
         // Autoplay might fail in some browsers
-        console.error('Preview video autoplay failed:', err)
+
         setIsHovering(false)
       })
     }
@@ -76,7 +76,7 @@ export default function VideoPreview({
           autoPlay={false}
           onError={() => {
             // If video fails to load, just stay with the image
-            console.debug('Preview video failed to load')
+
           }}
         >
           <source src={previewVideo} type="video/webm" />

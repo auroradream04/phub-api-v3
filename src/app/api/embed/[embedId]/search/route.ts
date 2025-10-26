@@ -92,7 +92,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
       },
     })
   } catch (error) {
-    console.error('Error searching for embed preview:', error)
+
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500, headers: getCorsHeaders() }

@@ -4,38 +4,6 @@ import { getRandomProxy } from '@/lib/proxy'
 
 export const revalidate = 7200 // 2 hours
 
-// ANSI color codes for console styling
-const colors = {
-  reset: '\x1b[0m',
-  bright: '\x1b[1m',
-  dim: '\x1b[2m',
-  green: '\x1b[32m',
-  yellow: '\x1b[33m',
-  blue: '\x1b[36m',
-  red: '\x1b[31m',
-  magenta: '\x1b[35m',
-}
-
-function log(level: 'info' | 'warn' | 'error' | 'debug', message: string, data?: unknown) {
-  const timestamp = new Date().toISOString()
-  const prefix = `${colors.bright}[Watch API]${colors.reset}`
-
-  const levelColors = {
-    info: colors.blue,
-    warn: colors.yellow,
-    error: colors.red,
-    debug: colors.magenta,
-  }
-
-  const coloredLevel = `${levelColors[level]}${level.toUpperCase()}${colors.reset}`
-
-  console.log(`${prefix} ${colors.dim}${timestamp}${colors.reset} ${coloredLevel} - ${message}`)
-
-  if (data !== undefined) {
-    console.log(`${prefix} ${colors.dim}└─ Data:${colors.reset}`, data)
-  }
-}
-
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -45,23 +13,10 @@ export async function GET(
   let apiCallTime = 0
 
   try {
-    // Log incoming request
-    log('info', `Request received: GET /api/watch/[id]`, {
-      requestId,
-      url: request.url,
-      headers: {
-        'user-agent': request.headers.get('user-agent'),
-        'referer': request.headers.get('referer'),
-      }
-    })
-
     const { id } = await params
-    log('debug', `Extracted video ID from params`, { videoId: id, requestId })
 
     // Validate video ID
     if (!id || id.trim() === '') {
-      log('warn', `Invalid video ID: empty or missing`, { videoId: id, requestId })
-
       const response = {
         error: 'Invalid video ID',
         videoId: id || 'undefined',
@@ -75,20 +30,12 @@ export async function GET(
         requestId
       }
 
-      log('info', `Response: 400 Bad Request`, { requestId, responseTime: `${Date.now() - startTime}ms` })
       return NextResponse.json(response, { status: 400 })
     }
 
     // Create PornHub client instance (fresh for each request to support proxy switching)
     const pornhub = new PornHub({
       dumpPage: process.env.NODE_ENV === 'development' // Enable debug dumps in development
-    })
-
-    // Log PornHub API call
-    log('info', `Fetching from PornHub API for video`, {
-      videoId: id,
-      method: 'pornhub.video()',
-      requestId
     })
 
     const apiStartTime = Date.now()
@@ -106,24 +53,19 @@ export async function GET(
       const proxyInfo = getRandomProxy('Watch API')
 
       if (!proxyInfo) {
-        log('warn', `No proxies available - cannot make request`, { videoId: id, requestId })
         break
       }
 
-      log('info', `Attempt ${attemptNum}/3 for video ${id} using proxy ${proxyInfo.proxyUrl}`, { videoId: id, requestId })
       pornhub.setAgent(proxyInfo.agent)
 
       try {
         videoData = await pornhub.video(id)
-        log('info', `✅ Proxy ${proxyInfo.proxyUrl} successful for video ${id}`, { videoId: id, retries, requestId })
         break
       } catch (apiError) {
         lastError = apiError instanceof Error ? apiError : new Error(String(apiError))
 
         // Check if it's a 404 error (video not found) - don't retry with more proxies for 404s
         if (lastError.message.includes('404')) {
-          log('warn', `Video not found on PornHub API (404)`, { videoId: id, requestId })
-
           const response = {
             error: 'Video not found',
             videoId: id,
@@ -137,20 +79,8 @@ export async function GET(
             requestId
           }
 
-          log('info', `Response: 404 Not Found`, {
-            videoId: id,
-            requestId,
-            responseTime: `${Date.now() - startTime}ms`
-          })
           return NextResponse.json(response, { status: 404 })
         }
-
-        log('warn', `❌ Proxy ${proxyInfo.proxyUrl} failed for video ${id}`, {
-          videoId: id,
-          error: lastError.message,
-          retriesRemaining: retries - 1,
-          requestId
-        })
       }
 
       retries--
@@ -158,16 +88,8 @@ export async function GET(
     }
 
     apiCallTime = Date.now() - apiStartTime
-    log('debug', `PornHub API call completed`, {
-      videoId: id,
-      apiCallTime: `${apiCallTime}ms`,
-      found: !!videoData,
-      requestId
-    })
 
     if (!videoData) {
-      log('warn', `Video data is empty from PornHub API`, { videoId: id, requestId })
-
       const response = {
         error: 'Video not found',
         videoId: id,
@@ -181,32 +103,13 @@ export async function GET(
         requestId
       }
 
-      log('info', `Response: 404 Not Found`, {
-        videoId: id,
-        requestId,
-        responseTime: `${Date.now() - startTime}ms`
-      })
       return NextResponse.json(response, { status: 404 })
     }
-
-    log('info', `Video found successfully`, {
-      videoId: id,
-      title: videoData.title,
-      duration: videoData.durationFormatted,
-      views: videoData.views,
-      requestId
-    })
 
     // Get base URL from request headers (for proxy URL generation)
     const protocol = request.headers.get('x-forwarded-proto') || 'http'
     const host = request.headers.get('host') || 'md8av.com'
     const baseUrl = `${protocol}://${host}`
-
-    log('debug', `Constructing video response`, {
-      baseUrl,
-      videoId: id,
-      requestId
-    })
 
     // Transform PornHub API response to our format
     const videoInfo = {
@@ -257,19 +160,6 @@ export async function GET(
       vote: videoData.vote
     }
 
-    const responseTime = Date.now() - startTime
-    log('info', `Response: 200 OK - Video info sent successfully`, {
-      videoId: id,
-      videoTitle: videoData.title,
-      requestId,
-      responseTime: `${responseTime}ms`,
-      apiCallTime: `${apiCallTime}ms`,
-      mediaDefinitionsCount: videoInfo.mediaDefinitions.length,
-      tagsCount: videoInfo.tags.length,
-      pornstarsCount: videoInfo.pornstars.length,
-      categoriesCount: videoInfo.categories.length
-    })
-
     return NextResponse.json(videoInfo, {
       status: 200,
       headers: {
@@ -311,14 +201,6 @@ export async function GET(
       }
     }
 
-    log('error', `Error processing request`, {
-      videoId: await params.then(p => p.id).catch(() => 'unknown'),
-      error: errorDetails,
-      stack: isDevMode ? (error instanceof Error ? error.stack : undefined) : undefined,
-      requestId,
-      responseTime: `${responseTime}ms`
-    })
-
     const response: {
       error: string
       message: string
@@ -353,11 +235,6 @@ export async function GET(
         videoId: await params.then(p => p.id).catch(() => 'unknown')
       }
     }
-
-    log('info', `Response: 500 Internal Server Error`, {
-      requestId,
-      responseTime: `${responseTime}ms`
-    })
 
     return NextResponse.json(response, { status: 500 })
   }

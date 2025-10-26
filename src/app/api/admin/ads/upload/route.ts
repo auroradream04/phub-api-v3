@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
       try {
         // Get video duration first
         duration = await getVideoDuration(tempFilePath)
-        console.log(`Video duration: ${duration} seconds`)
+
 
         // Convert to HLS segments
         const { segments: hlsSegments } = await convertToHLSSegments(
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
           segmentDuration
         )
 
-        console.log(`Created ${hlsSegments.length} segments`)
+
 
         // Create database segment records
         for (const segment of hlsSegments) {
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
         await unlink(tempFilePath)
 
       } catch (error) {
-        console.error('Failed to convert to HLS segments:', error)
+
         // Fallback: save as single file
         const fallbackPath = join(uploadDir, 'ad.mp4')
         await writeFile(fallbackPath, buffer)
@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
       }
     } else {
       // No FFmpeg, keep original
-      console.warn('FFmpeg not available, keeping original format')
+
       const fallbackPath = join(uploadDir, 'ad.mp4')
       await writeFile(fallbackPath, buffer)
       duration = 3 // Default duration
@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(ad)
   } catch (error) {
-    console.error('Error uploading ad:', error)
+
     return NextResponse.json(
       { error: 'Failed to upload ad' },
       { status: 500 }

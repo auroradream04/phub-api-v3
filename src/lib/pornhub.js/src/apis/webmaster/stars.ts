@@ -18,7 +18,7 @@ export async function stars(engine: Engine): Promise<string[]> {
         return result.stars.map(x => x.star.star_name)
     }
     catch (err) {
-        console.error(err)
+
         return []
     }
 }

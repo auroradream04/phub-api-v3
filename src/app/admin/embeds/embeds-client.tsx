@@ -88,7 +88,7 @@ export default function EmbedsClient() {
       setEmbeds(data.data)
       setTotal(data.total)
     } catch (error) {
-      console.error('Error fetching embeds:', error)
+
     } finally {
       setLoading(false)
     }
@@ -119,7 +119,7 @@ export default function EmbedsClient() {
 
         const res = await fetch(`/api/admin/embeds/search-video?${params}`)
         if (!res.ok) {
-          console.error('Error searching videos')
+
           setSearching(false)
           return
         }
@@ -127,7 +127,7 @@ export default function EmbedsClient() {
         const data: SearchResponse = await res.json()
         setSearchResults(data.videos)
       } catch (error) {
-        console.error('Error searching videos:', error)
+
       } finally {
         setSearching(false)
       }
@@ -169,7 +169,7 @@ export default function EmbedsClient() {
 
         const res = await fetch(`/api/admin/embeds/fetch-video?${params}`)
         if (!res.ok) {
-          console.error('Failed to fetch video')
+
           setFetchingManualVideo(false)
           return
         }
@@ -178,7 +178,7 @@ export default function EmbedsClient() {
         handleSelectVideo(video)
         setManualVideoInput('')
       } catch (error) {
-        console.error('Error fetching video:', error)
+
       } finally {
         setFetchingManualVideo(false)
       }
@@ -203,7 +203,7 @@ export default function EmbedsClient() {
 
       if (!res.ok) {
         const errorData = await res.json()
-        console.error('API error:', errorData)
+
         alert(`Failed to create embed: ${JSON.stringify(errorData.error || errorData)}`)
         return
       }
@@ -212,7 +212,7 @@ export default function EmbedsClient() {
       setPage(1)
       fetchEmbeds()
     } catch (error) {
-      console.error('Error creating embed:', error)
+
       alert('Error creating embed')
     }
   }
@@ -237,7 +237,7 @@ export default function EmbedsClient() {
       }
       fetchEmbeds()
     } catch (error) {
-      console.error('Error deleting embed:', error)
+
       alert('Error deleting embed')
     }
   }

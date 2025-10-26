@@ -39,7 +39,7 @@ export default function EmbedEditClient({ embedId }: { embedId: string }) {
       setRedirectUrl(data.redirectUrl)
       setEnabled(data.enabled)
     } catch (error) {
-      console.error('Error fetching embed:', error)
+
       alert('Failed to load embed')
     } finally {
       setLoading(false)
@@ -72,7 +72,7 @@ export default function EmbedEditClient({ embedId }: { embedId: string }) {
       alert('Embed updated successfully!')
       router.push(`/admin/embeds/${embedId}`)
     } catch (error) {
-      console.error('Error saving embed:', error)
+
       const message = error instanceof Error ? error.message : 'Failed to save embed'
       alert(message)
     } finally {

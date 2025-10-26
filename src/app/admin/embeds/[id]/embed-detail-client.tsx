@@ -60,7 +60,7 @@ export default function EmbedDetailClient({ embedId }: { embedId: string }) {
         setAnalytics(analyticsData)
       }
     } catch (error) {
-      console.error('Error fetching data:', error)
+
     } finally {
       setLoading(false)
     }
@@ -82,7 +82,7 @@ export default function EmbedDetailClient({ embedId }: { embedId: string }) {
         alert('Updated successfully!')
       }
     } catch (error) {
-      console.error('Error updating:', error)
+
       alert('Error updating embed')
     }
   }

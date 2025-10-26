@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
       counting: result.counting,
     })
   } catch (error) {
-    console.error('Error searching videos:', error)
+
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

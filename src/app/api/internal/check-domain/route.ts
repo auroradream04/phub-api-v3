@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
       reason: accessCheck.reason
     })
   } catch (error) {
-    console.error('[Internal] Error checking domain:', error)
+
     // Fail open - allow request on error
     return NextResponse.json({ allowed: true })
   }

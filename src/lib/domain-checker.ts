@@ -58,7 +58,6 @@ export async function checkDomainAccess(domain: string | null): Promise<{
       domainAccessId: domainRule.id
     }
   } catch (error) {
-    console.error('[DomainChecker] Error checking domain access:', error)
     // On error, allow the request (fail open)
     return { allowed: true }
   }
@@ -96,6 +95,5 @@ export async function logApiRequest(data: {
     })
   } catch (error) {
     // Silently fail - don't block requests if logging fails
-    console.error('[DomainChecker] Error logging request:', error)
   }
 }

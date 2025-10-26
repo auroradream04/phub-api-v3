@@ -396,7 +396,7 @@ export async function GET(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('[Maccms API] Error:', error)
+
 
     // Handle validation errors
     if (error instanceof z.ZodError) {

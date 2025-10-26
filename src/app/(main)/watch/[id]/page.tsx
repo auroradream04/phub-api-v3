@@ -90,7 +90,7 @@ export default function WatchPage() {
 
         setLoading(false)
       } catch (err) {
-        console.error('Failed to fetch data:', err)
+
         setError('无法加载视频信息')
         setLoading(false)
       }

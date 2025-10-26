@@ -29,14 +29,12 @@ export async function getVideoData(
     )
 
     if (!response.ok) {
-      console.error(`Failed to fetch video ${videoId}:`, response.status)
       return null
     }
 
     const data = await response.json()
     return data
   } catch (error) {
-    console.error(`Error fetching video ${videoId}:`, error)
     return null
   }
 }

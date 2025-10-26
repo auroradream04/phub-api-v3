@@ -44,7 +44,7 @@ function parseResult($: CheerioAPI) {
         const descriptionContainer = description.find('.descriptionContainer > ul')
         const descriptionGrid = descriptionContainer.children('li')
         if (descriptionContainer.children('li').length !== 4) {
-            console.warn(`[Channel] descriptionGrid length is ${descriptionGrid.length} instead of 4`)
+
             return null
         }
 

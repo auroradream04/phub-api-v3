@@ -184,7 +184,6 @@ export async function checkAndLogDomain(
         }
       }
     } catch (error) {
-      console.error('[DomainCheck] Error checking domain:', error)
       // Fail open - allow request on database error
     }
   }
@@ -210,7 +209,7 @@ export async function checkAndLogDomain(
         }
       })
     } catch (error) {
-      console.error('[DomainCheck] Error logging request:', error)
+      // Silently fail - don't block requests if logging fails
     }
   }
 
@@ -279,7 +278,7 @@ export async function checkDomainAccess(request: NextRequest): Promise<{
       }
     }
   } catch (error) {
-    console.error('[DomainCheck] Error:', error)
+    // Fail open on error
   }
 
   return { allowed: true }

@@ -11,7 +11,7 @@ function getFFmpegPath(): string | null {
     const ffmpegPath = typeof ffmpegStatic === 'string' ? ffmpegStatic : ffmpegStatic.path || ffmpegStatic.default
 
     if (ffmpegPath && existsSync(ffmpegPath)) {
-      console.log('FFmpeg found at:', ffmpegPath)
+
       return ffmpegPath
     }
 
@@ -24,15 +24,15 @@ function getFFmpegPath(): string | null {
 
     for (const p of possiblePaths) {
       if (existsSync(p)) {
-        console.log('FFmpeg found at fallback path:', p)
+
         return p
       }
     }
 
-    console.error('FFmpeg binary not found in any expected location')
+
     return null
   } catch (error) {
-    console.error('Error loading ffmpeg-static:', error)
+
     return null
   }
 }
@@ -70,11 +70,11 @@ export async function convertToTS(inputPath: string, outputPath: string): Promis
       ])
       .output(outputPath)
       .on('end', () => {
-        console.log(`Successfully converted to .ts: ${path.basename(outputPath)}`)
+
         resolve()
       })
       .on('error', (err) => {
-        console.error('FFmpeg conversion error:', err)
+
         reject(err)
       })
       .run()

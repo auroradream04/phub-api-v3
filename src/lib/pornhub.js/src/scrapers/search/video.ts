@@ -67,9 +67,9 @@ export function parseVideoResult($: CheerioAPI, container: string | Cheerio<Elem
 
         // Debug: Log if we found a preview video
         if (!previewVideo && preview) {
-            console.debug(`[VideoScraper] No preview video found for video ${id}`)
+
         } else if (previewVideo) {
-            console.debug(`[VideoScraper] Found preview video for ${id}: ${previewVideo.substring(0, 80)}...`)
+
         }
 
         // Extract provider information

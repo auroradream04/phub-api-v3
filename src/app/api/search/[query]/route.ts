@@ -35,8 +35,6 @@ export async function GET(
     const pageParam = searchParams.get('page')
     const page = pageParam ? parseInt(pageParam, 10) : 1
 
-    console.log(`[Search] Query: "${decodedQuery}", Page: ${page}`)
-
     const pornhub = new PornHub()
     let result = null
 
@@ -49,29 +47,22 @@ export async function GET(
       const proxyInfo = getRandomProxy('Search API')
 
       if (!proxyInfo) {
-        console.warn('[Search] No proxies available. Cannot make request.')
         break
       }
 
-      console.log(`[Search] Attempt ${attemptNum}/3 for query "${decodedQuery}" using proxy ${proxyInfo.proxyUrl}`)
       pornhub.setAgent(proxyInfo.agent)
 
-      const startTime = Date.now()
       try {
         const response = await pornhub.searchVideo(decodedQuery, { page })
 
-        const duration = Date.now() - startTime
-
         // Check for soft blocking (empty results)
         if (!response.data || response.data.length === 0) {
-          console.log(`[Search] ⚠️  Proxy ${proxyInfo.proxyUrl} returned empty results (soft block) after ${duration}ms - trying different proxy...`)
+          // Try different proxy
         } else {
-          console.log(`[Search] ✅ Proxy ${proxyInfo.proxyUrl} successful! Got ${response.data.length} results in ${duration}ms`)
           result = response
         }
       } catch (error: unknown) {
-        const duration = Date.now() - startTime
-        console.error(`[Search] ❌ Proxy ${proxyInfo.proxyUrl} failed after ${duration}ms:`, error instanceof Error ? error.message : 'Unknown error')
+        // Try different proxy
       }
 
       retries--
@@ -82,8 +73,6 @@ export async function GET(
       await domainCheck.logRequest(500, Date.now() - requestStart)
       throw new Error('Failed to fetch search results from PornHub')
     }
-
-    console.log(`[Search] Found ${result.data.length} results for "${decodedQuery}"`)
 
     // Log successful request
     await domainCheck.logRequest(200, Date.now() - requestStart)
@@ -96,7 +85,6 @@ export async function GET(
     })
 
   } catch (error) {
-    console.error('[Search] Error:', error)
     return NextResponse.json(
       {
         success: false,

@@ -91,7 +91,7 @@ export async function GET() {
       }
     })
   } catch (error) {
-    console.error('[API] Error fetching logs:', error)
+
     return NextResponse.json(
       { error: 'Failed to fetch logs' },
       { status: 500 }

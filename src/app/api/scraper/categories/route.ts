@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       let categoryScraped = 0
       let categoryErrors = 0
 
-      console.log(`[Scraper] Starting category: ${category.name} (ID: ${category.id})`)
+
 
       // Scrape specified number of pages for this category
       for (let page = 1; page <= pagesPerCategory; page++) {
@@ -55,17 +55,17 @@ export async function POST(request: NextRequest) {
             categoryScraped += scraperData.scraped
             totalScraped += scraperData.scraped
 
-            console.log(`[Scraper] ✓ ${category.name} page ${page}/${pagesPerCategory} - Scraped ${scraperData.scraped} videos`)
+
 
             // If no more pages available for this category, break
             if (!scraperData.hasMore) {
-              console.log(`[Scraper] No more pages for ${category.name}`)
+
               break
             }
           } else {
             categoryErrors++
             totalErrors++
-            console.error(`[Scraper] ✗ ${category.name} page ${page} - Error: ${scraperData.message}`)
+
           }
 
           // Small delay between requests to avoid rate limiting
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
         } catch (error) {
           categoryErrors++
           totalErrors++
-          console.error(`[Scraper] ✗ Failed to scrape ${category.name} page ${page}:`, error)
+
         }
       }
 
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
     }, { status: 200 })
 
   } catch (error) {
-    console.error('[Scraper] Error:', error)
+
     return NextResponse.json({
       success: false,
       message: error instanceof Error ? error.message : 'Unknown error',

@@ -187,7 +187,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       period: { from: dateFrom.toISOString(), to: new Date().toISOString(), days },
     })
   } catch (error) {
-    console.error('Error fetching analytics:', error)
+
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

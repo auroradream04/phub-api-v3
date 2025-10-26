@@ -37,7 +37,7 @@ export async function GET(
 
     // Check if file exists
     if (!existsSync(filePath)) {
-      console.error(`Ad file not found: ${filePath}`)
+
       return NextResponse.json(
         { error: 'Ad file not found' },
         { status: 404 }
@@ -62,7 +62,7 @@ export async function GET(
     })
 
   } catch (error) {
-    console.error('Error serving ad segment:', error)
+
     return NextResponse.json(
       { error: 'Failed to serve ad segment' },
       { status: 500 }

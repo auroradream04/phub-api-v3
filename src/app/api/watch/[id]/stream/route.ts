@@ -57,29 +57,22 @@ export async function GET(
       const proxyInfo = getRandomProxy('Stream API')
 
       if (!proxyInfo) {
-        console.warn('[Stream] No proxies available. Cannot make request.')
         break
       }
 
-      console.log(`[Stream] Attempt ${attemptNum}/3 for video ${id} (quality: ${quality}) using proxy ${proxyInfo.proxyUrl}`)
       pornhub.setAgent(proxyInfo.agent)
 
-      const startTime = Date.now()
       try {
         const response = await pornhub.video(id)
 
-        const duration = Date.now() - startTime
-
         // Check for soft blocking (missing media definitions)
         if (!response.mediaDefinitions || response.mediaDefinitions.length < 1) {
-          console.log(`[Stream] ⚠️  Proxy ${proxyInfo.proxyUrl} returned empty media definitions (soft block) after ${duration}ms - trying different proxy...`)
+          // Try different proxy
         } else {
-          console.log(`[Stream] ✅ Proxy ${proxyInfo.proxyUrl} successful! Got ${response.mediaDefinitions.length} quality options in ${duration}ms`)
           videoInfo = response
         }
       } catch (error: unknown) {
-        const duration = Date.now() - startTime
-        console.error(`[Stream] ❌ Proxy ${proxyInfo.proxyUrl} failed after ${duration}ms:`, error instanceof Error ? error.message : 'Unknown error')
+        // Try different proxy
       }
 
       retries--
@@ -105,7 +98,6 @@ export async function GET(
 
     const originalM3u8Url = mediaDefinition.videoUrl
 
-    console.log(`[Stream] Fetching original m3u8 from: ${originalM3u8Url}`)
     const m3u8Response = await fetch(originalM3u8Url)
 
     if (!m3u8Response.ok) {
@@ -115,15 +107,12 @@ export async function GET(
     const originalM3u8 = await m3u8Response.text()
 
     if (isMasterPlaylist(originalM3u8)) {
-      console.log('[Stream] Detected master playlist, fetching variant playlist')
-
       const variantUrl = extractFirstVariantUrl(originalM3u8, originalM3u8Url)
 
       if (!variantUrl) {
         throw new Error('Could not extract variant playlist URL')
       }
 
-      console.log(`[Stream] Fetching variant playlist from: ${variantUrl}`)
       const variantResponse = await fetch(variantUrl)
 
       if (!variantResponse.ok) {
@@ -156,7 +145,6 @@ export async function GET(
     })
 
   } catch (error) {
-    console.error('[Stream] Error:', error)
     await domainCheck.logRequest(500, Date.now() - requestStart)
     return NextResponse.json(
       { error: 'Failed to generate stream' },
@@ -275,8 +263,6 @@ async function injectAds(m3u8Text: string, quality: string, baseUrl: string, vid
       headerComplete = true
 
       if (selectedAd && selectedAd.segments.length > 0 && !adInjected) {
-        console.log(`[Stream] Injecting ad "${selectedAd.title}" for quality ${quality}, replacing first ${segmentsToSkip} segments`)
-
         // Select a random segment from the ad
         const randomSegment = selectedAd.segments[Math.floor(Math.random() * selectedAd.segments.length)]
 
@@ -310,16 +296,14 @@ async function injectAds(m3u8Text: string, quality: string, baseUrl: string, vid
             }
           })
         } catch (error) {
-          console.error('Failed to record ad impression:', error)
+          // Failed to record impression
         }
 
         // Skip the first segment (don't add it to result)
-        console.log(`[Stream] Skipping segment 1/${segmentsToSkip}`)
         pendingExtInf = '' // Clear the pending EXTINF for first segment
         skippedSegments = 1
         continue
       } else if (!selectedAd || selectedAd.segments.length === 0) {
-        console.log(`[Stream] No ads available for quality ${quality}`)
         // No ad, so add the first segment normally
         if (pendingExtInf) {
           result.push(pendingExtInf)
@@ -337,13 +321,11 @@ async function injectAds(m3u8Text: string, quality: string, baseUrl: string, vid
       // Skip segments if we need to
       if (adInjected && skippedSegments < segmentsToSkip) {
         skippedSegments++
-        console.log(`[Stream] Skipping segment ${skippedSegments}/${segmentsToSkip}`)
         pendingExtInf = '' // Clear the pending EXTINF
         continue
       }
 
       segmentCount++
-      console.log(`[Stream] Adding video segment ${segmentCount}: ${line.substring(0, 50)}...`)
 
       // Add the pending EXTINF before this segment
       if (pendingExtInf) {
@@ -369,6 +351,5 @@ async function injectAds(m3u8Text: string, quality: string, baseUrl: string, vid
     }
   }
 
-  console.log(`[Stream] Final m3u8 has ${segmentCount} video segments`)
   return result.join('\n')
 }

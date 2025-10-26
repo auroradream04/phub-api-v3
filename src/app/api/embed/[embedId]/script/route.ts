@@ -65,7 +65,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
           referrerDomain: window.location.hostname,
           userAgent: navigator.userAgent
         })
-      }).catch(e => console.debug('Embed impression tracking failed:', e));
+
 
       // Display preview or placeholder
       let html = '';
@@ -119,14 +119,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
             referrerDomain: window.location.hostname,
             userAgent: navigator.userAgent
           })
-        }).catch(e => console.debug('Embed click tracking failed:', e));
+
 
         // Navigate to redirect URL
         window.open(data.redirectUrl, '_blank');
       };
     })
     .catch(error => {
-      console.error('Failed to load embed:', error);
+
       widget.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#999;font-size:12px;">Failed to load</div>';
     });
 })();
@@ -141,8 +141,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
       },
     })
   } catch (error) {
-    console.error('Error generating embed script:', error)
-    const errorScript = `console.error('Failed to load embed script');`
+
+
     return new NextResponse(errorScript, {
       status: 500,
       headers: {

@@ -160,7 +160,7 @@ export function parseMediaDefinition(html: string): MediaDefinition[] {
     while (true) {
         const match = mediaDefinitionRegex.exec(html)
         if (!match) {
-            console.log(`[Scraper] Total regex matches found: ${matchCount}, total parsed definitions: ${mediaDefinitions.length}`)
+
             break
         }
         matchCount++
@@ -235,7 +235,7 @@ export function parseMediaDefinition(html: string): MediaDefinition[] {
                     continue
                 }
                 catch (parseError) {
-                    console.warn('[Scraper] Failed to parse concatenated JSON, using first URL only:', parseError instanceof Error ? parseError.message : String(parseError))
+
                     videoUrl = actualFirstUrl
                 }
             }
@@ -250,7 +250,7 @@ export function parseMediaDefinition(html: string): MediaDefinition[] {
             })
         }
         catch (error) {
-            console.warn('Failed to parse media definition:', error instanceof Error ? error.message : String(error))
+
         }
     }
 

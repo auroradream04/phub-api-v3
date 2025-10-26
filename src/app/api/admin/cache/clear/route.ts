@@ -32,14 +32,14 @@ export async function POST(request: NextRequest) {
       target = `video-${videoId}`
       cleared = `video-${videoId}`
       trackCacheClear(`video-${videoId}`)
-      console.log(`[Cache] Cleared cache for video: ${videoId}`)
+
     } else {
       // Clear all video cache
       revalidateTag('videos')
       target = 'all'
       cleared = 'all videos'
       trackCacheClear('all')
-      console.log('[Cache] Cleared cache for all videos')
+
     }
 
     // Log to database
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
         }
       })
     } catch (dbError) {
-      console.error('[Cache] Failed to log cache clear to database:', dbError)
+
       // Don't fail the whole request if logging fails
     }
 
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     )
   } catch (error) {
-    console.error('[Cache] Error clearing cache:', error)
+
 
     // Log failure to database
     try {
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
         }
       })
     } catch (dbError) {
-      console.error('[Cache] Failed to log cache error to database:', dbError)
+
     }
 
     return NextResponse.json(

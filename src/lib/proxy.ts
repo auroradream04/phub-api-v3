@@ -15,7 +15,6 @@ export function getProxyList(): string[] {
 
     // Check if file exists
     if (!fs.existsSync(proxyFilePath)) {
-      console.warn('[Proxy] proxies.txt not found. Proceeding without proxies.');
       return [];
     }
 
@@ -45,14 +44,11 @@ export function getProxyList(): string[] {
     });
 
     if (proxies.length === 0) {
-      console.warn('[Proxy] No proxies found in proxies.txt. Proceeding without proxies.');
       return [];
     }
 
-    console.log(`[Proxy] Loaded ${proxies.length} proxy(ies) from proxies.txt`);
     return proxies;
   } catch (error) {
-    console.error('[Proxy] Error reading proxies.txt:', error);
     return [];
   }
 }
@@ -73,39 +69,28 @@ export function getRandomProxy(route?: string): { agent: HttpsProxyAgent<string>
     // Select random proxy
     const randomProxy = proxyList[Math.floor(Math.random() * proxyList.length)];
 
-    // Extract host:port for logging (mask credentials)
-    const maskedProxy = randomProxy.replace(/:[^:@]+@/, ':****@');
-
     // Extract just host:port for easier identification
     const urlMatch = randomProxy.match(/@([^:]+):(\d+)/);
+    const maskedProxy = randomProxy.replace(/:[^:@]+@/, ':****@');
     const hostPort = urlMatch ? `${urlMatch[1]}:${urlMatch[2]}` : maskedProxy;
-
-    const routePrefix = route ? `[${route}]` : '[Proxy]';
-    console.log(`${routePrefix} Selected proxy: ${hostPort}`);
-    console.log(`${routePrefix} Proxy URL format: ${maskedProxy}`);
 
     // Determine proxy type and create appropriate agent
     // For HTTP proxies connecting to HTTPS sites, we need HttpsProxyAgent
     let agent;
     if (randomProxy.startsWith('socks4://') || randomProxy.startsWith('socks5://')) {
       agent = new SocksProxyAgent(randomProxy);
-      console.log(`${routePrefix} Using SocksProxyAgent`);
     } else if (randomProxy.startsWith('http://')) {
       // For HTTP proxy to HTTPS target, use HttpsProxyAgent
       agent = new HttpsProxyAgent(randomProxy);
-      console.log(`${routePrefix} Using HttpsProxyAgent for HTTP proxy`);
     } else if (randomProxy.startsWith('https://')) {
       agent = new HttpsProxyAgent(randomProxy);
-      console.log(`${routePrefix} Using HttpsProxyAgent`);
     } else {
       // Default to HTTPS proxy if no protocol specified
       agent = new HttpsProxyAgent(randomProxy);
-      console.log(`${routePrefix} Using HttpsProxyAgent (default)`);
     }
 
     return { agent, proxyUrl: hostPort };
   } catch (error) {
-    console.error('[Proxy] Error creating proxy agent:', error);
     return null;
   }
 }

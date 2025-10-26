@@ -41,11 +41,11 @@ export async function PATCH(
       }
     })
 
-    console.log(`[Admin] Domain ${existing.domain} updated by ${session.user.email}`)
+
 
     return NextResponse.json(updated)
   } catch (error) {
-    console.error('[API] Error updating domain:', error)
+
     return NextResponse.json(
       { error: 'Failed to update domain' },
       { status: 500 }
@@ -84,11 +84,11 @@ export async function DELETE(
       where: { id }
     })
 
-    console.log(`[Admin] Domain ${existing.domain} deleted by ${session.user.email}`)
+
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('[API] Error deleting domain:', error)
+
     return NextResponse.json(
       { error: 'Failed to delete domain' },
       { status: 500 }

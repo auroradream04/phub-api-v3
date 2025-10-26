@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('[API] Error fetching domains:', error)
+
     return NextResponse.json(
       { error: 'Failed to fetch domains' },
       { status: 500 }
@@ -137,11 +137,11 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    console.log(`[Admin] Domain ${domain} added with status: ${status}, type: ${type}`)
+
 
     return NextResponse.json(newDomain, { status: 201 })
   } catch (error) {
-    console.error('[API] Error creating domain:', error)
+
     return NextResponse.json(
       { error: 'Failed to create domain' },
       { status: 500 }

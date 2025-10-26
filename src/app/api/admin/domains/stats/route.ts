@@ -108,7 +108,7 @@ export async function GET(request: NextRequest) {
       }))
     })
   } catch (error) {
-    console.error('[API] Error fetching domain stats:', error)
+
     return NextResponse.json(
       { error: 'Failed to fetch statistics' },
       { status: 500 }

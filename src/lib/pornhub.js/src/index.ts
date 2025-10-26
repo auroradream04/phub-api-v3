@@ -100,7 +100,7 @@ export class PornHub {
      * @deprecated This method is no longer needed.
      */
     async warmup() {
-        console.warn('`warmup` has been deprecated. You can safely remove this method call. It has been handled internally.')
+
         // no-op
     }
 

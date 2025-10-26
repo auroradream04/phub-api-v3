@@ -14,7 +14,7 @@ export async function search(engine: Engine, keyword: string, options: Webmaster
         return result.videos.map(x => videoTransform(x))
     }
     catch (err) {
-        console.error(err)
+
         return []
     }
 }

@@ -25,7 +25,7 @@ export async function video_is_active(engine: Engine, urlOrId: string): Promise<
         return result.active.is_active === '1'
     }
     catch (err) {
-        console.error(err)
+
         return false
     }
 }

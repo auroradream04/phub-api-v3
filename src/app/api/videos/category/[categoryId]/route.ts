@@ -81,7 +81,7 @@ export async function GET(
         categoryName = category.category
       }
     } catch (err) {
-      console.warn('Could not fetch category name:', err)
+
     }
 
     // Add category info to the response
@@ -95,7 +95,7 @@ export async function GET(
 
     return NextResponse.json(response)
   } catch (error) {
-    console.error('[API] Error fetching videos by category from PornHub:', error)
+
 
     return NextResponse.json(
       {
@@ -116,7 +116,7 @@ async function handleCustomCategory(request: NextRequest, categoryId: number) {
 
     const categoryName = CUSTOM_CATEGORIES[categoryId]
 
-    console.log(`[Custom Category] ${categoryName}, Page: ${page} - Using PornHub search`)
+
 
     // Use PornHub search API to find videos
     const result = await pornhub.searchVideo(categoryName, {
@@ -152,7 +152,7 @@ async function handleCustomCategory(request: NextRequest, categoryId: number) {
 
     return NextResponse.json(response)
   } catch (error) {
-    console.error('[Custom Category] Error:', error)
+
 
     // Check if it's a JSON parse error (rate limiting)
     const errorMessage = error instanceof Error ? error.message : String(error)

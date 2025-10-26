@@ -117,7 +117,7 @@ export async function GET(request: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('[API] Error fetching detailed logs:', error)
+
     return NextResponse.json(
       { error: 'Failed to fetch detailed logs' },
       { status: 500 }

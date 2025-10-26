@@ -79,7 +79,7 @@ export default function EmbedDetailPage() {
           })
         }
       } catch (err) {
-        console.error('Failed to fetch preview:', err)
+
         // Silently fail - preview is optional
       } finally {
         setPreviewLoading(false)

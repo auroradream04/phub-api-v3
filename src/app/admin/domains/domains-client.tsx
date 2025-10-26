@@ -70,7 +70,7 @@ export default function DomainsClient() {
       const data = await response.json()
       setDomains(data.domains || [])
     } catch {
-      console.error('Failed to fetch domains')
+
     } finally {
       setLoading(false)
     }
@@ -84,7 +84,7 @@ export default function DomainsClient() {
       const data = await response.json()
       setLogs(data.logs || [])
     } catch {
-      console.error('Failed to fetch logs')
+
     } finally {
       setLoading(false)
     }
@@ -98,7 +98,7 @@ export default function DomainsClient() {
       const data = await response.json()
       setDetailedLogs(data.logs || [])
     } catch {
-      console.error('Failed to fetch detailed logs')
+
     } finally {
       setLoading(false)
     }

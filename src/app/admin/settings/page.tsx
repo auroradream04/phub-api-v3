@@ -24,7 +24,7 @@ export default function AdminSettingsPage() {
       const data = await response.json()
       setSettings(data)
     } catch (error) {
-      console.error('Failed to fetch settings:', error)
+
       setMessage({ type: 'error', text: 'Failed to load settings' })
     } finally {
       setLoading(false)
@@ -46,7 +46,7 @@ export default function AdminSettingsPage() {
 
       setMessage({ type: 'success', text: 'Settings saved successfully!' })
     } catch (error) {
-      console.error('Failed to save settings:', error)
+
       setMessage({ type: 'error', text: 'Failed to save settings' })
     } finally {
       setSaving(false)

@@ -28,7 +28,7 @@ function getFFmpegPath(): string | null {
 
     return null
   } catch (error) {
-    console.error('Error loading ffmpeg-static:', error)
+
     return null
   }
 }
@@ -69,11 +69,11 @@ function ensureFFmpegConfigured() {
       // Only set ffprobe path if it exists
       if (ffprobePath) {
         ffmpeg.setFfprobePath(ffprobePath)
-        console.log('FFprobe configured:', ffprobePath)
+
       }
 
       ffmpegConfigured = true
-      console.log('FFmpeg configured:', ffmpegPath)
+
     }
   }
 }
@@ -128,7 +128,7 @@ function getVideoDurationWithFFmpeg(inputPath: string): Promise<number> {
       })
       .on('error', (err) => {
         // If we can't get duration, default to 10 seconds
-        console.warn('Could not get video duration, using default:', err.message)
+
         resolve(10)
       })
       .on('end', () => {
@@ -203,7 +203,7 @@ export async function convertToHLSSegments(
       ])
       .output(playlistPath)
       .on('end', async () => {
-        console.log('HLS conversion complete')
+
 
         // Read generated segments
         const files = await readdir(outputDir)
@@ -218,7 +218,7 @@ export async function convertToHLSSegments(
             return aNum - bNum
           })
 
-        console.log(`Found ${segmentFiles.length} segments for ${totalDuration}s video (expected ~${Math.ceil(totalDuration / segmentDuration)})`)
+
 
         // Calculate duration for each segment
         segmentFiles.forEach((filename, index) => {
@@ -242,7 +242,7 @@ export async function convertToHLSSegments(
         resolve({ segments, totalDuration })
       })
       .on('error', (err) => {
-        console.error('FFmpeg error:', err)
+
         reject(err)
       })
       .run()

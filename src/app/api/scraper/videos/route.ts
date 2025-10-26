@@ -59,10 +59,10 @@ export async function POST(request: NextRequest) {
         : (typeof categoryId === 'number' ? categoryId : parseInt(categoryId, 10))
 
       currentCategory = { id: numericId, name: categoryName || 'Unknown' }
-      console.log(`[Scraper] Fetching ${categoryName} (ID: ${categoryId}) - page ${page}`)
+
     } else {
       apiUrl = `${baseUrl}/api/home?page=${page}`
-      console.log(`[Scraper] Fetching homepage - page ${page}`)
+
     }
 
     const response = await fetch(apiUrl)
@@ -115,13 +115,13 @@ export async function POST(request: NextRequest) {
         // Apply filters: skip if video doesn't meet minimum requirements
         if (minViews > 0 && views < minViews) {
           skippedCount++
-          console.log(`[Scraper] ⊘ Skipped: ${video.id} - ${video.title} (views: ${views} < ${minViews})`)
+
           continue
         }
 
         if (minDuration > 0 && durationSeconds < minDuration) {
           skippedCount++
-          console.log(`[Scraper] ⊘ Skipped: ${video.id} - ${video.title} (duration: ${durationSeconds}s < ${minDuration}s)`)
+
           continue
         }
         const publishDate = new Date()
@@ -216,10 +216,10 @@ export async function POST(request: NextRequest) {
         })
 
         scrapedCount++
-        console.log(`[Scraper] ✓ Saved: ${video.id} - ${cleanTitle} [${typeName}]`)
+
       } catch (error) {
         errorCount++
-        console.error(`[Scraper] ✗ Failed to save video ${video.id}:`, error)
+
       }
     }
 
@@ -246,7 +246,7 @@ export async function POST(request: NextRequest) {
     }, { status: 200 })
 
   } catch (error) {
-    console.error('[Scraper] Error:', error)
+
     return NextResponse.json({
       success: false,
       message: error instanceof Error ? error.message : 'Unknown error',
@@ -269,7 +269,7 @@ export async function GET() {
       categories: videosByCategory.sort((a, b) => a.typeId - b.typeId),
     })
   } catch (error) {
-    console.error('[Scraper] Error:', error)
+
     return NextResponse.json({
       success: false,
       message: 'Failed to get scraper status',
@@ -287,7 +287,7 @@ export async function DELETE() {
       deleted: deleted.count,
     })
   } catch (error) {
-    console.error('[Scraper] Error:', error)
+
     return NextResponse.json({
       success: false,
       message: 'Failed to delete videos',

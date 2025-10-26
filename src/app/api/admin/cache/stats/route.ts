@@ -59,7 +59,7 @@ export async function GET() {
       timestamp: new Date().toISOString()
     })
   } catch (error) {
-    console.error('[Cache Stats] Error:', error)
+
     return NextResponse.json(
       {
         error: 'Failed to fetch cache stats',

@@ -23,7 +23,7 @@ export default function HorizontalAdsSlider() {
         setAds(adsData.horizontalAds || [])
       })
       .catch(error => {
-        console.error('Failed to fetch ads:', error)
+
       })
   }, [])
 

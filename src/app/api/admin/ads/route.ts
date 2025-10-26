@@ -41,7 +41,7 @@ export async function GET() {
 
     return NextResponse.json(ads)
   } catch (error) {
-    console.error('Error fetching ads:', error)
+
     return NextResponse.json(
       { error: 'Failed to fetch ads' },
       { status: 500 }
@@ -75,7 +75,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Error deleting ad:', error)
+
     return NextResponse.json(
       { error: 'Failed to delete ad' },
       { status: 500 }
@@ -136,7 +136,7 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json(updatedAd)
   } catch (error) {
-    console.error('Error updating ad:', error)
+
     return NextResponse.json(
       { error: 'Failed to update ad' },
       { status: 500 }

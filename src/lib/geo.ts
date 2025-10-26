@@ -42,7 +42,6 @@ export async function getCountryFromIP(ip: string | null): Promise<string | null
     const data = await response.json()
     return data.countryCode || null
   } catch (error) {
-    console.error('[GeoIP] Error looking up country:', error)
     return null
   }
 }

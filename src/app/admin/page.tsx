@@ -85,7 +85,7 @@ export default function AdminDashboard() {
       const data = await res.json()
       setStats(data)
     } catch (error) {
-      console.error('Failed to fetch stats:', error)
+
     }
   }
 
@@ -97,7 +97,7 @@ export default function AdminDashboard() {
         setCategories(data.categories)
       }
     } catch (error) {
-      console.error('Failed to fetch categories:', error)
+
     }
   }
 
@@ -108,7 +108,7 @@ export default function AdminDashboard() {
       const data = await res.json()
       setCacheStats(data)
     } catch (error) {
-      console.error('Failed to fetch cache stats:', error)
+
     } finally {
       setStatsLoading(false)
     }

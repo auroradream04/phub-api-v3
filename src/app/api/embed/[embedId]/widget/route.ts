@@ -45,7 +45,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
       )
     }
 
-    console.log(`[Widget] DB query took ${dbTime}ms`)
+
 
     // Fetch video preview from search route (cached with Next.js caching)
     let preview = null
@@ -59,19 +59,19 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
       })
       const searchTime = Date.now() - searchStart
 
-      console.log(`[Widget] Search route took ${searchTime}ms`)
+
 
       if (searchResponse.ok) {
         preview = await searchResponse.json()
       }
     } catch (err) {
-      console.error('Error fetching video preview from search route:', err)
+
       // Continue without preview - it's not critical
     }
 
     // Return widget data
     const totalTime = Date.now() - startTime
-    console.log(`[Widget] Total time: ${totalTime}ms`)
+
 
     return NextResponse.json(
       {
@@ -90,7 +90,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
       }
     )
   } catch (error) {
-    console.error('Error fetching embed widget:', error)
+
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500, headers: getCorsHeaders() }
