@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 
 interface VideoEmbed {
   id: string
@@ -15,10 +16,25 @@ interface VideoEmbed {
   _count?: { analytics: number }
 }
 
+interface SearchVideo {
+  id: string
+  videoId: string
+  title: string
+  preview: string
+  previewVideo?: string
+  url: string
+}
+
 interface EmbedResponse {
   data: VideoEmbed[]
   total: number
   pages: number
+}
+
+interface SearchResponse {
+  videos: SearchVideo[]
+  paging?: Record<string, unknown>
+  counting?: Record<string, unknown>
 }
 
 export default function EmbedsClient() {
@@ -28,6 +44,10 @@ export default function EmbedsClient() {
   const [total, setTotal] = useState(0)
   const [search, setSearch] = useState('')
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [videoSearch, setVideoSearch] = useState('')
+  const [searchResults, setSearchResults] = useState<SearchVideo[]>([])
+  const [searching, setSearching] = useState(false)
+  const [selectedVideo, setSelectedVideo] = useState<SearchVideo | null>(null)
   const [formData, setFormData] = useState({
     videoId: '',
     title: '',
@@ -63,7 +83,52 @@ export default function EmbedsClient() {
     }
   }
 
+  async function handleSearchVideos() {
+    if (!videoSearch || videoSearch.length < 2) {
+      alert('Search term must be at least 2 characters')
+      return
+    }
+
+    try {
+      setSearching(true)
+      const params = new URLSearchParams({
+        q: videoSearch,
+        page: '1',
+      })
+
+      const res = await fetch(`/api/admin/embeds/search-video?${params}`)
+      if (!res.ok) {
+        alert('Error searching videos')
+        return
+      }
+
+      const data: SearchResponse = await res.json()
+      setSearchResults(data.videos)
+    } catch (error) {
+      console.error('Error searching videos:', error)
+      alert('Error searching videos')
+    } finally {
+      setSearching(false)
+    }
+  }
+
+  function handleSelectVideo(video: SearchVideo) {
+    setSelectedVideo(video)
+    setFormData({
+      videoId: video.videoId,
+      title: video.title,
+      preview: video.preview,
+      previewVideo: video.previewVideo || '',
+      redirectUrl: '',
+    })
+  }
+
   async function handleCreateEmbed() {
+    if (!formData.redirectUrl) {
+      alert('Please enter a redirect URL')
+      return
+    }
+
     try {
       const res = await fetch('/api/admin/embeds', {
         method: 'POST',
@@ -76,14 +141,21 @@ export default function EmbedsClient() {
         return
       }
 
-      setFormData({ videoId: '', title: '', preview: '', previewVideo: '', redirectUrl: '' })
-      setShowCreateModal(false)
+      resetCreateModal()
       setPage(1)
       fetchEmbeds()
     } catch (error) {
       console.error('Error creating embed:', error)
       alert('Error creating embed')
     }
+  }
+
+  function resetCreateModal() {
+    setFormData({ videoId: '', title: '', preview: '', previewVideo: '', redirectUrl: '' })
+    setSelectedVideo(null)
+    setVideoSearch('')
+    setSearchResults([])
+    setShowCreateModal(false)
   }
 
   async function handleDeleteEmbed(id: string) {
@@ -236,75 +308,137 @@ export default function EmbedsClient() {
       {/* Create Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-card border border-border rounded-lg p-6 max-w-md w-full">
+          <div className="bg-card border border-border rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <h2 className="text-lg font-bold text-foreground mb-4">Create New Embed</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Video ID</label>
-                <input
-                  type="text"
-                  value={formData.videoId}
-                  onChange={(e) => setFormData({ ...formData, videoId: e.target.value })}
-                  placeholder="e.g., ph123456"
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Title</label>
-                <input
-                  type="text"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="Video title"
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Preview Image URL</label>
-                <input
-                  type="url"
-                  value={formData.preview}
-                  onChange={(e) => setFormData({ ...formData, preview: e.target.value })}
-                  placeholder="https://..."
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Preview Video URL (Optional)</label>
-                <input
-                  type="url"
-                  value={formData.previewVideo}
-                  onChange={(e) => setFormData({ ...formData, previewVideo: e.target.value })}
-                  placeholder="https://..."
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Redirect URL</label>
-                <input
-                  type="url"
-                  value={formData.redirectUrl}
-                  onChange={(e) => setFormData({ ...formData, redirectUrl: e.target.value })}
-                  placeholder="https://..."
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-            </div>
 
+            {!selectedVideo ? (
+              // Search Step
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">Search for a Video</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={videoSearch}
+                      onChange={(e) => setVideoSearch(e.target.value)}
+                      placeholder="e.g., teen, amateur, etc..."
+                      onKeyDown={(e) => e.key === 'Enter' && handleSearchVideos()}
+                      className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                    <button
+                      onClick={handleSearchVideos}
+                      disabled={searching}
+                      className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                    >
+                      {searching ? 'Searching...' : 'Search'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Search Results */}
+                {searchResults.length > 0 && (
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-foreground">Select a Video</label>
+                    <div className="grid grid-cols-2 gap-3 max-h-96 overflow-y-auto">
+                      {searchResults.map((video) => (
+                        <button
+                          key={video.id}
+                          onClick={() => handleSelectVideo(video)}
+                          className="text-left p-3 rounded-lg border border-border hover:border-primary hover:bg-muted/50 transition-all group"
+                        >
+                          <div className="relative w-full aspect-video bg-muted rounded mb-2 overflow-hidden">
+                            <Image
+                              src={video.preview}
+                              alt={video.title}
+                              fill
+                              className="object-cover group-hover:scale-110 transition-transform"
+                            />
+                          </div>
+                          <div className="text-xs font-medium text-foreground line-clamp-2">{video.title}</div>
+                          <div className="text-xs text-muted-foreground">{video.videoId}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              // Details Step
+              <div className="space-y-4">
+                {/* Selected Video Preview */}
+                <div className="bg-muted rounded-lg p-4">
+                  <div className="flex gap-4">
+                    <div className="w-32 h-24 rounded overflow-hidden flex-shrink-0">
+                      <Image
+                        src={selectedVideo.preview}
+                        alt={selectedVideo.title}
+                        width={128}
+                        height={96}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-foreground mb-1">{selectedVideo.title}</h3>
+                      <p className="text-xs text-muted-foreground">ID: {selectedVideo.videoId}</p>
+                      <button
+                        onClick={() => {
+                          setSelectedVideo(null)
+                          setSearchResults([])
+                          setVideoSearch('')
+                        }}
+                        className="text-xs text-primary hover:text-primary/80 mt-2"
+                      >
+                        Change Video
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Redirect URL */}
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">Redirect URL *</label>
+                  <input
+                    type="url"
+                    value={formData.redirectUrl}
+                    onChange={(e) => setFormData({ ...formData, redirectUrl: e.target.value })}
+                    placeholder="https://yoursite.com or https://affiliate-link.com"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Where users will be taken when they click the embed
+                  </p>
+                </div>
+
+                {/* Info */}
+                <div className="bg-muted/50 rounded p-3 text-xs text-muted-foreground">
+                  <p className="font-medium mb-1">Preview Details Auto-filled:</p>
+                  <ul className="space-y-1">
+                    <li>✓ Video ID: {formData.videoId}</li>
+                    <li>✓ Title: {formData.title}</li>
+                    <li>✓ Preview Image: Fetched</li>
+                    {formData.previewVideo && <li>✓ Preview Video: Fetched</li>}
+                  </ul>
+                </div>
+              </div>
+            )}
+
+            {/* Buttons */}
             <div className="flex gap-2 mt-6">
               <button
-                onClick={() => setShowCreateModal(false)}
+                onClick={resetCreateModal}
                 className="flex-1 rounded-md border border-input px-4 py-2 text-sm font-semibold hover:bg-muted transition-colors"
               >
                 Cancel
               </button>
-              <button
-                onClick={handleCreateEmbed}
-                disabled={!formData.videoId || !formData.title || !formData.preview || !formData.redirectUrl}
-                className="flex-1 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                Create
-              </button>
+              {selectedVideo && (
+                <button
+                  onClick={handleCreateEmbed}
+                  disabled={!formData.redirectUrl}
+                  className="flex-1 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Create Embed
+                </button>
+              )}
             </div>
           </div>
         </div>
