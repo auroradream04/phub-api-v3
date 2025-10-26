@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 
@@ -50,6 +50,8 @@ export default function EmbedsClient() {
   const [selectedVideo, setSelectedVideo] = useState<SearchVideo | null>(null)
   const [manualVideoInput, setManualVideoInput] = useState('')
   const [fetchingManualVideo, setFetchingManualVideo] = useState(false)
+  const searchTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
+  const manualTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
   const [formData, setFormData] = useState({
     videoId: '',
     title: '',
@@ -85,33 +87,44 @@ export default function EmbedsClient() {
     }
   }
 
-  async function handleSearchVideos() {
-    if (!videoSearch || videoSearch.length < 2) {
-      alert('Search term must be at least 2 characters')
+  function handleSearchVideosDebounced(query: string) {
+    // Clear previous timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current)
+    }
+
+    // Show loading state immediately
+    if (query.length >= 2) {
+      setSearching(true)
+    } else {
+      setSearching(false)
+      setSearchResults([])
       return
     }
 
-    try {
-      setSearching(true)
-      const params = new URLSearchParams({
-        q: videoSearch,
-        page: '1',
-      })
+    // Set timeout for debounce
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        const params = new URLSearchParams({
+          q: query,
+          page: '1',
+        })
 
-      const res = await fetch(`/api/admin/embeds/search-video?${params}`)
-      if (!res.ok) {
-        alert('Error searching videos')
-        return
+        const res = await fetch(`/api/admin/embeds/search-video?${params}`)
+        if (!res.ok) {
+          console.error('Error searching videos')
+          setSearching(false)
+          return
+        }
+
+        const data: SearchResponse = await res.json()
+        setSearchResults(data.videos)
+      } catch (error) {
+        console.error('Error searching videos:', error)
+      } finally {
+        setSearching(false)
       }
-
-      const data: SearchResponse = await res.json()
-      setSearchResults(data.videos)
-    } catch (error) {
-      console.error('Error searching videos:', error)
-      alert('Error searching videos')
-    } finally {
-      setSearching(false)
-    }
+    }, 1000)
   }
 
   function handleSelectVideo(video: SearchVideo) {
@@ -125,34 +138,43 @@ export default function EmbedsClient() {
     })
   }
 
-  async function handleFetchManualVideo() {
-    if (!manualVideoInput || manualVideoInput.length < 2) {
-      alert('Please enter a video ID or link')
+  function handleFetchManualVideoDebounced(input: string) {
+    // Clear previous timeout
+    if (manualTimeoutRef.current) {
+      clearTimeout(manualTimeoutRef.current)
+    }
+
+    // Show loading state immediately
+    if (input.length >= 2) {
+      setFetchingManualVideo(true)
+    } else {
+      setFetchingManualVideo(false)
       return
     }
 
-    try {
-      setFetchingManualVideo(true)
-      const params = new URLSearchParams({
-        q: manualVideoInput,
-      })
+    // Set timeout for debounce
+    manualTimeoutRef.current = setTimeout(async () => {
+      try {
+        const params = new URLSearchParams({
+          q: input,
+        })
 
-      const res = await fetch(`/api/admin/embeds/fetch-video?${params}`)
-      if (!res.ok) {
-        const error = await res.json()
-        alert(error.error || 'Failed to fetch video')
-        return
+        const res = await fetch(`/api/admin/embeds/fetch-video?${params}`)
+        if (!res.ok) {
+          console.error('Failed to fetch video')
+          setFetchingManualVideo(false)
+          return
+        }
+
+        const video: SearchVideo = await res.json()
+        handleSelectVideo(video)
+        setManualVideoInput('')
+      } catch (error) {
+        console.error('Error fetching video:', error)
+      } finally {
+        setFetchingManualVideo(false)
       }
-
-      const video: SearchVideo = await res.json()
-      handleSelectVideo(video)
-      setManualVideoInput('')
-    } catch (error) {
-      console.error('Error fetching video:', error)
-      alert('Error fetching video details')
-    } finally {
-      setFetchingManualVideo(false)
-    }
+    }, 1000)
   }
 
   async function handleCreateEmbed() {
@@ -350,22 +372,22 @@ export default function EmbedsClient() {
                 {/* Search Option */}
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">Option 1: Search for a Video</label>
-                  <div className="flex gap-2">
+                  <div className="relative">
                     <input
                       type="text"
                       value={videoSearch}
-                      onChange={(e) => setVideoSearch(e.target.value)}
+                      onChange={(e) => {
+                        setVideoSearch(e.target.value)
+                        handleSearchVideosDebounced(e.target.value)
+                      }}
                       placeholder="e.g., teen, amateur, etc..."
-                      onKeyDown={(e) => e.key === 'Enter' && handleSearchVideos()}
-                      className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                     />
-                    <button
-                      onClick={handleSearchVideos}
-                      disabled={searching}
-                      className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
-                    >
-                      {searching ? 'Searching...' : 'Search'}
-                    </button>
+                    {searching && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -406,22 +428,22 @@ export default function EmbedsClient() {
                 {/* Manual Entry Option */}
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">Option 2: Enter Video ID or Link</label>
-                  <div className="flex gap-2">
+                  <div className="relative">
                     <input
                       type="text"
                       value={manualVideoInput}
-                      onChange={(e) => setManualVideoInput(e.target.value)}
+                      onChange={(e) => {
+                        setManualVideoInput(e.target.value)
+                        handleFetchManualVideoDebounced(e.target.value)
+                      }}
                       placeholder="e.g., ph123456 or https://pornhub.com/view_video.php?viewkey=ph123456"
-                      onKeyDown={(e) => e.key === 'Enter' && handleFetchManualVideo()}
-                      className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                     />
-                    <button
-                      onClick={handleFetchManualVideo}
-                      disabled={fetchingManualVideo}
-                      className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
-                    >
-                      {fetchingManualVideo ? 'Fetching...' : 'Fetch'}
-                    </button>
+                    {fetchingManualVideo && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></div>
+                      </div>
+                    )}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
                     Paste a PornHub link or just the video ID - we&apos;ll auto-fetch all details
