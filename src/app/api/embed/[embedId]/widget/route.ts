@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { decryptEmbedId } from '@/lib/embed-encryption'
+import { PornHub } from 'pornhub.js'
+import { getRandomProxy } from '@/lib/proxy'
 
 function getCorsHeaders() {
   return {
@@ -42,6 +44,27 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
       )
     }
 
+    // Fetch video preview data
+    let preview = null
+    try {
+      const proxyInfo = getRandomProxy('Embed Widget')
+      if (proxyInfo) {
+        const pornhub = new PornHub()
+        pornhub.setAgent(proxyInfo.agent)
+        const videoInfo = await pornhub.video(embed.videoId)
+
+        // Extract preview image
+        if (videoInfo && videoInfo.preview) {
+          preview = {
+            image: videoInfo.preview,
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching video preview for widget:', err)
+      // Continue without preview - it's not critical
+    }
+
     // Return widget data
     return NextResponse.json(
       {
@@ -50,9 +73,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
         title: embed.title,
         redirectUrl: embed.redirectUrl,
         embedId: encryptedId, // Return encrypted ID for tracking
+        preview, // Include preview data
       },
       {
-        headers: getCorsHeaders(),
+        headers: {
+          ...getCorsHeaders(),
+          'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
+        },
       }
     )
   } catch (error) {
