@@ -245,7 +245,7 @@ export default function EmbedsClient() {
   function copyEmbedCode(embedId: string) {
     const origin = process.env.NEXT_PUBLIC_APP_URL || typeof window !== 'undefined' ? window.location.origin : ''
     const encryptedId = encryptEmbedId(embedId)
-    const code = `<script src="${origin}/api/embed/${encryptedId}/script"><\/script>`
+    const code = `<script src="${origin}/embed/${encryptedId}"><\/script>`
     navigator.clipboard.writeText(code)
     alert('Embed code copied to clipboard!')
   }

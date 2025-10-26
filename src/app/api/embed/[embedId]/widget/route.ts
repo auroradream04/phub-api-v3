@@ -61,7 +61,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
         if (videoInfo && videoInfo.title) {
           try {
             const searchResults = await pornhub.searchVideo(videoInfo.title, { page: 1 })
-            const matchedVideo = searchResults.data.find((v: any) => v.id === embed.videoId)
+            const matchedVideo = searchResults.data.find((v) => (v as any).id === embed.videoId)
             if (matchedVideo?.previewVideo) {
               previewVideo = matchedVideo.previewVideo
             }
