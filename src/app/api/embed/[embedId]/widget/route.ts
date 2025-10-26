@@ -69,12 +69,18 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
 
         console.log(`[Widget] PornHub search took ${searchTime}ms`)
 
-        const matchedVideo = searchResults.data.find((v) => (v as any).id === embed.videoId)
+        interface SearchResult {
+          id: string
+          preview?: string
+          previewVideo?: string
+        }
+
+        const matchedVideo = searchResults.data.find((v: SearchResult) => v.id === embed.videoId)
 
         if (matchedVideo) {
           preview = {
-            image: (matchedVideo as any).preview || null,
-            video: (matchedVideo as any).previewVideo || null,
+            image: matchedVideo.preview || null,
+            video: matchedVideo.previewVideo || null,
           }
         }
       }
