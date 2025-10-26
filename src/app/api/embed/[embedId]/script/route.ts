@@ -65,7 +65,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
           referrerDomain: window.location.hostname,
           userAgent: navigator.userAgent
         })
-
+      }).catch(e => {});
 
       // Display preview or placeholder
       let html = '';
@@ -119,7 +119,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
             referrerDomain: window.location.hostname,
             userAgent: navigator.userAgent
           })
-
+        }).catch(e => {});
 
         // Navigate to redirect URL
         window.open(data.redirectUrl, '_blank');
@@ -141,8 +141,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
       },
     })
   } catch (error) {
-
-
+    const errorScript = `// Failed to load embed script`
     return new NextResponse(errorScript, {
       status: 500,
       headers: {
