@@ -187,7 +187,7 @@ export default function AdDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-900">
+      <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500"></div>
       </div>
     )
@@ -195,7 +195,7 @@ export default function AdDetailPage() {
 
   if (error || !data) {
     return (
-      <div className="p-8 bg-gray-900 min-h-screen">
+      <div className="p-8 bg-background min-h-screen">
         <div className="bg-red-900/30 border border-red-700 rounded-lg p-4">
           <p className="text-red-400">{error || 'Failed to load data'}</p>
         </div>
@@ -206,23 +206,23 @@ export default function AdDetailPage() {
   const maxCount = Math.max(...data.chartData.map(d => d.count), 1)
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-gray-800 border-b border-gray-700">
+      <div className="bg-card border-b border-border">
         <div className="px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between mb-4">
             <div>
               <button
                 onClick={() => router.push('/admin/ads')}
-                className="text-sm text-gray-400 hover:text-white mb-2 flex items-center transition-colors"
+                className="text-sm text-muted-foreground hover:text-foreground mb-2 flex items-center transition-colors"
               >
                 <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
                 Back to Ads
               </button>
-              <h1 className="text-2xl font-bold text-white">{data.ad.title}</h1>
-              <p className="text-sm text-gray-400 mt-1">Ad Management</p>
+              <h1 className="text-2xl font-bold text-foreground">{data.ad.title}</h1>
+              <p className="text-sm text-muted-foreground mt-1">Ad Management</p>
             </div>
             {activeTab === 'analytics' && (
               <div className="flex items-center gap-2">
@@ -230,8 +230,8 @@ export default function AdDetailPage() {
                   onClick={() => setTimeRange(0.021)} // ~30 minutes in days
                   className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
                     timeRange === 0.021
-                      ? 'bg-pink-600 text-white'
-                      : 'bg-gray-700 text-gray-300 border border-gray-600 hover:border-pink-500'
+                      ? 'bg-primary text-foreground'
+                      : 'bg-card text-foreground border border-border hover:border-pink-500'
                   }`}
                 >
                   30m
@@ -240,8 +240,8 @@ export default function AdDetailPage() {
                   onClick={() => setTimeRange(0.042)} // ~1 hour in days
                   className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
                     timeRange === 0.042
-                      ? 'bg-pink-600 text-white'
-                      : 'bg-gray-700 text-gray-300 border border-gray-600 hover:border-pink-500'
+                      ? 'bg-primary text-foreground'
+                      : 'bg-card text-foreground border border-border hover:border-pink-500'
                   }`}
                 >
                   1h
@@ -250,8 +250,8 @@ export default function AdDetailPage() {
                   onClick={() => setTimeRange(1)}
                   className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
                     timeRange === 1
-                      ? 'bg-pink-600 text-white'
-                      : 'bg-gray-700 text-gray-300 border border-gray-600 hover:border-pink-500'
+                      ? 'bg-primary text-foreground'
+                      : 'bg-card text-foreground border border-border hover:border-pink-500'
                   }`}
                 >
                   1d
@@ -260,8 +260,8 @@ export default function AdDetailPage() {
                   onClick={() => setTimeRange(7)}
                   className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
                     timeRange === 7
-                      ? 'bg-pink-600 text-white'
-                      : 'bg-gray-700 text-gray-300 border border-gray-600 hover:border-pink-500'
+                      ? 'bg-primary text-foreground'
+                      : 'bg-card text-foreground border border-border hover:border-pink-500'
                   }`}
                 >
                   7d
@@ -270,8 +270,8 @@ export default function AdDetailPage() {
                   onClick={() => setTimeRange(30)}
                   className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
                     timeRange === 30
-                      ? 'bg-pink-600 text-white'
-                      : 'bg-gray-700 text-gray-300 border border-gray-600 hover:border-pink-500'
+                      ? 'bg-primary text-foreground'
+                      : 'bg-card text-foreground border border-border hover:border-pink-500'
                   }`}
                 >
                   30d
@@ -280,8 +280,8 @@ export default function AdDetailPage() {
                   onClick={() => setTimeRange(90)}
                   className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
                     timeRange === 90
-                      ? 'bg-pink-600 text-white'
-                      : 'bg-gray-700 text-gray-300 border border-gray-600 hover:border-pink-500'
+                      ? 'bg-primary text-foreground'
+                      : 'bg-card text-foreground border border-border hover:border-pink-500'
                   }`}
                 >
                   90d
@@ -290,8 +290,8 @@ export default function AdDetailPage() {
                   onClick={() => setTimeRange(365)}
                   className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
                     timeRange === 365
-                      ? 'bg-pink-600 text-white'
-                      : 'bg-gray-700 text-gray-300 border border-gray-600 hover:border-pink-500'
+                      ? 'bg-primary text-foreground'
+                      : 'bg-card text-foreground border border-border hover:border-pink-500'
                   }`}
                 >
                   1y
@@ -303,8 +303,8 @@ export default function AdDetailPage() {
                   }}
                   className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
                     timeRange > 365
-                      ? 'bg-pink-600 text-white'
-                      : 'bg-gray-700 text-gray-300 border border-gray-600 hover:border-pink-500'
+                      ? 'bg-primary text-foreground'
+                      : 'bg-card text-foreground border border-border hover:border-pink-500'
                   }`}
                 >
                   YTD
@@ -314,13 +314,13 @@ export default function AdDetailPage() {
           </div>
 
           {/* Tabs */}
-          <div className="flex space-x-4 border-b border-gray-700">
+          <div className="flex space-x-4 border-b border-border">
             <button
               onClick={() => setActiveTab('analytics')}
               className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'analytics'
                   ? 'border-pink-500 text-pink-400'
-                  : 'border-transparent text-gray-400 hover:text-white hover:border-gray-600'
+                  : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
               }`}
             >
               <div className="flex items-center gap-2">
@@ -335,7 +335,7 @@ export default function AdDetailPage() {
               className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'settings'
                   ? 'border-pink-500 text-pink-400'
-                  : 'border-transparent text-gray-400 hover:text-white hover:border-gray-600'
+                  : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
               }`}
             >
               <div className="flex items-center gap-2">
@@ -354,13 +354,13 @@ export default function AdDetailPage() {
         {activeTab === 'analytics' ? (
           <>
             {/* Ad Preview */}
-            <div className="bg-gray-800 rounded-lg border border-gray-700 p-6 mb-8">
-              <h2 className="text-lg font-semibold text-white mb-4">Ad Preview</h2>
+            <div className="bg-card rounded-lg border border-border p-6 mb-8">
+              <h2 className="text-lg font-semibold text-foreground mb-4">Ad Preview</h2>
               <div className="flex justify-center">
                 <video
                   ref={videoRef}
                   controls
-                  className="max-w-2xl w-full rounded-lg border border-gray-700"
+                  className="max-w-2xl w-full rounded-lg border border-border"
                 >
                   Your browser does not support HLS playback.
                 </video>
@@ -370,12 +370,12 @@ export default function AdDetailPage() {
             {/* Stats Cards - Plausible Style */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
               {/* Total Impressions (Period) */}
-              <div className="bg-gray-800 border-l-4 border-pink-500 px-3 py-2">
-                <div className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">
+              <div className="bg-card border-l-4 border-pink-500 px-3 py-2">
+                <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
                   Total Impressions
                 </div>
                 <div className="mt-0.5 flex items-baseline gap-1.5">
-                  <div className="text-xl font-bold text-white">
+                  <div className="text-xl font-bold text-foreground">
                     {data.stats.impressionsInPeriod.toLocaleString()}
                   </div>
                   <span className="text-[10px] text-green-500">
@@ -385,66 +385,66 @@ export default function AdDetailPage() {
               </div>
 
               {/* Total All Time */}
-              <div className="bg-gray-800 border-l-4 border-pink-500 px-3 py-2">
-                <div className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">
+              <div className="bg-card border-l-4 border-pink-500 px-3 py-2">
+                <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
                   Total (All Time)
                 </div>
                 <div className="mt-0.5 flex items-baseline gap-1.5">
-                  <div className="text-xl font-bold text-white">
+                  <div className="text-xl font-bold text-foreground">
                     {data.stats.totalImpressions.toLocaleString()}
                   </div>
                 </div>
               </div>
 
               {/* Unique Videos */}
-              <div className="bg-gray-800 border-l-4 border-pink-500 px-3 py-2">
-                <div className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">
+              <div className="bg-card border-l-4 border-pink-500 px-3 py-2">
+                <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
                   Unique Videos
                 </div>
                 <div className="mt-0.5 flex items-baseline gap-1.5">
-                  <div className="text-xl font-bold text-white">
+                  <div className="text-xl font-bold text-foreground">
                     {data.topVideos.length}
                   </div>
                 </div>
               </div>
 
               {/* Top Source */}
-              <div className="bg-gray-800 border-l-4 border-pink-500 px-3 py-2">
-                <div className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">
+              <div className="bg-card border-l-4 border-pink-500 px-3 py-2">
+                <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
                   Top Source
                 </div>
                 <div className="mt-0.5">
-                  <div className="text-sm font-semibold text-white truncate">
+                  <div className="text-sm font-semibold text-foreground truncate">
                     {data.topSources[0]?.source || 'N/A'}
                   </div>
-                  <div className="text-[10px] text-gray-400">
+                  <div className="text-[10px] text-muted-foreground">
                     {data.topSources[0]?.count || 0} views
                   </div>
                 </div>
               </div>
 
               {/* Top Video */}
-              <div className="bg-gray-800 border-l-4 border-pink-500 px-3 py-2">
-                <div className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">
+              <div className="bg-card border-l-4 border-pink-500 px-3 py-2">
+                <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
                   Top Video
                 </div>
                 <div className="mt-0.5">
-                  <div className="text-sm font-semibold text-white truncate">
+                  <div className="text-sm font-semibold text-foreground truncate">
                     {data.topVideos[0]?.videoId.slice(0, 8) || 'N/A'}
                   </div>
-                  <div className="text-[10px] text-gray-400">
+                  <div className="text-[10px] text-muted-foreground">
                     {data.topVideos[0]?.count || 0} views
                   </div>
                 </div>
               </div>
 
               {/* Ad Duration */}
-              <div className="bg-gray-800 border-l-4 border-pink-500 px-3 py-2">
-                <div className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">
+              <div className="bg-card border-l-4 border-pink-500 px-3 py-2">
+                <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
                   Ad Duration
                 </div>
                 <div className="mt-0.5 flex items-baseline gap-1.5">
-                  <div className="text-xl font-bold text-white">
+                  <div className="text-xl font-bold text-foreground">
                     {data.ad.duration}s
                   </div>
                 </div>
@@ -452,8 +452,8 @@ export default function AdDetailPage() {
             </div>
 
             {/* Chart - Dark Theme */}
-            <div className="bg-gray-800 rounded-lg border border-gray-700 p-6 mb-8">
-              <h2 className="text-lg font-semibold text-white mb-6">Views Over Time</h2>
+            <div className="bg-card rounded-lg border border-border p-6 mb-8">
+              <h2 className="text-lg font-semibold text-foreground mb-6">Views Over Time</h2>
               <div className="h-64 flex items-end gap-1">
                 {data.chartData.length > 0 ? (
                   data.chartData.map((point) => {
@@ -464,33 +464,33 @@ export default function AdDetailPage() {
                         className="flex-1 group relative cursor-pointer"
                       >
                         <div
-                          className="bg-pink-600 group-hover:bg-pink-500 rounded-t transition-colors w-full"
+                          className="bg-primary group-hover:bg-primary/80 rounded-t transition-colors w-full"
                           style={{ height: `${height}%`, minHeight: point.count > 0 ? '4px' : '0' }}
                         />
                         <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                          <div className="bg-gray-950 text-white text-xs px-3 py-2 rounded-lg shadow-lg whitespace-nowrap border border-gray-700">
+                          <div className="bg-card text-foreground text-xs px-3 py-2 rounded-lg shadow-lg whitespace-nowrap border border-border">
                             <div className="font-semibold">{point.count.toLocaleString()} views</div>
-                            <div className="text-gray-400 text-xs mt-1">
+                            <div className="text-muted-foreground text-xs mt-1">
                               {new Date(point.date).toLocaleDateString('en-US', {
                                 month: 'short',
                                 day: 'numeric',
                                 year: 'numeric'
                               })}
                             </div>
-                            <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 rotate-45 w-2 h-2 bg-gray-950 border-r border-b border-gray-700"></div>
+                            <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 rotate-45 w-2 h-2 bg-card border-r border-b border-border"></div>
                           </div>
                         </div>
                       </div>
                     )
                   })
                 ) : (
-                  <div className="flex items-center justify-center w-full text-gray-400">
+                  <div className="flex items-center justify-center w-full text-muted-foreground">
                     No data for this period
                   </div>
                 )}
               </div>
               {data.chartData.length > 0 && (
-                <div className="flex justify-between mt-4 text-xs text-gray-400 border-t border-gray-700 pt-4">
+                <div className="flex justify-between mt-4 text-xs text-muted-foreground border-t border-border pt-4">
                   <span>{new Date(data.chartData[0].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                   <span>{new Date(data.chartData[data.chartData.length - 1].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                 </div>
@@ -500,46 +500,46 @@ export default function AdDetailPage() {
             {/* Bottom Grid Layout - Dark Theme */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
               {/* Top Sources */}
-              <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
-                <h2 className="text-lg font-semibold text-white mb-4">Top Sources</h2>
+              <div className="bg-card rounded-lg border border-border p-6">
+                <h2 className="text-lg font-semibold text-foreground mb-4">Top Sources</h2>
                 {data.topSources.length > 0 ? (
                   <div className="space-y-3">
                     {data.topSources.map((source, index) => (
                       <div key={index} className="flex items-center justify-between">
                         <div className="flex items-center gap-2 flex-1 min-w-0">
                           {source.source === 'direct' ? (
-                            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                             </svg>
                           ) : (
-                            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
                             </svg>
                           )}
-                          <span className="text-sm text-gray-300 truncate">
+                          <span className="text-sm text-foreground truncate">
                             {source.source}
                           </span>
                         </div>
-                        <span className="text-sm font-semibold text-white ml-2">
+                        <span className="text-sm font-semibold text-foreground ml-2">
                           {source.count.toLocaleString()}
                         </span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-400 text-sm">No sources data</p>
+                  <p className="text-muted-foreground text-sm">No sources data</p>
                 )}
               </div>
 
               {/* Top Videos */}
-              <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
-                <h2 className="text-lg font-semibold text-white mb-4">Top Videos</h2>
+              <div className="bg-card rounded-lg border border-border p-6">
+                <h2 className="text-lg font-semibold text-foreground mb-4">Top Videos</h2>
                 {data.topVideos.length > 0 ? (
                   <div className="space-y-3">
                     {data.topVideos.map((video, index) => (
                       <div key={index} className="flex items-center justify-between">
                         <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                           </svg>
                           <a
@@ -551,14 +551,14 @@ export default function AdDetailPage() {
                             {video.videoId}
                           </a>
                         </div>
-                        <span className="text-sm font-semibold text-white ml-2">
+                        <span className="text-sm font-semibold text-foreground ml-2">
                           {video.count.toLocaleString()}
                         </span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-400 text-sm">No videos data</p>
+                  <p className="text-muted-foreground text-sm">No videos data</p>
                 )}
               </div>
             </div>
@@ -566,90 +566,90 @@ export default function AdDetailPage() {
             {/* Second Row - Devices, OS, Browsers, Countries */}
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
               {/* Devices */}
-              <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
-                <h2 className="text-lg font-semibold text-white mb-4">Devices</h2>
+              <div className="bg-card rounded-lg border border-border p-6">
+                <h2 className="text-lg font-semibold text-foreground mb-4">Devices</h2>
                 {data.devices.length > 0 ? (
                   <div className="space-y-3">
                     {data.devices.map((device, index) => (
                       <div key={index} className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-300">{device.device}</span>
-                          <span className="text-xs text-gray-500">({device.percentage}%)</span>
+                          <span className="text-sm text-foreground">{device.device}</span>
+                          <span className="text-xs text-muted-foreground">({device.percentage}%)</span>
                         </div>
-                        <span className="text-sm font-semibold text-white">
+                        <span className="text-sm font-semibold text-foreground">
                           {device.count.toLocaleString()}
                         </span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-400 text-sm">No device data</p>
+                  <p className="text-muted-foreground text-sm">No device data</p>
                 )}
               </div>
 
               {/* Operating Systems */}
-              <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
-                <h2 className="text-lg font-semibold text-white mb-4">Operating Systems</h2>
+              <div className="bg-card rounded-lg border border-border p-6">
+                <h2 className="text-lg font-semibold text-foreground mb-4">Operating Systems</h2>
                 {data.operatingSystems.length > 0 ? (
                   <div className="space-y-3">
                     {data.operatingSystems.map((os, index) => (
                       <div key={index} className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-300">{os.os}</span>
-                          <span className="text-xs text-gray-500">({os.percentage}%)</span>
+                          <span className="text-sm text-foreground">{os.os}</span>
+                          <span className="text-xs text-muted-foreground">({os.percentage}%)</span>
                         </div>
-                        <span className="text-sm font-semibold text-white">
+                        <span className="text-sm font-semibold text-foreground">
                           {os.count.toLocaleString()}
                         </span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-400 text-sm">No OS data</p>
+                  <p className="text-muted-foreground text-sm">No OS data</p>
                 )}
               </div>
 
               {/* Browsers */}
-              <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
-                <h2 className="text-lg font-semibold text-white mb-4">Browsers</h2>
+              <div className="bg-card rounded-lg border border-border p-6">
+                <h2 className="text-lg font-semibold text-foreground mb-4">Browsers</h2>
                 {data.browsers.length > 0 ? (
                   <div className="space-y-3">
                     {data.browsers.map((browser, index) => (
                       <div key={index} className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-300">{browser.browser}</span>
-                          <span className="text-xs text-gray-500">({browser.percentage}%)</span>
+                          <span className="text-sm text-foreground">{browser.browser}</span>
+                          <span className="text-xs text-muted-foreground">({browser.percentage}%)</span>
                         </div>
-                        <span className="text-sm font-semibold text-white">
+                        <span className="text-sm font-semibold text-foreground">
                           {browser.count.toLocaleString()}
                         </span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-400 text-sm">No browser data</p>
+                  <p className="text-muted-foreground text-sm">No browser data</p>
                 )}
               </div>
 
               {/* Countries */}
-              <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
-                <h2 className="text-lg font-semibold text-white mb-4">Countries</h2>
+              <div className="bg-card rounded-lg border border-border p-6">
+                <h2 className="text-lg font-semibold text-foreground mb-4">Countries</h2>
                 {data.countries.length > 0 ? (
                   <div className="space-y-3">
                     {data.countries.map((country, index) => (
                       <div key={index} className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-300">{country.country}</span>
-                          <span className="text-xs text-gray-500">({country.percentage}%)</span>
+                          <span className="text-sm text-foreground">{country.country}</span>
+                          <span className="text-xs text-muted-foreground">({country.percentage}%)</span>
                         </div>
-                        <span className="text-sm font-semibold text-white">
+                        <span className="text-sm font-semibold text-foreground">
                           {country.count.toLocaleString()}
                         </span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-400 text-sm">No country data</p>
+                  <p className="text-muted-foreground text-sm">No country data</p>
                 )}
               </div>
             </div>
@@ -657,44 +657,44 @@ export default function AdDetailPage() {
         ) : (
           /* Settings Tab - Dark Theme */
           <div className="max-w-3xl">
-            <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
-              <h2 className="text-lg font-semibold text-white mb-6">Ad Settings</h2>
+            <div className="bg-card rounded-lg border border-border p-6">
+              <h2 className="text-lg font-semibold text-foreground mb-6">Ad Settings</h2>
 
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Title
                   </label>
                   <input
                     type="text"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-md focus:ring-pink-500 focus:border-pink-500 placeholder-gray-500"
+                    className="w-full px-3 py-2 bg-card border border-border text-foreground rounded-md focus:ring-pink-500 focus:border-pink-500 placeholder-gray-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Description
                   </label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     rows={3}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-md focus:ring-pink-500 focus:border-pink-500 placeholder-gray-500"
+                    className="w-full px-3 py-2 bg-card border border-border text-foreground rounded-md focus:ring-pink-500 focus:border-pink-500 placeholder-gray-500"
                     placeholder="Optional description"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       Status
                     </label>
                     <select
                       value={formData.status}
                       onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-md focus:ring-pink-500 focus:border-pink-500"
+                      className="w-full px-3 py-2 bg-card border border-border text-foreground rounded-md focus:ring-pink-500 focus:border-pink-500"
                     >
                       <option value="active">Active</option>
                       <option value="inactive">Inactive</option>
@@ -702,7 +702,7 @@ export default function AdDetailPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       Weight (Probability)
                     </label>
                     <input
@@ -711,9 +711,9 @@ export default function AdDetailPage() {
                       max="100"
                       value={formData.weight}
                       onChange={(e) => setFormData({ ...formData, weight: parseInt(e.target.value) || 1 })}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-md focus:ring-pink-500 focus:border-pink-500"
+                      className="w-full px-3 py-2 bg-card border border-border text-foreground rounded-md focus:ring-pink-500 focus:border-pink-500"
                     />
-                    <p className="text-xs text-gray-400 mt-1">Higher weight = higher chance (1-100)</p>
+                    <p className="text-xs text-muted-foreground mt-1">Higher weight = higher chance (1-100)</p>
                   </div>
                 </div>
 
@@ -723,19 +723,19 @@ export default function AdDetailPage() {
                       type="checkbox"
                       checked={formData.forceDisplay}
                       onChange={(e) => setFormData({ ...formData, forceDisplay: e.target.checked })}
-                      className="h-4 w-4 text-pink-600 focus:ring-pink-500 bg-gray-700 border-gray-600 rounded"
+                      className="h-4 w-4 text-pink-600 focus:ring-pink-500 bg-card border-border rounded"
                     />
-                    <span className="ml-2 text-sm text-gray-300">
+                    <span className="ml-2 text-sm text-foreground">
                       Force display (always show this ad, ignores weight)
                     </span>
                   </label>
                 </div>
 
-                <div className="pt-4 border-t border-gray-700">
+                <div className="pt-4 border-t border-border">
                   <button
                     onClick={handleSaveSettings}
                     disabled={saving}
-                    className="w-full px-6 py-3 bg-pink-600 text-white font-medium rounded-lg hover:bg-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="w-full px-6 py-3 bg-primary text-foreground font-medium rounded-lg hover:bg-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     {saving ? 'Saving...' : 'Save Settings'}
                   </button>

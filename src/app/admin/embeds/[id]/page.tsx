@@ -60,17 +60,17 @@ export default function EmbedDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-900">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500"></div>
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     )
   }
 
   if (error || !data) {
     return (
-      <div className="p-8 bg-gray-900 min-h-screen">
-        <div className="bg-red-900/30 border border-red-700 rounded-lg p-4">
-          <p className="text-red-400">{error || 'Failed to load data'}</p>
+      <div className="p-8 bg-background min-h-screen">
+        <div className="bg-destructive/10 border border-destructive rounded-lg p-4">
+          <p className="text-destructive">{error || 'Failed to load data'}</p>
         </div>
       </div>
     )
@@ -79,15 +79,15 @@ export default function EmbedDetailPage() {
   const maxCount = Math.max(...data.chartData.map(d => d.count), 1)
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-gray-800 border-b border-gray-700">
+      <div className="bg-card border-b border-border">
         <div className="px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between mb-4">
             <div>
               <button
                 onClick={() => router.push('/admin/embeds')}
-                className="text-sm text-gray-400 hover:text-white mb-2 flex items-center transition-colors"
+                className="text-sm text-muted-foreground hover:text-foreground mb-2 flex items-center transition-colors"
               >
                 <svg
                   className="w-4 h-4 mr-1"
@@ -104,10 +104,10 @@ export default function EmbedDetailPage() {
                 </svg>
                 Back to Embeds
               </button>
-              <h1 className="text-2xl font-bold text-white">
+              <h1 className="text-2xl font-bold text-foreground">
                 {data.embed.displayName || data.embed.title}
               </h1>
-              <p className="text-sm text-gray-400 mt-1">Embed Analytics</p>
+              <p className="text-sm text-muted-foreground mt-1">Embed Analytics</p>
             </div>
           </div>
 
@@ -124,8 +124,8 @@ export default function EmbedDetailPage() {
                 onClick={() => setTimeRange(value)}
                 className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
                   timeRange === value
-                    ? 'bg-pink-600 text-white'
-                    : 'bg-gray-700 text-gray-300 border border-gray-600 hover:border-pink-500 hover:bg-gray-700/80'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-card text-foreground border border-border hover:border-primary hover:bg-card/80'
                 }`}
               >
                 {label}
@@ -140,36 +140,36 @@ export default function EmbedDetailPage() {
         {/* Stats Cards - Plausible Style */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3 mb-8">
           {/* Impressions */}
-          <div className="bg-gray-800 border-l-4 border-pink-500 px-3 py-2">
-            <div className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">
+          <div className="bg-card border-l-4 border-primary px-3 py-2">
+            <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
               Impressions
             </div>
             <div className="mt-0.5 flex items-baseline gap-1.5">
-              <div className="text-xl font-bold text-white">
+              <div className="text-xl font-bold text-foreground">
                 {data.impressions.toLocaleString()}
               </div>
             </div>
           </div>
 
           {/* Clicks */}
-          <div className="bg-gray-800 border-l-4 border-pink-500 px-3 py-2">
-            <div className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">
+          <div className="bg-card border-l-4 border-primary px-3 py-2">
+            <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
               Clicks
             </div>
             <div className="mt-0.5 flex items-baseline gap-1.5">
-              <div className="text-xl font-bold text-white">
+              <div className="text-xl font-bold text-foreground">
                 {data.clicks.toLocaleString()}
               </div>
             </div>
           </div>
 
           {/* Click Rate */}
-          <div className="bg-gray-800 border-l-4 border-pink-500 px-3 py-2">
-            <div className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">
+          <div className="bg-card border-l-4 border-primary px-3 py-2">
+            <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
               Click Rate
             </div>
             <div className="mt-0.5 flex items-baseline gap-1.5">
-              <div className="text-xl font-bold text-white">
+              <div className="text-xl font-bold text-foreground">
                 {data.ctr.toFixed(2)}%
               </div>
             </div>
@@ -177,10 +177,10 @@ export default function EmbedDetailPage() {
         </div>
 
         {/* Preview Section */}
-        <div className="bg-gray-800 rounded-lg border border-gray-700 p-6 mb-8">
-          <h2 className="text-lg font-semibold text-white mb-4">Preview</h2>
+        <div className="bg-card rounded-lg border border-border p-6 mb-8">
+          <h2 className="text-lg font-semibold text-foreground mb-4">Preview</h2>
           <div className="flex justify-center">
-            <div className="w-full max-w-2xl aspect-video bg-gray-900 rounded-lg overflow-hidden border border-gray-700">
+            <div className="w-full max-w-2xl aspect-video bg-background rounded-lg overflow-hidden border border-border">
               <VideoPreview
                 preview={data.embed.preview}
                 previewVideo={data.embed.previewVideo}
@@ -192,8 +192,8 @@ export default function EmbedDetailPage() {
         </div>
 
         {/* Chart Section */}
-        <div className="bg-gray-800 rounded-lg border border-gray-700 p-6 mb-8">
-          <h2 className="text-lg font-semibold text-white mb-6">Activity Over Time</h2>
+        <div className="bg-card rounded-lg border border-border p-6 mb-8">
+          <h2 className="text-lg font-semibold text-foreground mb-6">Activity Over Time</h2>
           <div className="h-64 flex items-end gap-1">
             {data.chartData.length > 0 ? (
               data.chartData.map((point) => {
@@ -204,33 +204,32 @@ export default function EmbedDetailPage() {
                     className="flex-1 group relative cursor-pointer"
                   >
                     <div
-                      className="bg-pink-600 group-hover:bg-pink-500 rounded-t transition-colors w-full"
+                      className="bg-primary group-hover:bg-primary/80 rounded-t transition-colors w-full"
                       style={{ height: `${height}%`, minHeight: point.count > 0 ? '4px' : '0' }}
                     />
                     <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                      <div className="bg-gray-950 text-white text-xs px-3 py-2 rounded-lg shadow-lg whitespace-nowrap border border-gray-700">
+                      <div className="bg-foreground text-background text-xs px-3 py-2 rounded-lg shadow-lg whitespace-nowrap border border-border">
                         <div className="font-semibold">{point.count.toLocaleString()} views</div>
-                        <div className="text-gray-400 text-xs mt-1">
+                        <div className="text-muted-foreground text-xs mt-1">
                           {new Date(point.date).toLocaleDateString('en-US', {
                             month: 'short',
                             day: 'numeric',
                             year: 'numeric'
                           })}
                         </div>
-                        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 rotate-45 w-2 h-2 bg-gray-950 border-r border-b border-gray-700"></div>
                       </div>
                     </div>
                   </div>
                 )
               })
             ) : (
-              <div className="flex items-center justify-center w-full text-gray-400">
+              <div className="flex items-center justify-center w-full text-muted-foreground">
                 No data for this period
               </div>
             )}
           </div>
           {data.chartData.length > 0 && (
-            <div className="flex justify-between mt-4 text-xs text-gray-400 border-t border-gray-700 pt-4">
+            <div className="flex justify-between mt-4 text-xs text-muted-foreground border-t border-border pt-4">
               <span>{new Date(data.chartData[0].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
               <span>{new Date(data.chartData[data.chartData.length - 1].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
             </div>
@@ -240,30 +239,30 @@ export default function EmbedDetailPage() {
         {/* Details Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Details Section */}
-          <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
-            <h2 className="text-lg font-semibold text-white mb-4">Details</h2>
+          <div className="bg-card rounded-lg border border-border p-6">
+            <h2 className="text-lg font-semibold text-foreground mb-4">Details</h2>
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-400">Title</label>
-                <div className="text-white mt-1">{data.embed.title}</div>
+                <label className="text-sm font-medium text-muted-foreground">Title</label>
+                <div className="text-foreground mt-1">{data.embed.title}</div>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-400">Display Name</label>
-                <div className="text-white mt-1">
+                <label className="text-sm font-medium text-muted-foreground">Display Name</label>
+                <div className="text-foreground mt-1">
                   {data.embed.displayName || '(using title)'}
                 </div>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-400">Video ID</label>
-                <div className="text-white font-mono text-sm mt-1">{data.embed.videoId}</div>
+                <label className="text-sm font-medium text-muted-foreground">Video ID</label>
+                <div className="text-foreground font-mono text-sm mt-1">{data.embed.videoId}</div>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-400">Redirect URL</label>
+                <label className="text-sm font-medium text-muted-foreground">Redirect URL</label>
                 <a
                   href={data.embed.redirectUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-pink-500 hover:text-pink-400 truncate block mt-1 text-sm"
+                  className="text-primary hover:text-primary/80 truncate block mt-1 text-sm"
                 >
                   {data.embed.redirectUrl}
                 </a>
@@ -273,16 +272,16 @@ export default function EmbedDetailPage() {
 
           {/* Top Domains */}
           {Object.keys(data.domainBreakdown).length > 0 && (
-            <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
-              <h3 className="text-lg font-semibold text-white mb-4">Top Domains</h3>
+            <div className="bg-card rounded-lg border border-border p-6">
+              <h3 className="text-lg font-semibold text-foreground mb-4">Top Domains</h3>
               <div className="space-y-3">
                 {Object.entries(data.domainBreakdown)
                   .sort(([, a], [, b]) => b - a)
                   .slice(0, 5)
                   .map(([domain, count]) => (
                     <div key={domain} className="flex justify-between items-center">
-                      <span className="text-gray-300 truncate text-sm">{domain || 'Direct'}</span>
-                      <span className="text-white font-semibold ml-2">{count.toLocaleString()}</span>
+                      <span className="text-foreground truncate text-sm">{domain || 'Direct'}</span>
+                      <span className="text-foreground font-semibold ml-2">{count.toLocaleString()}</span>
                     </div>
                   ))}
               </div>
@@ -294,16 +293,16 @@ export default function EmbedDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Browsers */}
           {data.browsers.length > 0 && (
-            <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
-              <h3 className="text-lg font-semibold text-white mb-4">Browsers</h3>
+            <div className="bg-card rounded-lg border border-border p-6">
+              <h3 className="text-lg font-semibold text-foreground mb-4">Browsers</h3>
               <div className="space-y-3">
                 {data.browsers.map(b => (
                   <div key={b.browser} className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
-                      <span className="text-gray-300 text-sm">{b.browser}</span>
-                      <span className="text-xs text-gray-500">({b.percentage}%)</span>
+                      <span className="text-foreground text-sm">{b.browser}</span>
+                      <span className="text-xs text-muted-foreground">({b.percentage}%)</span>
                     </div>
-                    <span className="text-white font-semibold">
+                    <span className="text-foreground font-semibold">
                       {b.count.toLocaleString()}
                     </span>
                   </div>
@@ -314,16 +313,16 @@ export default function EmbedDetailPage() {
 
           {/* Devices */}
           {data.devices.length > 0 && (
-            <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
-              <h3 className="text-lg font-semibold text-white mb-4">Devices</h3>
+            <div className="bg-card rounded-lg border border-border p-6">
+              <h3 className="text-lg font-semibold text-foreground mb-4">Devices</h3>
               <div className="space-y-3">
                 {data.devices.map(d => (
                   <div key={d.device} className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
-                      <span className="text-gray-300 text-sm">{d.device}</span>
-                      <span className="text-xs text-gray-500">({d.percentage}%)</span>
+                      <span className="text-foreground text-sm">{d.device}</span>
+                      <span className="text-xs text-muted-foreground">({d.percentage}%)</span>
                     </div>
-                    <span className="text-white font-semibold">
+                    <span className="text-foreground font-semibold">
                       {d.count.toLocaleString()}
                     </span>
                   </div>
@@ -334,16 +333,16 @@ export default function EmbedDetailPage() {
 
           {/* Operating Systems */}
           {data.operatingSystems.length > 0 && (
-            <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
-              <h3 className="text-lg font-semibold text-white mb-4">Operating Systems</h3>
+            <div className="bg-card rounded-lg border border-border p-6">
+              <h3 className="text-lg font-semibold text-foreground mb-4">Operating Systems</h3>
               <div className="space-y-3">
                 {data.operatingSystems.map(os => (
                   <div key={os.os} className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
-                      <span className="text-gray-300 text-sm">{os.os}</span>
-                      <span className="text-xs text-gray-500">({os.percentage}%)</span>
+                      <span className="text-foreground text-sm">{os.os}</span>
+                      <span className="text-xs text-muted-foreground">({os.percentage}%)</span>
                     </div>
-                    <span className="text-white font-semibold">
+                    <span className="text-foreground font-semibold">
                       {os.count.toLocaleString()}
                     </span>
                   </div>
