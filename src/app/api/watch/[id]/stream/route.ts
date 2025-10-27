@@ -57,21 +57,29 @@ export async function GET(
       const proxyInfo = getRandomProxy('Stream API')
 
       if (!proxyInfo) {
+        console.error('[Stream API] No proxy available from proxy list')
         break
       }
 
+      console.log(`[Stream API] Attempt ${attemptNum}/3 for video ${id}: Using proxy ${proxyInfo.proxyUrl}`)
       pornhub.setAgent(proxyInfo.agent)
 
+      const startTime = Date.now()
       try {
         const response = await pornhub.video(id)
+        const duration = Date.now() - startTime
 
         // Check for soft blocking (missing media definitions)
         if (!response.mediaDefinitions || response.mediaDefinitions.length < 1) {
+          console.warn(`[Stream API] Proxy ${proxyInfo.proxyUrl} returned video without media definitions (${duration}ms) - likely blocked`)
           // Try different proxy
         } else {
+          console.log(`[Stream API] ✓ Success with proxy ${proxyInfo.proxyUrl} (${duration}ms, ${response.mediaDefinitions.length} qualities available)`)
           videoInfo = response
         }
       } catch (error: unknown) {
+        const duration = Date.now() - startTime
+        console.error(`[Stream API] Proxy ${proxyInfo.proxyUrl} failed (${duration}ms):`, error instanceof Error ? error.message : error)
         // Try different proxy
       }
 
@@ -81,6 +89,7 @@ export async function GET(
 
     if (!videoInfo || !videoInfo.mediaDefinitions || videoInfo.mediaDefinitions.length < 1) {
       await domainCheck.logRequest(500, Date.now() - requestStart)
+      console.error('[Stream API] ❌ All proxy attempts failed - could not fetch video information')
       throw new Error('Failed to fetch video information')
     }
 
@@ -90,6 +99,7 @@ export async function GET(
 
     if (!mediaDefinition) {
       await domainCheck.logRequest(404, Date.now() - requestStart)
+      console.warn(`[Stream API] Quality ${quality}p not found for video ${id}. Available qualities: ${videoInfo.mediaDefinitions.map(md => md.quality).join(', ')}`)
       return NextResponse.json(
         { error: `Quality ${quality} not found` },
         { status: 404 }
@@ -97,30 +107,41 @@ export async function GET(
     }
 
     const originalM3u8Url = mediaDefinition.videoUrl
+    console.log(`[Stream API] Fetching m3u8 playlist from: ${originalM3u8Url}`)
 
     const m3u8Response = await fetch(originalM3u8Url)
 
     if (!m3u8Response.ok) {
+      console.error(`[Stream API] Failed to fetch m3u8 playlist: ${m3u8Response.status} ${m3u8Response.statusText}`)
       throw new Error(`Failed to fetch m3u8: ${m3u8Response.status}`)
     }
 
     const originalM3u8 = await m3u8Response.text()
+    console.log(`[Stream API] M3u8 playlist fetched successfully (${originalM3u8.length} bytes)`)
 
     if (isMasterPlaylist(originalM3u8)) {
+      console.log('[Stream API] Detected master playlist, extracting variant URL...')
       const variantUrl = extractFirstVariantUrl(originalM3u8, originalM3u8Url)
 
       if (!variantUrl) {
+        console.error('[Stream API] Could not extract variant playlist URL from master playlist')
         throw new Error('Could not extract variant playlist URL')
       }
 
+      console.log(`[Stream API] Fetching variant playlist from: ${variantUrl}`)
       const variantResponse = await fetch(variantUrl)
 
       if (!variantResponse.ok) {
+        console.error(`[Stream API] Failed to fetch variant playlist: ${variantResponse.status} ${variantResponse.statusText}`)
         throw new Error(`Failed to fetch variant playlist: ${variantResponse.status}`)
       }
 
       const variantM3u8 = await variantResponse.text()
+      console.log(`[Stream API] Variant playlist fetched (${variantM3u8.length} bytes), injecting ads...`)
       const modifiedM3u8 = await injectAds(variantM3u8, quality, variantUrl, id, request.headers)
+
+      await domainCheck.logRequest(200, Date.now() - requestStart)
+      console.log(`[Stream API] ✓ Stream generated successfully for video ${id} (quality: ${quality}p, duration: ${Date.now() - requestStart}ms)`)
 
       return new Response(modifiedM3u8, {
         headers: {
@@ -131,10 +152,12 @@ export async function GET(
       })
     }
 
+    console.log('[Stream API] Standard playlist detected, injecting ads...')
     const modifiedM3u8 = await injectAds(originalM3u8, quality, originalM3u8Url, id, request.headers)
 
     // Log successful request
     await domainCheck.logRequest(200, Date.now() - requestStart)
+    console.log(`[Stream API] ✓ Stream generated successfully for video ${id} (quality: ${quality}p, duration: ${Date.now() - requestStart}ms)`)
 
     return new Response(modifiedM3u8, {
       headers: {
@@ -146,6 +169,7 @@ export async function GET(
 
   } catch (error) {
     await domainCheck.logRequest(500, Date.now() - requestStart)
+    console.error('[Stream API] ❌ Failed to generate stream:', error instanceof Error ? error.message : error)
     return NextResponse.json(
       { error: 'Failed to generate stream' },
       { status: 500 }

@@ -212,6 +212,7 @@ function jsonToXml(response: MaccmsJsonResponse): string {
 }
 
 export async function GET(request: NextRequest) {
+  const requestStart = Date.now()
   try {
     const { searchParams } = new URL(request.url)
 
@@ -225,6 +226,8 @@ export async function GET(request: NextRequest) {
       ids: searchParams.get('ids') || undefined,
       at: searchParams.get('at') || '',
     })
+
+    console.log(`[MacCMS API] ${params.ac === 'detail' ? 'Detail' : 'List'} request - Page: ${params.pg}${params.t ? `, Type: ${params.t}` : ''}${params.wd ? `, Search: ${params.wd}` : ''}${params.ids ? `, IDs: ${params.ids}` : ''}`)
 
     const pageSize = 100
     const skip = (params.pg - 1) * pageSize
@@ -383,6 +386,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Return response in requested format
+    const duration = Date.now() - requestStart
+    console.log(`[MacCMS API] ✓ Success - Returned ${videos.length} videos (format: ${params.at === 'xml' ? 'XML' : 'JSON'}, duration: ${duration}ms)`)
+
     if (params.at === 'xml') {
       const xmlResponse = jsonToXml(response)
       return new NextResponse(xmlResponse, {
@@ -396,6 +402,8 @@ export async function GET(request: NextRequest) {
     }
 
   } catch (error) {
+    const duration = Date.now() - requestStart
+    console.error(`[MacCMS API] ❌ Request failed (${duration}ms):`, error instanceof Error ? error.message : error)
 
 
     // Handle validation errors

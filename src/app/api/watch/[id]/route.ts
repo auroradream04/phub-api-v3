@@ -53,19 +53,26 @@ export async function GET(
       const proxyInfo = getRandomProxy('Watch API')
 
       if (!proxyInfo) {
+        console.error('[Watch API] No proxy available from proxy list')
         break
       }
 
+      console.log(`[Watch API] Attempt ${attemptNum}/3 for video ${id}: Using proxy ${proxyInfo.proxyUrl}`)
       pornhub.setAgent(proxyInfo.agent)
 
+      const startTime = Date.now()
       try {
         videoData = await pornhub.video(id)
+        const duration = Date.now() - startTime
+        console.log(`[Watch API] ✓ Success with proxy ${proxyInfo.proxyUrl} (${duration}ms)`)
         break
       } catch (apiError) {
+        const duration = Date.now() - startTime
         lastError = apiError instanceof Error ? apiError : new Error(String(apiError))
 
         // Check if it's a 404 error (video not found) - don't retry with more proxies for 404s
         if (lastError.message.includes('404')) {
+          console.warn(`[Watch API] Video ${id} not found (404) - stopping retries`)
           const response = {
             error: 'Video not found',
             videoId: id,
@@ -81,6 +88,8 @@ export async function GET(
 
           return NextResponse.json(response, { status: 404 })
         }
+
+        console.error(`[Watch API] Proxy ${proxyInfo.proxyUrl} failed (${duration}ms):`, lastError.message)
       }
 
       retries--
@@ -90,6 +99,7 @@ export async function GET(
     apiCallTime = Date.now() - apiStartTime
 
     if (!videoData) {
+      console.error(`[Watch API] ❌ All proxy attempts failed for video ${id}`)
       const response = {
         error: 'Video not found',
         videoId: id,
@@ -105,6 +115,9 @@ export async function GET(
 
       return NextResponse.json(response, { status: 404 })
     }
+
+    console.log(`[Watch API] Video metadata fetched successfully for ${id} (${videoData.mediaDefinitions?.length || 0} qualities)`)
+
 
     // Get base URL from request headers (for proxy URL generation)
     const protocol = request.headers.get('x-forwarded-proto') || 'http'
