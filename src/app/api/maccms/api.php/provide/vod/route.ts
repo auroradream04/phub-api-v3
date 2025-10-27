@@ -16,6 +16,8 @@ interface MaccmsVideo {
   vod_time: string
   vod_remarks: string
   vod_play_from: string
+  vod_play_server: string
+  vod_play_note: string
   vod_pic: string
   vod_pic_thumb: string
   vod_pic_slide: string
@@ -258,6 +260,8 @@ export async function GET(request: NextRequest) {
         vod_time: formatDate(v.vodTime),
         vod_remarks: v.vodRemarks || '',
         vod_play_from: v.vodPlayFrom,
+        vod_play_server: 'no',
+        vod_play_note: '',
         vod_pic: v.vodPic || '',
         vod_pic_thumb: v.vodPic || '',
         vod_pic_slide: v.vodPic || '',
@@ -350,6 +354,8 @@ export async function GET(request: NextRequest) {
         vod_time: formatDate(v.vodTime),
         vod_remarks: v.vodRemarks || '',
         vod_play_from: v.vodPlayFrom,
+        vod_play_server: 'no',
+        vod_play_note: '',
         vod_pic: v.vodPic || '',
         vod_pic_thumb: v.vodPic || '',
         vod_pic_slide: v.vodPic || '',
