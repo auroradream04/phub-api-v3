@@ -51,11 +51,11 @@ export async function GET(request: NextRequest) {
       const proxyInfo = getRandomProxy('Home API')
 
       if (!proxyInfo) {
-
+        console.error('[Home API] No proxy available from proxy list')
         break
       }
 
-
+      console.log(`[Home API] Attempt ${attemptNum}/3: Using proxy ${proxyInfo.proxyUrl}`)
       pornhub.setAgent(proxyInfo.agent)
 
       const startTime = Date.now()
@@ -69,14 +69,14 @@ export async function GET(request: NextRequest) {
 
         // Check for soft blocking (empty results)
         if (!response.data || response.data.length === 0) {
-
+          console.warn(`[Home API] Proxy ${proxyInfo.proxyUrl} returned empty results (${duration}ms) - likely blocked`)
         } else {
-
+          console.log(`[Home API] ✓ Success with proxy ${proxyInfo.proxyUrl} (${duration}ms, ${response.data.length} videos)`)
           result = response
         }
       } catch (error: unknown) {
         const duration = Date.now() - startTime
-
+        console.error(`[Home API] Proxy ${proxyInfo.proxyUrl} failed (${duration}ms):`, error instanceof Error ? error.message : error)
       }
 
       retries--
@@ -86,6 +86,7 @@ export async function GET(request: NextRequest) {
     if (!result || !result.data) {
       // Log failed request
       await domainCheck.logRequest(500, Date.now() - requestStart)
+      console.error('[Home API] ❌ All proxy attempts failed - could not fetch videos')
       throw new Error('Failed to fetch video list from PornHub')
     }
 

@@ -47,14 +47,32 @@ export default function Home() {
       setLoading(true)
 
       const response = await fetch(`/api/home?page=${page}`)
+
+      // Check if response is OK before parsing
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        console.error('[Homepage] API Error:', response.status, errorData)
+        throw new Error(errorData.error || `API returned ${response.status}`)
+      }
+
       const data = await response.json()
 
-      setFeaturedVideos(data.data || [])
+      // Validate response structure
+      if (!data.data || !Array.isArray(data.data)) {
+        console.error('[Homepage] Invalid response structure:', data)
+        throw new Error('Invalid response from API')
+      }
+
+      setFeaturedVideos(data.data)
 
       // Check if there are more pages
       setHasMore(!data.paging?.isEnd)
     } catch (error) {
-
+      console.error('[Homepage] Failed to fetch videos:', error)
+      // Show error to user instead of silently failing
+      setFeaturedVideos([])
+      setHasMore(false)
+      // TODO: Add toast notification or error banner to UI
     } finally {
       setLoading(false)
     }
