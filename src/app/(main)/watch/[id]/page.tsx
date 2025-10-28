@@ -1,12 +1,11 @@
-'use client'
-
-import { useEffect, useState, useRef } from 'react'
-import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { Eye, Star, Clock, ChevronLeft, User } from 'lucide-react'
-import Hls from 'hls.js'
+import { Eye, Clock, ChevronLeft, User } from 'lucide-react'
+import { notFound } from 'next/navigation'
+import { prisma } from '@/lib/prisma'
+import { getCategoryChineseName } from '@/lib/category-mapping'
 import HorizontalAdsSlider from '@/components/HorizontalAdsSlider'
 import VideoPreview from '@/components/VideoPreview'
+import WatchClient from './watch-client'
 
 interface MediaDefinition {
   quality: number
@@ -31,184 +30,118 @@ interface RecommendedVideo {
   id: string
   title: string
   preview: string
-  previewVideo?: string
   duration: string
   views: string
   provider?: string
 }
 
-export default function WatchPage() {
-  const params = useParams()
-  const videoId = params.id as string
+async function getVideoData(videoId: string) {
+  try {
+    const video = await prisma.video.findUnique({
+      where: { vodId: videoId }
+    })
 
-  const [videoInfo, setVideoInfo] = useState<VideoInfo | null>(null)
-  const [recommendedVideos, setRecommendedVideos] = useState<RecommendedVideo[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [selectedQuality, setSelectedQuality] = useState<number | null>(null)
+    if (!video) {
+      return null
+    }
 
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const hlsRef = useRef<Hls | null>(null)
-
-  useEffect(() => {
-    // Fetch video info first
-    const fetchData = async () => {
-      try {
-        const videoResponse = await fetch(`/api/db/watch/${videoId}`)
-        const videoData = await videoResponse.json()
-
-        setVideoInfo(videoData)
-
-        // Fetch recommendations based on provider (with category fallback)
-        if (videoData.provider) {
-          try {
-            const params = new URLSearchParams()
-            params.append('provider', videoData.provider)
-            params.append('exclude', videoId)
-            params.append('limit', '6')
-
-            const recoResponse = await fetch(
-              `/api/db/videos/by-provider?${params.toString()}`
-            )
-            const recoData = await recoResponse.json()
-
-            console.log('[Watch] Recommendations response:', {
-              provider: videoData.provider,
-              dataCount: recoData?.data?.length,
-            })
-
-            if (recoData?.data && recoData.data.length > 0) {
-              setRecommendedVideos(recoData.data)
-            }
-          } catch (recoErr) {
-            console.error('[Watch] Failed to fetch recommendations:', recoErr)
-          }
+    const videoInfo: VideoInfo = {
+      title: video.vodName,
+      views: video.views,
+      rating: 0,
+      duration: video.vodRemarks || '',
+      preview: video.vodPic || '',
+      mediaDefinitions: [
+        {
+          quality: 1080,
+          videoUrl: `/api/watch/${videoId}/stream.m3u8?q=1080`,
+          format: 'hls',
+        },
+        {
+          quality: 720,
+          videoUrl: `/api/watch/${videoId}/stream.m3u8?q=720`,
+          format: 'hls',
+        },
+        {
+          quality: 480,
+          videoUrl: `/api/watch/${videoId}/stream.m3u8?q=480`,
+          format: 'hls',
         }
-
-        // Select highest quality by default
-        if (videoData.mediaDefinitions && videoData.mediaDefinitions.length > 0) {
-          const qualities = videoData.mediaDefinitions
-            .filter((md: MediaDefinition) => md.format === 'hls')
-            .sort((a: MediaDefinition, b: MediaDefinition) => b.quality - a.quality)
-
-          if (qualities.length > 0) {
-            setSelectedQuality(qualities[0].quality)
-          }
+      ],
+      tags: [],
+      pornstars: video.vodActor ? video.vodActor.split(',').map(a => a.trim()) : [],
+      categories: [
+        {
+          id: video.typeId,
+          name: getCategoryChineseName(video.typeName)
         }
-
-        setLoading(false)
-      } catch {
-        setError('无法加载视频信息')
-        setLoading(false)
-      }
+      ],
+      provider: video.vodProvider || '',
     }
 
-    fetchData()
-  }, [videoId])
+    return videoInfo
+  } catch (error) {
+    console.error('[Watch Server] Error fetching video:', error)
+    return null
+  }
+}
 
-  useEffect(() => {
-    if (!videoInfo || selectedQuality === null || !videoRef.current) return
+async function getRecommendedVideos(videoId: string, provider: string) {
+  try {
+    const videos = await prisma.video.findMany({
+      where: {
+        vodProvider: provider,
+        vodId: { not: videoId }
+      },
+      select: {
+        vodId: true,
+        vodName: true,
+        vodPic: true,
+        vodRemarks: true,
+        views: true,
+        typeName: true,
+        vodProvider: true,
+      },
+      orderBy: {
+        views: 'desc'
+      },
+      take: 6,
+    })
 
-    const selectedMedia = videoInfo.mediaDefinitions.find(
-      md => md.quality === selectedQuality && md.format === 'hls'
-    )
+    return videos.map((video) => ({
+      id: video.vodId,
+      title: video.vodName,
+      preview: video.vodPic || '',
+      duration: video.vodRemarks || '',
+      views: video.views.toString(),
+      provider: video.vodProvider || '',
+    }))
+  } catch (error) {
+    console.error('[Watch Server] Error fetching recommendations:', error)
+    return []
+  }
+}
 
-    if (!selectedMedia) return
+export default async function WatchPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id: videoId } = await params
 
-    const video = videoRef.current
-    const videoSrc = selectedMedia.videoUrl
+  const videoInfo = await getVideoData(videoId)
 
-    // Clean up previous HLS instance
-    if (hlsRef.current) {
-      hlsRef.current.destroy()
-    }
-
-    if (Hls.isSupported()) {
-      const hls = new Hls({
-        enableWorker: true,
-        lowLatencyMode: false,
-        backBufferLength: 90,
-      })
-
-      hls.loadSource(videoSrc)
-      hls.attachMedia(video)
-
-      hls.on(Hls.Events.ERROR, (event, data) => {
-        if (data.fatal) {
-          switch (data.type) {
-            case Hls.ErrorTypes.NETWORK_ERROR:
-              hls.startLoad()
-              break
-            case Hls.ErrorTypes.MEDIA_ERROR:
-              hls.recoverMediaError()
-              break
-            default:
-              break
-          }
-        }
-      })
-
-      hlsRef.current = hls
-    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      // Native HLS support (Safari)
-      video.src = videoSrc
-    }
-
-    return () => {
-      if (hlsRef.current) {
-        hlsRef.current.destroy()
-      }
-    }
-  }, [videoInfo, selectedQuality])
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="py-12 px-4 sm:px-6 lg:px-8">
-          <div className="animate-pulse space-y-6">
-            <div className="w-full aspect-video bg-muted rounded-lg"></div>
-            <div className="h-8 bg-muted rounded w-3/4"></div>
-            <div className="h-4 bg-muted rounded w-1/2"></div>
-          </div>
-        </div>
-      </div>
-    )
+  if (!videoInfo) {
+    notFound()
   }
 
-  if (error || !videoInfo) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="py-12 px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <p className="text-red-500 text-lg mb-4">{error || '视频未找到'}</p>
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 text-primary hover:text-primary/80"
-            >
-              <ChevronLeft className="w-5 h-5" />
-              返回首页
-            </Link>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  const recommendedVideos = videoInfo.provider
+    ? await getRecommendedVideos(videoId, videoInfo.provider)
+    : []
 
   return (
     <div className="min-h-screen bg-background">
       {/* Video Player Section */}
       <div className="py-8 px-4 sm:px-6 lg:px-8">
         <div className="space-y-6">
-          {/* Video Player */}
-          <div className="w-full aspect-video bg-black rounded-lg overflow-hidden">
-            <video
-              ref={videoRef}
-              className="w-full h-full"
-              controls
-              playsInline
-              poster={videoInfo.preview}
-            />
-          </div>
+          {/* Video Player - Client Component */}
+          <WatchClient videoInfo={videoInfo} />
 
           {/* Horizontal Ads Slider */}
           <HorizontalAdsSlider />
@@ -224,12 +157,6 @@ export default function WatchPage() {
                 <Eye className="w-5 h-5" />
                 {videoInfo.views?.toLocaleString() || '0'} 次观看
               </span>
-              {videoInfo.rating && (
-                <span className="flex items-center gap-2">
-                  <Star className="w-5 h-5" />
-                  {videoInfo.rating}%
-                </span>
-              )}
               {videoInfo.duration && (
                 <span className="flex items-center gap-2">
                   <Clock className="w-5 h-5" />
@@ -303,7 +230,6 @@ export default function WatchPage() {
               >
                 <VideoPreview
                   preview={video.preview}
-                  previewVideo={video.previewVideo}
                   title={video.title}
                   duration={video.duration}
                   className="group-hover:scale-110 transition-transform duration-300"

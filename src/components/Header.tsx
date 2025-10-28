@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import Image from 'next/image'
+import { Send } from 'lucide-react'
 
 export function Header() {
   const pathname = usePathname()
@@ -21,7 +22,7 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex h-16 items-center justify-between">
+      <div className="flex h-16 items-center justify-between px-4 sm:px-0">
         {/* Logo + Main Navigation */}
         <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity flex-shrink-0">
@@ -53,12 +54,15 @@ export function Header() {
           </nav>
         </div>
 
-        {/* Admin Link */}
+        {/* Telegram Link */}
         <Link
-          href="/admin"
-          className="text-sm text-muted-foreground hover:text-primary transition-colors"
+          href="https://t.me/your_channel"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center w-8 h-8 rounded-full bg-[#0088cc] hover:opacity-80 transition-opacity"
+          aria-label="Join our Telegram channel"
         >
-          管理后台
+          <Send className="w-4 h-4 text-white" />
         </Link>
       </div>
     </header>

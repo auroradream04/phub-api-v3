@@ -1,18 +1,8 @@
-'use client'
-
 import Link from 'next/link'
-import { ChevronRight, AlertCircle, CheckCircle, Copy } from 'lucide-react'
-import { useState } from 'react'
+import { ChevronRight, AlertCircle, CheckCircle } from 'lucide-react'
+import { CopyButton } from './maccms-client'
 
 export default function MacCMSGuide() {
-  const [copied, setCopied] = useState<string | null>(null)
-
-  const copyToClipboard = (text: string, id: string) => {
-    navigator.clipboard.writeText(text)
-    setCopied(id)
-    setTimeout(() => setCopied(null), 2000)
-  }
-
   const apiUrl = 'https://your-domain.com/api/maccms/api.php/provide/vod/at/xml'
   const jsonUrl = 'https://your-domain.com/api/maccms/api.php/provide/vod'
 
@@ -162,22 +152,7 @@ export default function MacCMSGuide() {
                       readOnly
                       className="flex-1 px-4 py-2 bg-card border border-border rounded-lg text-foreground text-sm font-mono"
                     />
-                    <button
-                      onClick={() => copyToClipboard(apiUrl, 'xml-url')}
-                      className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2"
-                    >
-                      {copied === 'xml-url' ? (
-                        <>
-                          <CheckCircle className="w-4 h-4" />
-                          已复制
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-4 h-4" />
-                          复制
-                        </>
-                      )}
-                    </button>
+                    <CopyButton text={apiUrl} id="xml-url" />
                   </div>
                 </div>
 
@@ -190,22 +165,7 @@ export default function MacCMSGuide() {
                       readOnly
                       className="flex-1 px-4 py-2 bg-card border border-border rounded-lg text-foreground text-sm font-mono"
                     />
-                    <button
-                      onClick={() => copyToClipboard(jsonUrl, 'json-url')}
-                      className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2"
-                    >
-                      {copied === 'json-url' ? (
-                        <>
-                          <CheckCircle className="w-4 h-4" />
-                          已复制
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-4 h-4" />
-                          复制
-                        </>
-                      )}
-                    </button>
+                    <CopyButton text={jsonUrl} id="json-url" />
                   </div>
                 </div>
               </div>
