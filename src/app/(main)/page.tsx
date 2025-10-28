@@ -103,31 +103,52 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section with Search */}
-      <section className="py-8 border-b border-border/20">
-        <div className="space-y-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">发现更多精彩</h1>
-            <p className="text-sm text-muted-foreground">搜索您感兴趣的内容</p>
+      <section className="py-16 md:py-24">
+        <div className="max-w-4xl mx-auto">
+          {/* Content */}
+          <div className="mb-12">
+            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4 leading-tight">
+              发现精彩视频
+            </h1>
+            <p className="text-lg text-muted-foreground">
+              数百万部高清视频等待探索。搜索、浏览、享受最佳内容。
+            </p>
           </div>
 
           {/* Search Bar */}
-          <form onSubmit={handleSearch} className="max-w-2xl">
+          <form onSubmit={handleSearch} className="w-full">
             <div className="relative">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="搜索视频..."
-                className="w-full px-4 py-3 pr-12 rounded-lg border border-border bg-card text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+                placeholder="搜索视频、演员、分类..."
+                className="w-full px-6 py-4 pr-14 rounded-xl border-2 border-border bg-background text-foreground placeholder-muted-foreground/60 focus:border-primary focus:outline-none transition-colors"
               />
               <button
                 type="submit"
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
               >
-                <Search className="w-5 h-5" />
+                <Search className="w-6 h-6" />
               </button>
             </div>
           </form>
+
+          {/* Stats */}
+          <div className="mt-10 grid grid-cols-3 gap-6">
+            <div>
+              <p className="text-2xl md:text-3xl font-bold text-primary">{stats.totalVideos}</p>
+              <p className="text-sm text-muted-foreground">视频总数</p>
+            </div>
+            <div>
+              <p className="text-2xl md:text-3xl font-bold text-primary">{stats.todayUpdates}</p>
+              <p className="text-sm text-muted-foreground">今日更新</p>
+            </div>
+            <div>
+              <p className="text-2xl md:text-3xl font-bold text-primary">4K</p>
+              <p className="text-sm text-muted-foreground">高清品质</p>
+            </div>
+          </div>
         </div>
       </section>
 
