@@ -299,7 +299,7 @@ export default function WatchPage() {
               <Link
                 key={video.id}
                 href={`/watch/${video.id}`}
-                className="bg-card rounded-xl overflow-hidden border border-border hover:border-primary transition-all group"
+                className="bg-card rounded-xl overflow-hidden border border-border hover:border-primary transition-all group flex flex-col"
               >
                 <VideoPreview
                   preview={video.preview}
@@ -308,8 +308,8 @@ export default function WatchPage() {
                   duration={video.duration}
                   className="group-hover:scale-110 transition-transform duration-300"
                 />
-                <div className="p-4">
-                  <h3 className="font-medium text-foreground mb-2 line-clamp-2 group-hover:text-primary transition-colors">
+                <div className="p-4 flex flex-col flex-1">
+                  <h3 className="font-medium text-foreground mb-2 line-clamp-2 group-hover:text-primary transition-colors flex-1">
                     {video.title}
                   </h3>
                   <div className="flex items-center gap-3 text-sm text-muted-foreground">

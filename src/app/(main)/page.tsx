@@ -161,7 +161,7 @@ export default function Home() {
 
       {/* Featured Videos Section - Table Layout */}
       <section className="py-12">
-        <div className="px-4 sm:px-6 lg:px-8">
+        <div className="px-4 md:px-0">
           <div className="mb-8">
             <h2 className="text-3xl font-bold text-foreground mb-2">影片资源列表</h2>
             <div className="h-1 w-20 bg-gradient-to-r from-primary to-accent rounded-full"></div>
@@ -260,7 +260,7 @@ export default function Home() {
               </div>
 
               {/* Mobile Card View */}
-              <div className="md:hidden space-y-2">
+              <div className="md:hidden space-y-0 border-t border-border/20">
                 {featuredVideos.map((video) => {
                   // Determine tags to show - ORDER MATTERS! HOT first (leftmost)
                   const tags = [];
@@ -292,35 +292,25 @@ export default function Home() {
                   if (video.duration) tags.push({ label: 'HD', color: 'from-amber-500 to-yellow-400', pulse: false });
 
                   return (
-                  <div key={video.id} className="bg-card rounded-lg border border-border/40 p-3 space-y-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 flex items-start gap-2">
-                        <div className="flex gap-1 flex-shrink-0 pt-0.5">
-                          {tags.map((tag) => (
-                            <span
-                              key={tag.label}
-                              className={`px-2 py-0.5 text-xs font-semibold rounded text-white bg-gradient-to-r ${tag.color} whitespace-nowrap ${tag.pulse ? 'pulse-hot' : ''}`}
-                            >
-                              {tag.label}
-                            </span>
-                          ))}
-                        </div>
-                        <h3 className="font-medium text-foreground text-sm line-clamp-2">
-                          {video.title}
-                        </h3>
-                      </div>
+                  <div key={video.id} className="flex items-center gap-2 p-2 border-b border-border/20 hover:bg-muted/30 transition-colors">
+                    <div className="flex gap-1 flex-shrink-0">
+                      {tags.map((tag) => (
+                        <span
+                          key={tag.label}
+                          className={`px-1.5 py-0.5 text-xs font-semibold rounded text-white bg-gradient-to-r ${tag.color} whitespace-nowrap ${tag.pulse ? 'pulse-hot' : ''}`}
+                        >
+                          {tag.label}
+                        </span>
+                      ))}
                     </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <div className="space-y-0.5 text-muted-foreground">
-                        <div><span className="font-medium">类型:</span> {video.category?.split(',')[0] || '未分类'}</div>
-                        <div><span className="font-medium">时间:</span> 2025-10-28</div>
-                      </div>
-                      <Link href={`/watch/${video.id}`}>
-                        <button className="px-4 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded text-xs font-medium transition-colors whitespace-nowrap">
-                          点击进入
-                        </button>
-                      </Link>
-                    </div>
+                    <h3 className="font-medium text-foreground text-sm line-clamp-1 flex-1">
+                      {video.title}
+                    </h3>
+                    <Link href={`/watch/${video.id}`}>
+                      <button className="px-3 py-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded text-xs font-medium transition-colors whitespace-nowrap flex-shrink-0">
+                        进入
+                      </button>
+                    </Link>
                   </div>
                 );
                 })}
