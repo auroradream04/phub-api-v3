@@ -235,24 +235,28 @@ function jsonToXml(response: MaccmsJsonResponse): string {
 
   for (const video of response.list) {
     xml += '    <video>\n'
-
-    // Map all video fields to XML tags dynamically
-    for (const [key, value] of Object.entries(video)) {
-      // Convert vod_field_name to field_name tag (remove vod_ prefix)
-      const tagName = key.startsWith('vod_') ? key.substring(4) : key
-
-      // Handle null/undefined values
-      if (value === null || value === undefined) {
-        continue
-      }
-
-      // Determine if we need CDATA wrapping (for text fields with special chars)
-      const needsCDATA = typeof value === 'string' && (value.includes('<') || value.includes('&') || value.includes('$') || value.includes('#'))
-      const wrappedValue = needsCDATA ? wrapCDATA(value) : escapeXml(String(value))
-
-      xml += `      <${tagName}>${wrappedValue}</${tagName}>\n`
-    }
-
+    xml += `      <last>${escapeXml(video.vod_time)}</last>\n`
+    xml += `      <id>${escapeXml(video.vod_id)}</id>\n`
+    xml += `      <tid>${video.type_id}</tid>\n`
+    xml += `      <name>${wrapCDATA(video.vod_name)}</name>\n`
+    xml += `      <type>${escapeXml(video.type_name)}</type>\n`
+    xml += `      <class>${wrapCDATA(video.vod_class)}</class>\n`
+    xml += `      <pic>${wrapCDATA(video.vod_pic)}</pic>\n`
+    xml += `      <pic_thumb>${wrapCDATA(video.vod_pic_thumb || video.vod_pic)}</pic_thumb>\n`
+    xml += `      <pic_slide>${wrapCDATA(video.vod_pic_slide || video.vod_pic)}</pic_slide>\n`
+    xml += `      <pic_screenshot>${wrapCDATA(video.vod_pic_screenshot || video.vod_pic)}</pic_screenshot>\n`
+    xml += `      <lang>${escapeXml(video.vod_lang)}</lang>\n`
+    xml += `      <area>${escapeXml(video.vod_area)}</area>\n`
+    xml += `      <year>${escapeXml(video.vod_year)}</year>\n`
+    xml += `      <state>${escapeXml(video.vod_remarks)}</state>\n`
+    xml += `      <note>${escapeXml(video.vod_remarks)}</note>\n`
+    xml += `      <actor>${wrapCDATA(video.vod_actor)}</actor>\n`
+    xml += `      <director>${wrapCDATA(video.vod_director)}</director>\n`
+    xml += `      <hit>${video.vod_hits}</hit>\n`
+    xml += '      <dl>\n'
+    xml += `        <dd flag="${escapeXml(video.vod_play_from)}">${wrapCDATA(video.vod_play_url)}</dd>\n`
+    xml += '      </dl>\n'
+    xml += `      <des>${wrapCDATA(video.vod_content)}</des>\n`
     xml += '    </video>\n'
   }
 
