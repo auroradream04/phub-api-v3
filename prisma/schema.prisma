@@ -145,6 +145,7 @@ model Video {
   vodDirector   String?  @db.Text
   vodContent    String?  @db.Text // Description
   vodPlayUrl    String   @db.Text // Episode$URL format
+  vodProvider   String?  @db.VarChar(100) // Video provider/platform name for recommendations
   views         Int      @default(0)
   duration      Int? // Duration in seconds
   createdAt     DateTime @default(now())
@@ -153,6 +154,7 @@ model Video {
   @@index([typeId])
   @@index([vodTime])
   @@index([views])
+  @@index([vodProvider]) // Index for provider-based queries
 }
 
 // Domain access control - whitelist/blacklist management

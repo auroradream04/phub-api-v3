@@ -4,6 +4,17 @@ import { isTranslationEnabled, translateBatch } from '@/lib/translate'
 
 export const revalidate = 7200 // 2 hours
 
+// Type definitions for scraped video data
+interface ScrapedVideo {
+  id: string
+  views?: string
+  duration: string
+  title: string
+  preview?: string
+  provider?: string
+  categories?: Array<{ id: number; name: string } | string>
+}
+
 // Map custom category string IDs to numeric IDs for database storage
 const CUSTOM_CATEGORY_IDS: Record<string, number> = {
   'japanese': 9999,
@@ -102,7 +113,7 @@ export async function POST(request: NextRequest) {
 
     // Phase 1: Filter videos and prepare data
     const videosToProcess: Array<{
-      video: any
+      video: ScrapedVideo
       views: number
       durationSeconds: number
       cleanTitle: string
@@ -223,6 +234,9 @@ export async function POST(request: NextRequest) {
             views: item.views,
             vodClass: vodClass,
             vodYear: item.year,
+            vodProvider: item.video.provider || '',
+            vodLang: 'zh',
+            vodArea: 'CN',
           },
           create: {
             vodId: item.video.id,
@@ -240,13 +254,14 @@ export async function POST(request: NextRequest) {
             vodRemarks: `HD ${item.video.duration}`,
             vodPlayFrom: 'dplayer',
             vodPic: item.video.preview,
-            vodArea: 'US',
-            vodLang: 'en',
+            vodArea: 'CN',
+            vodLang: 'zh',
             vodYear: item.year,
             vodActor: item.video.provider || '',
             vodDirector: '',
             vodContent: finalTitle,
             vodPlayUrl: `HD$${baseUrl}/api/watch/${item.video.id}/stream.m3u8?q=720`,
+            vodProvider: item.video.provider || '',
             views: item.views,
             duration: item.durationSeconds,
           },

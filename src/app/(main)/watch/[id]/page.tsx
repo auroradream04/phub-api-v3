@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
-import { useParams, useSearchParams } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { Eye, Star, Clock, ChevronLeft, User } from 'lucide-react'
 import Hls from 'hls.js'
@@ -23,6 +23,7 @@ interface VideoInfo {
   mediaDefinitions: MediaDefinition[]
   tags?: string[]
   pornstars?: string[]
+  provider?: string
 }
 
 interface RecommendedVideo {
@@ -37,9 +38,7 @@ interface RecommendedVideo {
 
 export default function WatchPage() {
   const params = useParams()
-  const searchParams = useSearchParams()
   const videoId = params.id as string
-  const provider = searchParams.get('provider')
 
   const [videoInfo, setVideoInfo] = useState<VideoInfo | null>(null)
   const [recommendedVideos, setRecommendedVideos] = useState<RecommendedVideo[]>([])
@@ -51,30 +50,29 @@ export default function WatchPage() {
   const hlsRef = useRef<Hls | null>(null)
 
   useEffect(() => {
-    // Fetch video info and provider videos in parallel
+    // Fetch video info first
     const fetchData = async () => {
       try {
-        const promises = [
-          fetch(`/api/watch/${videoId}`).then(res => res.json())
-        ]
-
-        // If provider is available, fetch provider's videos
-        if (provider) {
-          promises.push(
-            fetch(`/api/search/${encodeURIComponent(provider)}?page=1`).then(res => res.json())
-          )
-        }
-
-        const results = await Promise.all(promises)
-        const videoData = results[0]
-        const providerData = results[1]
+        const videoResponse = await fetch(`/api/watch/${videoId}`)
+        const videoData = await videoResponse.json()
 
         setVideoInfo(videoData)
 
-        // Set recommended videos (filter out current video)
-        if (providerData?.data) {
-          const filtered = providerData.data.filter((v: RecommendedVideo) => v.id !== videoId)
-          setRecommendedVideos(filtered.slice(0, 6))
+        // If provider is available, fetch videos from same provider
+        if (videoData.provider) {
+          try {
+            const providerResponse = await fetch(
+              `/api/videos/by-provider?provider=${encodeURIComponent(videoData.provider)}&exclude=${videoId}&limit=6`
+            )
+            const providerData = await providerResponse.json()
+
+            if (providerData?.data) {
+              setRecommendedVideos(providerData.data)
+            }
+          } catch (providerErr) {
+            // If provider fetch fails, just skip recommendations
+            console.warn('Failed to fetch provider videos:', providerErr)
+          }
         }
 
         // Select highest quality by default
@@ -89,15 +87,14 @@ export default function WatchPage() {
         }
 
         setLoading(false)
-      } catch (err) {
-
+      } catch {
         setError('无法加载视频信息')
         setLoading(false)
       }
     }
 
     fetchData()
-  }, [videoId, provider])
+  }, [videoId])
 
   useEffect(() => {
     if (!videoInfo || selectedQuality === null || !videoRef.current) return
@@ -273,7 +270,7 @@ export default function WatchPage() {
         <section className="py-12 px-4 sm:px-6 lg:px-8">
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-foreground mb-2">
-              {provider ? `更多来自 ${provider} 的视频` : '推荐视频'}
+              {videoInfo?.provider ? `更多来自 ${videoInfo.provider} 的视频` : '推荐视频'}
             </h2>
             <div className="h-1 w-20 bg-gradient-to-r from-primary to-accent rounded-full"></div>
           </div>

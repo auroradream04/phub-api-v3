@@ -82,11 +82,11 @@ export async function translateToZhCN(text: string): Promise<string> {
       console.log(`[Translation] (${proxyInfo.proxyUrl}) "${text.substring(0, 50)}${text.length > 50 ? '...' : ''}" → "${translated.substring(0, 50)}${translated.length > 50 ? '...' : ''}"`)
       return translated
 
-    } catch (error: any) {
+    } catch (error) {
       retries--
 
       // Check if it's a rate limit error
-      const isRateLimit = error?.status === 429 || error?.statusCode === 429
+      const isRateLimit = (error as { status?: number; statusCode?: number })?.status === 429 || (error as { status?: number; statusCode?: number })?.statusCode === 429
 
       if (isRateLimit && retries > 0) {
         console.warn(`[Translation] Rate limit hit, retrying with different proxy (${MAX_RETRIES - retries}/${MAX_RETRIES})...`)
@@ -96,10 +96,11 @@ export async function translateToZhCN(text: string): Promise<string> {
       }
 
       // If no retries left or different error, return original
+      const errorMessage = error instanceof Error ? error.message : String(error)
       if (retries === 0) {
-        console.error(`[Translation] Failed after ${MAX_RETRIES} retries:`, error?.message || error)
+        console.error(`[Translation] Failed after ${MAX_RETRIES} retries:`, errorMessage)
       } else {
-        console.error('[Translation] Failed to translate:', error?.message || error)
+        console.error('[Translation] Failed to translate:', errorMessage)
       }
 
       return text
