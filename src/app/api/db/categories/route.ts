@@ -10,10 +10,10 @@ export async function GET(request: NextRequest) {
     const videos = await prisma.video.findMany({
       select: { category: true },
       where: {
-        category: {
-          not: null,
-          not: ''
-        }
+        AND: [
+          { category: { not: null } },
+          { category: { not: '' } }
+        ]
       },
       distinct: ['category']
     })
