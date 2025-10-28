@@ -24,6 +24,7 @@ interface VideoInfo {
   tags?: string[]
   pornstars?: string[]
   provider?: string
+  categories?: Array<{ id?: number; name: string }>
 }
 
 interface RecommendedVideo {
@@ -58,11 +59,22 @@ export default function WatchPage() {
 
         setVideoInfo(videoData)
 
-        // If provider is available, fetch videos from same provider
-        if (videoData.provider) {
+        // If provider is available, fetch videos from same provider (with category fallback)
+        if (videoData.provider || videoData.categories?.[0]?.name) {
           try {
+            const params = new URLSearchParams()
+            if (videoData.provider) {
+              params.append('provider', videoData.provider)
+            }
+            // Use first category as fallback for recommendations
+            if (videoData.categories?.[0]?.name) {
+              params.append('typeName', videoData.categories[0].name)
+            }
+            params.append('exclude', videoId)
+            params.append('limit', '6')
+
             const providerResponse = await fetch(
-              `/api/videos/by-provider?provider=${encodeURIComponent(videoData.provider)}&exclude=${videoId}&limit=6`
+              `/api/videos/by-provider?${params.toString()}`
             )
             const providerData = await providerResponse.json()
 
@@ -209,7 +221,7 @@ export default function WatchPage() {
               {videoInfo.title}
             </h1>
 
-            <div className="flex items-center gap-6 text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-4 text-muted-foreground md:gap-6">
               <span className="flex items-center gap-2">
                 <Eye className="w-5 h-5" />
                 {videoInfo.views?.toLocaleString() || '0'} 次观看
@@ -224,6 +236,12 @@ export default function WatchPage() {
                 <span className="flex items-center gap-2">
                   <Clock className="w-5 h-5" />
                   {videoInfo.duration}
+                </span>
+              )}
+              {videoInfo.provider && (
+                <span className="flex items-center gap-2">
+                  <User className="w-5 h-5" />
+                  {videoInfo.provider}
                 </span>
               )}
             </div>
@@ -270,7 +288,11 @@ export default function WatchPage() {
         <section className="py-12 px-4 sm:px-6 lg:px-8">
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-foreground mb-2">
-              {videoInfo?.provider ? `更多来自 ${videoInfo.provider} 的视频` : '推荐视频'}
+              {videoInfo?.provider
+                ? `更多来自 ${videoInfo.provider} 的视频`
+                : videoInfo?.categories?.[0]?.name
+                ? `更多 ${videoInfo.categories[0].name} 分类视频`
+                : '推荐视频'}
             </h2>
             <div className="h-1 w-20 bg-gradient-to-r from-primary to-accent rounded-full"></div>
           </div>

@@ -8,36 +8,76 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
     const provider = searchParams.get('provider')
+    const typeName = searchParams.get('typeName') // Fallback category
     const limit = parseInt(searchParams.get('limit') || '6', 10)
     const excludeId = searchParams.get('exclude')
 
-    if (!provider) {
+    if (!provider && !typeName) {
       return NextResponse.json(
-        { error: 'Provider parameter is required' },
+        { error: 'Either provider or typeName parameter is required' },
         { status: 400 }
       )
     }
 
-    // Fetch videos from the same provider
-    const videos = await prisma.video.findMany({
-      where: {
-        vodProvider: provider,
-        ...(excludeId && { vodId: { not: excludeId } })
-      },
-      select: {
-        vodId: true,
-        vodName: true,
-        vodPic: true,
-        vodRemarks: true,
-        views: true,
-        typeName: true,
-        vodProvider: true,
-      },
-      orderBy: {
-        views: 'desc'
-      },
-      take: limit,
-    })
+    interface VideoRecord {
+      vodId: string
+      vodName: string
+      vodPic: string | null
+      vodRemarks: string | null
+      views: number
+      typeName: string
+      vodProvider: string | null
+    }
+
+    let videos: VideoRecord[] = []
+    let usedFallback = false
+
+    // First, try to fetch videos from the same provider
+    if (provider) {
+      videos = await prisma.video.findMany({
+        where: {
+          vodProvider: provider,
+          ...(excludeId && { vodId: { not: excludeId } })
+        },
+        select: {
+          vodId: true,
+          vodName: true,
+          vodPic: true,
+          vodRemarks: true,
+          views: true,
+          typeName: true,
+          vodProvider: true,
+        },
+        orderBy: {
+          views: 'desc'
+        },
+        take: limit,
+      })
+    }
+
+    // If no provider videos found and we have typeName, fallback to category-based recommendations
+    if (videos.length === 0 && typeName) {
+      usedFallback = true
+      videos = await prisma.video.findMany({
+        where: {
+          typeName: typeName,
+          ...(excludeId && { vodId: { not: excludeId } })
+        },
+        select: {
+          vodId: true,
+          vodName: true,
+          vodPic: true,
+          vodRemarks: true,
+          views: true,
+          typeName: true,
+          vodProvider: true,
+        },
+        orderBy: {
+          views: 'desc'
+        },
+        take: limit,
+      })
+    }
 
     // Format response
     const data = videos.map((video) => ({
@@ -54,6 +94,8 @@ export async function GET(request: NextRequest) {
       success: true,
       data,
       count: data.length,
+      usedFallback, // Indicate if we used category fallback
+      provider,
     }, { status: 200 })
 
   } catch (error) {
