@@ -25,10 +25,16 @@ async function getInitialData() {
     const videosData = await videosRes.json()
     const categoriesData = await categoriesRes.json()
 
+    console.log('[Homepage Server] Categories response:', categoriesData)
+    console.log('[Homepage Server] Categories count:', categoriesData.categories?.length)
+
+    const categoryNames = categoriesData.categories?.map((cat: any) => cat.name) || []
+    console.log('[Homepage Server] Category names:', categoryNames)
+
     return {
       videos: videosData.data || [],
       stats: videosData.stats || { totalVideos: 0, todayUpdates: 0 },
-      categories: categoriesData.categories?.map((cat: any) => cat.name) || []
+      categories: categoryNames
     }
   } catch (error) {
     console.error('[Homepage Server] Failed to fetch initial data:', error)
