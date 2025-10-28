@@ -34,11 +34,33 @@ export async function GET(request: NextRequest) {
     let videos: VideoRecord[] = []
     let usedFallback = false
 
-    // Use category-based recommendations (primary strategy for DB)
-    if (typeName) {
-      usedFallback = true
+    // First, try to match by provider
+    if (provider) {
+      videos = await prisma.video.findMany({
+        where: {
+          vodProvider: provider,
+          ...(excludeId && { vodId: { not: excludeId } })
+        },
+        select: {
+          vodId: true,
+          vodName: true,
+          vodPic: true,
+          vodRemarks: true,
+          views: true,
+          typeName: true,
+          vodProvider: true,
+        },
+        orderBy: {
+          views: 'desc'
+        },
+        take: limit,
+      })
+      console.log(`[DB By-Provider API] Provider "${provider}" query returned ${videos.length} videos`)
+    }
 
-      // Try exact match first
+    // If no provider match, try category fallback
+    if (videos.length === 0 && typeName) {
+      usedFallback = true
       videos = await prisma.video.findMany({
         where: {
           typeName: typeName,
@@ -58,32 +80,12 @@ export async function GET(request: NextRequest) {
         },
         take: limit,
       })
-      console.log(`[DB By-Provider API] Category "${typeName}" query returned ${videos.length} videos`)
+      console.log(`[DB By-Provider API] Category "${typeName}" fallback returned ${videos.length} videos`)
+    }
 
-      // If still empty, just get most popular videos as last resort
-      if (videos.length === 0) {
-        videos = await prisma.video.findMany({
-          where: {
-            ...(excludeId && { vodId: { not: excludeId } })
-          },
-          select: {
-            vodId: true,
-            vodName: true,
-            vodPic: true,
-            vodRemarks: true,
-            views: true,
-            typeName: true,
-            vodProvider: true,
-          },
-          orderBy: {
-            views: 'desc'
-          },
-          take: limit,
-        })
-        console.log(`[DB By-Provider API] Popular videos fallback returned ${videos.length} videos`)
-      }
-    } else {
-      // No category provided, show most popular videos
+    // If still empty, get most popular videos as last resort
+    if (videos.length === 0) {
+      usedFallback = true
       videos = await prisma.video.findMany({
         where: {
           ...(excludeId && { vodId: { not: excludeId } })
@@ -102,7 +104,7 @@ export async function GET(request: NextRequest) {
         },
         take: limit,
       })
-      console.log(`[DB By-Provider API] No category provided, showing popular videos (${videos.length} returned)`)
+      console.log(`[DB By-Provider API] Popular videos fallback returned ${videos.length} videos`)
     }
 
     // Format response

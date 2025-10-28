@@ -59,11 +59,11 @@ export default function WatchPage() {
 
         setVideoInfo(videoData)
 
-        // Fetch recommendations based on category from database
-        if (videoData.categories?.[0]?.name) {
+        // Fetch recommendations based on provider (with category fallback)
+        if (videoData.provider) {
           try {
             const params = new URLSearchParams()
-            params.append('typeName', videoData.categories[0].name)
+            params.append('provider', videoData.provider)
             params.append('exclude', videoId)
             params.append('limit', '6')
 
@@ -73,7 +73,7 @@ export default function WatchPage() {
             const recoData = await recoResponse.json()
 
             console.log('[Watch] Recommendations response:', {
-              category: videoData.categories?.[0]?.name,
+              provider: videoData.provider,
               dataCount: recoData?.data?.length,
             })
 
