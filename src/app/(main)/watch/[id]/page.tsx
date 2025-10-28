@@ -54,43 +54,34 @@ export default function WatchPage() {
     // Fetch video info first
     const fetchData = async () => {
       try {
-        const videoResponse = await fetch(`/api/watch/${videoId}`)
+        const videoResponse = await fetch(`/api/db/watch/${videoId}`)
         const videoData = await videoResponse.json()
 
         setVideoInfo(videoData)
 
-        // If provider is available, fetch videos from same provider (with category fallback)
-        if (videoData.provider || videoData.categories?.[0]?.name) {
+        // Fetch recommendations based on category from database
+        if (videoData.categories?.[0]?.name) {
           try {
             const params = new URLSearchParams()
-            if (videoData.provider) {
-              params.append('provider', videoData.provider)
-            }
-            // Use first category as fallback for recommendations
-            if (videoData.categories?.[0]?.name) {
-              params.append('typeName', videoData.categories[0].name)
-            }
+            params.append('typeName', videoData.categories[0].name)
             params.append('exclude', videoId)
             params.append('limit', '6')
 
-            const providerResponse = await fetch(
-              `/api/videos/by-provider?${params.toString()}`
+            const recoResponse = await fetch(
+              `/api/db/videos/by-provider?${params.toString()}`
             )
-            const providerData = await providerResponse.json()
+            const recoData = await recoResponse.json()
 
             console.log('[Watch] Recommendations response:', {
-              provider: videoData.provider,
               category: videoData.categories?.[0]?.name,
-              dataCount: providerData?.data?.length,
-              usedFallback: providerData?.usedFallback,
+              dataCount: recoData?.data?.length,
             })
 
-            if (providerData?.data && providerData.data.length > 0) {
-              setRecommendedVideos(providerData.data)
+            if (recoData?.data && recoData.data.length > 0) {
+              setRecommendedVideos(recoData.data)
             }
-          } catch (providerErr) {
-            // If provider fetch fails, just skip recommendations
-            console.error('[Watch] Failed to fetch provider videos:', providerErr)
+          } catch (recoErr) {
+            console.error('[Watch] Failed to fetch recommendations:', recoErr)
           }
         }
 

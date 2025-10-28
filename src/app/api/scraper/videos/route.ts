@@ -245,7 +245,8 @@ export async function POST(request: NextRequest) {
             views: item.views,
             vodClass: vodClass,
             vodYear: item.year,
-            vodProvider: normalizeProvider(item.video.provider),
+            // NOTE: Do NOT update vodProvider - preserve existing MacCMS provider name
+            // vodProvider only gets set on create from PornHub API
             vodLang: 'zh',
             vodArea: 'CN',
           },

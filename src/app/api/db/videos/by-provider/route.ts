@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '6', 10)
     const excludeId = searchParams.get('exclude')
 
-    console.log('[By-Provider API] Request:', { provider, typeName, excludeId, limit })
+    console.log('[DB By-Provider API] Request:', { provider, typeName, excludeId, limit })
 
     if (!provider && !typeName) {
       return NextResponse.json(
@@ -34,11 +34,7 @@ export async function GET(request: NextRequest) {
     let videos: VideoRecord[] = []
     let usedFallback = false
 
-    // NOTE: Skip provider matching - PornHub API provider names don't match MacCMS database provider names
-    // (different data sources). Always use category-based fallback instead.
-    console.log(`[By-Provider API] Skipping provider "${provider}" (data source mismatch) - using category fallback`)
-
-    // Use category-based recommendations (this is the primary strategy)
+    // Use category-based recommendations (primary strategy for DB)
     if (typeName) {
       usedFallback = true
 
@@ -62,7 +58,7 @@ export async function GET(request: NextRequest) {
         },
         take: limit,
       })
-      console.log(`[By-Provider API] Category "${typeName}" fallback query returned ${videos.length} videos`)
+      console.log(`[DB By-Provider API] Category "${typeName}" query returned ${videos.length} videos`)
 
       // If still empty, just get most popular videos as last resort
       if (videos.length === 0) {
@@ -84,7 +80,7 @@ export async function GET(request: NextRequest) {
           },
           take: limit,
         })
-        console.log(`[By-Provider API] Popular videos fallback returned ${videos.length} videos`)
+        console.log(`[DB By-Provider API] Popular videos fallback returned ${videos.length} videos`)
       }
     } else {
       // No category provided, show most popular videos
@@ -106,7 +102,7 @@ export async function GET(request: NextRequest) {
         },
         take: limit,
       })
-      console.log(`[By-Provider API] No category provided, showing popular videos (${videos.length} returned)`)
+      console.log(`[DB By-Provider API] No category provided, showing popular videos (${videos.length} returned)`)
     }
 
     // Format response
@@ -120,13 +116,13 @@ export async function GET(request: NextRequest) {
       provider: video.vodProvider || '',
     }))
 
-    console.log(`[By-Provider API] Returning ${data.length} videos (usedFallback: ${usedFallback})`)
+    console.log(`[DB By-Provider API] Returning ${data.length} videos (usedFallback: ${usedFallback})`)
 
     return NextResponse.json({
       success: true,
       data,
       count: data.length,
-      usedFallback, // Indicate if we used category fallback
+      usedFallback,
       provider,
     }, { status: 200 })
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PornHub } from 'pornhub.js'
 import { getRandomProxy } from '@/lib/proxy'
+import { prisma } from '@/lib/prisma'
 
 export const revalidate = 7200 // 2 hours
 
