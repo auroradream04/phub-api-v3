@@ -156,22 +156,12 @@ export default function WatchPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white">
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-          <div className="px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <Link href="/" className="text-2xl font-bold text-blue-300">
-                视频中心
-              </Link>
-            </div>
-          </div>
-        </header>
-
+      <div className="min-h-screen bg-background">
         <div className="py-12 px-4 sm:px-6 lg:px-8">
           <div className="animate-pulse space-y-6">
-            <div className="w-full aspect-video bg-gray-200 rounded-lg"></div>
-            <div className="h-8 bg-gray-200 rounded w-3/4"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+            <div className="w-full aspect-video bg-muted rounded-lg"></div>
+            <div className="h-8 bg-muted rounded w-3/4"></div>
+            <div className="h-4 bg-muted rounded w-1/2"></div>
           </div>
         </div>
       </div>
@@ -180,23 +170,13 @@ export default function WatchPage() {
 
   if (error || !videoInfo) {
     return (
-      <div className="min-h-screen bg-white">
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-          <div className="px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <Link href="/" className="text-2xl font-bold text-blue-300">
-                视频中心
-              </Link>
-            </div>
-          </div>
-        </header>
-
+      <div className="min-h-screen bg-background">
         <div className="py-12 px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <p className="text-red-600 text-lg mb-4">{error || '视频未找到'}</p>
+            <p className="text-red-500 text-lg mb-4">{error || '视频未找到'}</p>
             <Link
               href="/"
-              className="inline-flex items-center gap-2 text-blue-300 hover:text-blue-400"
+              className="inline-flex items-center gap-2 text-primary hover:text-primary/80"
             >
               <ChevronLeft className="w-5 h-5" />
               返回首页
@@ -208,25 +188,7 @@ export default function WatchPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <Link href="/" className="text-2xl font-bold text-blue-300">
-              视频中心
-            </Link>
-            <Link
-              href="/"
-              className="text-gray-600 hover:text-blue-300 transition-colors flex items-center gap-2"
-            >
-              <ChevronLeft className="w-5 h-5" />
-              返回首页
-            </Link>
-          </div>
-        </div>
-      </header>
-
+    <div className="min-h-screen bg-background">
       {/* Video Player Section */}
       <div className="py-8 px-4 sm:px-6 lg:px-8">
         <div className="space-y-6">
@@ -246,11 +208,11 @@ export default function WatchPage() {
 
           {/* Video Info */}
           <div className="space-y-4">
-            <h1 className="text-xl font-bold text-gray-900">
+            <h1 className="text-xl font-bold text-foreground">
               {videoInfo.title}
             </h1>
 
-            <div className="flex items-center gap-6 text-gray-600">
+            <div className="flex items-center gap-6 text-muted-foreground">
               <span className="flex items-center gap-2">
                 <Eye className="w-5 h-5" />
                 {videoInfo.views?.toLocaleString() || '0'} 次观看
@@ -272,12 +234,12 @@ export default function WatchPage() {
             {/* Tags */}
             {videoInfo.tags && videoInfo.tags.length > 0 && (
               <div className="space-y-2">
-                <h3 className="text-sm font-medium text-gray-700">标签:</h3>
+                <h3 className="text-sm font-medium text-foreground">标签:</h3>
                 <div className="flex flex-wrap gap-2">
                   {videoInfo.tags.map((tag, index) => (
                     <span
                       key={index}
-                      className="px-3 py-1 bg-white text-gray-700 text-sm rounded-full border border-gray-200 hover:border-blue-300 transition-colors"
+                      className="px-3 py-1 bg-card text-foreground text-sm rounded-full border border-border hover:border-primary transition-colors"
                     >
                       {tag}
                     </span>
@@ -289,12 +251,12 @@ export default function WatchPage() {
             {/* Pornstars */}
             {videoInfo.pornstars && videoInfo.pornstars.length > 0 && (
               <div className="space-y-2">
-                <h3 className="text-sm font-medium text-gray-700">演员:</h3>
+                <h3 className="text-sm font-medium text-foreground">演员:</h3>
                 <div className="flex flex-wrap gap-2">
                   {videoInfo.pornstars.map((star, index) => (
                     <span
                       key={index}
-                      className="px-3 py-1 bg-blue-50 text-blue-400 text-sm rounded-full border border-blue-100"
+                      className="px-3 py-1 bg-primary/10 text-primary text-sm rounded-full border border-primary/20"
                     >
                       {star}
                     </span>
@@ -310,17 +272,17 @@ export default function WatchPage() {
       {recommendedVideos.length > 0 && (
         <section className="py-12 px-4 sm:px-6 lg:px-8">
           <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            <h2 className="text-2xl font-bold text-foreground mb-2">
               {provider ? `更多来自 ${provider} 的视频` : '推荐视频'}
             </h2>
-            <div className="h-1 w-20 bg-gradient-to-r from-blue-300 to-indigo-300 rounded-full"></div>
+            <div className="h-1 w-20 bg-gradient-to-r from-primary to-accent rounded-full"></div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {recommendedVideos.map((video) => (
               <Link
                 key={video.id}
-                href={`/watch/${video.id}${video.provider ? `?provider=${encodeURIComponent(video.provider)}` : ''}`}
-                className="bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-blue-300 transition-all group"
+                href={`/watch/${video.id}`}
+                className="bg-card rounded-xl overflow-hidden border border-border hover:border-primary transition-all group"
               >
                 <VideoPreview
                   preview={video.preview}
@@ -330,10 +292,10 @@ export default function WatchPage() {
                   className="group-hover:scale-110 transition-transform duration-300"
                 />
                 <div className="p-4">
-                  <h3 className="font-medium text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-300 transition-colors">
+                  <h3 className="font-medium text-foreground mb-2 line-clamp-2 group-hover:text-primary transition-colors">
                     {video.title}
                   </h3>
-                  <div className="flex items-center gap-3 text-sm text-gray-500">
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
                     <span className="flex items-center gap-1 leading-none">
                       <Eye className="w-4 h-4" />
                       <span className="leading-none">{video.views}</span>
@@ -351,15 +313,6 @@ export default function WatchPage() {
           </div>
         </section>
       )}
-
-      {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 py-8 mt-12">
-        <div className="px-4 sm:px-6 lg:px-8">
-          <div className="text-center text-gray-500 text-sm">
-            <p>© 2024 视频中心. 保留所有权利.</p>
-          </div>
-        </div>
-      </footer>
     </div>
   )
 }
