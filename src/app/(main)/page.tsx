@@ -103,76 +103,99 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section with Search */}
-      <section className="py-20 md:py-32 border-b border-border/30">
-        <div className="max-w-5xl mx-auto">
-          {/* Header */}
-          <div className="mb-16">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-1 h-8 bg-primary rounded"></div>
-              <span className="text-sm font-semibold text-primary uppercase tracking-wider">视频平台</span>
+      <section className="py-24 md:py-40 bg-gradient-to-b from-card/50 to-background relative overflow-hidden">
+        {/* Decorative elements */}
+        <div className="absolute top-10 right-10 w-40 h-40 bg-primary/5 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 left-5 w-56 h-56 bg-accent/5 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/2 left-1/3 w-32 h-32 bg-primary/3 rounded-full blur-2xl"></div>
+
+        <div className="max-w-6xl mx-auto relative z-10">
+          {/* Tag & Badge */}
+          <div className="flex items-center justify-center mb-8">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full border border-primary/30">
+              <span className="w-2 h-2 bg-primary rounded-full animate-pulse"></span>
+              <span className="text-sm font-bold text-primary">⚡ 超强视频库 | 日更新中</span>
             </div>
-            <h1 className="text-5xl md:text-6xl font-bold text-foreground mb-6 leading-tight">
-              探索无限视频世界
+          </div>
+
+          {/* Main Heading */}
+          <div className="text-center mb-8">
+            <h1 className="text-6xl md:text-7xl font-black text-foreground mb-4 leading-tight">
+              <span className="block">发现精彩</span>
+              <span className="block bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">视频世界</span>
             </h1>
-            <p className="text-xl text-muted-foreground max-w-2xl">
-              数百万部高清视频库，涵盖多种类型和主题。搜索您喜爱的内容，随时随地享受最佳观影体验。
+            <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto mb-2">
+              汇聚全球数百万部高清视频 • 覆盖所有热门类别 • 24小时更新
             </p>
+            <div className="flex items-center justify-center gap-6 text-sm md:text-base">
+              <div className="flex items-center gap-1 text-primary font-bold">
+                <span>📺</span> {stats.totalVideos}+ 视频库
+              </div>
+              <div className="w-px h-6 bg-border"></div>
+              <div className="flex items-center gap-1 text-accent font-bold">
+                <span>✨</span> 今日更新 {stats.todayUpdates}
+              </div>
+              <div className="w-px h-6 bg-border"></div>
+              <div className="flex items-center gap-1 text-foreground font-bold">
+                <span>🎬</span> 高清体验
+              </div>
+            </div>
           </div>
 
           {/* Search Bar */}
-          <form onSubmit={handleSearch} className="mb-16">
-            <div className="relative">
+          <form onSubmit={handleSearch} className="max-w-3xl mx-auto mb-20">
+            <div className="relative group">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="搜索视频、演员、分类..."
-                className="w-full px-8 py-5 pr-16 rounded-xl border-2 border-border/50 bg-card text-foreground placeholder-muted-foreground/70 focus:border-primary focus:outline-none transition-all text-lg"
+                placeholder="搜索您想看的内容... 演员、类型、关键词..."
+                className="w-full px-8 py-6 pr-16 rounded-2xl border-2 border-border bg-card text-foreground placeholder-muted-foreground/60 focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/20 transition-all text-lg font-medium"
               />
               <button
                 type="submit"
-                className="absolute right-5 top-1/2 -translate-y-1/2 bg-primary hover:bg-primary/90 text-primary-foreground p-2.5 rounded-lg transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 bg-gradient-to-r from-primary to-accent hover:shadow-lg hover:shadow-primary/50 text-primary-foreground p-3 rounded-xl transition-all transform group-hover:scale-110 font-bold text-sm"
               >
                 <Search className="w-6 h-6" />
               </button>
             </div>
           </form>
 
-          {/* Features Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="flex gap-4">
-              <div className="flex-shrink-0">
-                <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-primary/10 text-primary font-bold">
-                  4K
-                </div>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-foreground mb-1">超高清品质</h3>
-                <p className="text-muted-foreground text-sm">4K 分辨率，流畅播放体验</p>
-              </div>
+          {/* Features Grid - More Visually Rich */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+            <div className="bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 rounded-2xl p-8 hover:border-primary/60 hover:shadow-lg hover:shadow-primary/20 transition-all">
+              <div className="text-4xl mb-4">📺</div>
+              <h3 className="text-xl font-black text-foreground mb-2">海量资源</h3>
+              <p className="text-muted-foreground font-medium">
+                {stats.totalVideos}+ 部精选高清视频，每日不断更新
+              </p>
+              <div className="mt-4 h-1 w-12 bg-gradient-to-r from-primary to-transparent rounded"></div>
             </div>
-            <div className="flex gap-4">
-              <div className="flex-shrink-0">
-                <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-primary/10 text-primary font-bold">
-                  ✓
-                </div>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-foreground mb-1">日常更新</h3>
-                <p className="text-muted-foreground text-sm">每天添加新内容，保持最新</p>
-              </div>
+
+            <div className="bg-gradient-to-br from-accent/20 to-accent/5 border border-accent/30 rounded-2xl p-8 hover:border-accent/60 hover:shadow-lg hover:shadow-accent/20 transition-all">
+              <div className="text-4xl mb-4">⚡</div>
+              <h3 className="text-xl font-black text-foreground mb-2">极速体验</h3>
+              <p className="text-muted-foreground font-medium">
+                4K 超清流媒体，0 卡顿播放体验
+              </p>
+              <div className="mt-4 h-1 w-12 bg-gradient-to-r from-accent to-transparent rounded"></div>
             </div>
-            <div className="flex gap-4">
-              <div className="flex-shrink-0">
-                <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-primary/10 text-primary font-bold">
-                  ∞
-                </div>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-foreground mb-1">无限选择</h3>
-                <p className="text-muted-foreground text-sm">{stats.totalVideos}+ 视频等你发现</p>
-              </div>
+
+            <div className="bg-gradient-to-br from-yellow-500/20 to-yellow-500/5 border border-yellow-500/30 rounded-2xl p-8 hover:border-yellow-500/60 hover:shadow-lg hover:shadow-yellow-500/20 transition-all">
+              <div className="text-4xl mb-4">✨</div>
+              <h3 className="text-xl font-black text-foreground mb-2">精选推荐</h3>
+              <p className="text-muted-foreground font-medium">
+                智能算法推荐，发现您喜爱的内容
+              </p>
+              <div className="mt-4 h-1 w-12 bg-gradient-to-r from-yellow-500 to-transparent rounded"></div>
             </div>
+          </div>
+
+          {/* Call to Action Text */}
+          <div className="text-center">
+            <p className="text-muted-foreground text-lg mb-4">
+              🎯 立即开始探索 • 完全免费 • 无需注册
+            </p>
           </div>
         </div>
       </section>
