@@ -160,6 +160,13 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Horizontal Ads */}
+      <section className="py-6">
+        <div>
+          <HorizontalAds />
+        </div>
+      </section>
+
       {/* Category Filters */}
       {allCategories.length > 0 && (
         <section className="py-4 border-b border-border/20">
@@ -167,7 +174,7 @@ export default function Home() {
             <div className="flex items-center gap-2 overflow-x-auto pb-2">
               <button
                 onClick={() => setSelectedCategory(null)}
-                className={`px-4 py-2 rounded-full whitespace-nowrap font-medium transition-all flex-shrink-0 ${
+                className={`px-4 py-2 rounded-lg whitespace-nowrap font-medium transition-all flex-shrink-0 ${
                   selectedCategory === null
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-card text-foreground border border-border hover:border-primary'
@@ -179,7 +186,7 @@ export default function Home() {
                 <button
                   key={category}
                   onClick={() => setSelectedCategory(category)}
-                  className={`px-4 py-2 rounded-full whitespace-nowrap font-medium transition-all flex-shrink-0 ${
+                  className={`px-4 py-2 rounded-lg whitespace-nowrap font-medium transition-all flex-shrink-0 ${
                     selectedCategory === category
                       ? 'bg-primary text-primary-foreground'
                       : 'bg-card text-foreground border border-border hover:border-primary'
@@ -192,13 +199,6 @@ export default function Home() {
           </div>
         </section>
       )}
-
-      {/* Horizontal Ads */}
-      <section className="py-6">
-        <div>
-          <HorizontalAds />
-        </div>
-      </section>
 
       {/* Featured Videos Section - Table Layout */}
       <section className="py-12">
