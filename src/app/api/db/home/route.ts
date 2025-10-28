@@ -18,40 +18,15 @@ export async function GET(request: NextRequest) {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
-    // Build where clause based on category filter
-    const whereClause: any = {}
-    if (categoryParam) {
-      // Find all typeName values that map to this Chinese category
-      // For now, do a simple contains check since we're filtering by Chinese name
-      whereClause.typeName = {
-        not: ''
+    // Fetch ALL videos first (we need to filter client-side since category mapping is complex)
+    const allVideos = await prisma.video.findMany({
+      orderBy: {
+        createdAt: 'desc' // Newest first
       }
-    }
+    })
 
-    const [videos, totalCount, todayUpdates] = await Promise.all([
-      prisma.video.findMany({
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-        orderBy: {
-          createdAt: 'desc' // Newest first
-        },
-        where: whereClause
-      }),
-      prisma.video.count({
-        where: whereClause
-      }),
-      prisma.video.count({
-        where: {
-          ...whereClause,
-          createdAt: {
-            gte: today
-          }
-        }
-      })
-    ])
-
-    // Format videos to match expected response structure
-    let formattedVideos = videos.map((video) => ({
+    // Format and filter by category if provided
+    let formattedVideos = allVideos.map((video) => ({
       id: video.vodId,
       title: video.vodName,
       preview: video.vodPic || '',
@@ -59,19 +34,24 @@ export async function GET(request: NextRequest) {
       views: video.views.toString(),
       rating: '0',
       category: getCategoryChineseName(video.typeName),
-      createdAt: video.createdAt.toISOString(),
-      typeName: video.typeName
+      createdAt: video.createdAt.toISOString()
     }))
 
     // Filter by category if provided
     if (categoryParam) {
       formattedVideos = formattedVideos.filter(video =>
-        getCategoryChineseName(video.typeName) === categoryParam
+        video.category === categoryParam
       )
     }
 
-    // Remove typeName from response
-    const data = formattedVideos.map(({ typeName, ...video }) => video)
+    // Apply pagination after filtering
+    const totalCount = formattedVideos.length
+    const data = formattedVideos.slice((page - 1) * pageSize, page * pageSize)
+
+    // Count today's updates
+    const todayUpdates = allVideos.filter(v =>
+      v.createdAt >= today && (!categoryParam || getCategoryChineseName(v.typeName) === categoryParam)
+    ).length
 
     const response = {
       data,
