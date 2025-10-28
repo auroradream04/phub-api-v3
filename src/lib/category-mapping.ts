@@ -20,6 +20,7 @@ export const CATEGORY_MAPPING: Record<string, string> = {
   'big-tits': '大奶',
   'blonde': '金发女',
   'blowjob': '口交',
+  'deepthroat': '深喉',
   'brunette': '黑发女',
   'creampie': '内射',
   'cumshot': '射精',
@@ -86,6 +87,7 @@ export const CATEGORY_MAPPING: Record<string, string> = {
   'twink-18': '小鲜肉',
 
   // QUALITY/FORMAT
+  '2d': '3D',
   '3d': '3D',
   '60fps-1': '60帧',
   '180-1': '180度',
@@ -164,6 +166,7 @@ export const CATEGORY_MAPPING: Record<string, string> = {
   'euro-gay': '同性恋',
   'feet-gay': '同性恋',
   'fetish-gay': '同性恋',
+  'gaming-gay': '同性恋',
   'group-gay': '同性恋',
   'handjob-gay': '同性恋',
   'hd-porn-gay': '同性恋',
@@ -219,6 +222,7 @@ export const CATEGORY_CONSOLIDATION: Record<string, string> = {
   'euro-gay': 'gay',
   'feet-gay': 'gay',
   'fetish-gay': 'gay',
+  'gaming-gay': 'gay',
   'group-gay': 'gay',
   'handjob-gay': 'gay',
   'hd-porn-gay': 'gay',
