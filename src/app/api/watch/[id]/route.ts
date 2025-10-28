@@ -124,6 +124,17 @@ export async function GET(
     const host = request.headers.get('host') || 'md8av.com'
     const baseUrl = `${protocol}://${host}`
 
+    // Normalize provider - extract username if it's an object
+    const normalizeProvider = (provider: unknown): string => {
+      if (!provider) return ''
+      if (typeof provider === 'string') return provider
+      if (typeof provider === 'object' && provider !== null) {
+        const obj = provider as Record<string, unknown>
+        return (obj.username as string) || (obj.name as string) || ''
+      }
+      return ''
+    }
+
     // Transform PornHub API response to our format
     const videoInfo = {
       title: videoData.title,
@@ -165,7 +176,7 @@ export async function GET(
       pornstars: videoData.pornstars || [],
       categories: videoData.categories || [],
       uploadDate: videoData.uploadDate,
-      provider: videoData.provider,
+      provider: normalizeProvider(videoData.provider),
       premium: videoData.premium || false,
       id: videoData.id,
       url: videoData.url,

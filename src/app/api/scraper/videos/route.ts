@@ -11,8 +11,19 @@ interface ScrapedVideo {
   duration: string
   title: string
   preview?: string
-  provider?: string
+  provider?: string | { username?: string; name?: string }
   categories?: Array<{ id: number; name: string } | string>
+}
+
+// Helper to normalize provider
+function normalizeProvider(provider: unknown): string {
+  if (!provider) return ''
+  if (typeof provider === 'string') return provider
+  if (typeof provider === 'object' && provider !== null) {
+    const obj = provider as Record<string, unknown>
+    return (obj.username as string) || (obj.name as string) || ''
+  }
+  return ''
 }
 
 // Map custom category string IDs to numeric IDs for database storage
@@ -234,7 +245,7 @@ export async function POST(request: NextRequest) {
             views: item.views,
             vodClass: vodClass,
             vodYear: item.year,
-            vodProvider: item.video.provider || '',
+            vodProvider: normalizeProvider(item.video.provider),
             vodLang: 'zh',
             vodArea: 'CN',
           },
@@ -257,11 +268,11 @@ export async function POST(request: NextRequest) {
             vodArea: 'CN',
             vodLang: 'zh',
             vodYear: item.year,
-            vodActor: item.video.provider || '',
+            vodActor: normalizeProvider(item.video.provider) || '',
             vodDirector: '',
             vodContent: finalTitle,
             vodPlayUrl: `HD$${baseUrl}/api/watch/${item.video.id}/stream.m3u8?q=720`,
-            vodProvider: item.video.provider || '',
+            vodProvider: normalizeProvider(item.video.provider),
             views: item.views,
             duration: item.durationSeconds,
           },
