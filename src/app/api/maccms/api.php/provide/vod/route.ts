@@ -8,28 +8,88 @@ export const revalidate = 7200 // 2 hours
 // Type definitions for Maccms response format
 interface MaccmsVideo {
   vod_id: string
-  vod_name: string
   type_id: number
-  type_name: string
-  vod_class: string
+  type_id_1: number
+  group_id: number
+  vod_name: string
+  vod_sub: string
   vod_en: string
-  vod_time: string
-  vod_remarks: string
-  vod_play_from: string
-  vod_play_server: string
-  vod_play_note: string
+  vod_status: number
+  vod_letter: string
+  vod_color: string
+  vod_tag: string
+  vod_class: string
   vod_pic: string
   vod_pic_thumb: string
   vod_pic_slide: string
-  vod_pic_screenshot: string
+  vod_pic_screenshot: string | null
+  vod_actor: string
+  vod_director: string
+  vod_writer: string
+  vod_behind: string
+  vod_blurb: string
+  vod_remarks: string
+  vod_pubdate: string
+  vod_total: number
+  vod_serial: string
+  vod_tv: string
+  vod_weekday: string
   vod_area: string
   vod_lang: string
   vod_year: string
-  vod_actor: string
-  vod_director: string
-  vod_content: string
-  vod_play_url: string
+  vod_version: string
+  vod_state: string
+  vod_author: string
+  vod_jumpurl: string
+  vod_tpl: string
+  vod_tpl_play: string
+  vod_tpl_down: string
+  vod_isend: number
+  vod_lock: number
+  vod_level: number
+  vod_copyright: number
+  vod_points: number
+  vod_points_play: number
+  vod_points_down: number
   vod_hits: number
+  vod_hits_day: number
+  vod_hits_week: number
+  vod_hits_month: number
+  vod_duration: string
+  vod_up: number
+  vod_down: number
+  vod_score: string
+  vod_score_all: number
+  vod_score_num: number
+  vod_time: string
+  vod_time_add: number
+  vod_time_hits: number
+  vod_time_make: number
+  vod_trysee: number
+  vod_douban_id: number
+  vod_douban_score: string
+  vod_reurl: string
+  vod_rel_vod: string
+  vod_rel_art: string
+  vod_pwd: string
+  vod_pwd_url: string
+  vod_pwd_play: string
+  vod_pwd_play_url: string
+  vod_pwd_down: string
+  vod_pwd_down_url: string
+  vod_content: string
+  vod_play_from: string
+  vod_play_server: string
+  vod_play_note: string
+  vod_play_url: string
+  vod_down_from: string
+  vod_down_server: string
+  vod_down_note: string
+  vod_down_url: string
+  vod_plot: number
+  vod_plot_name: string
+  vod_plot_detail: string
+  type_name: string
 }
 
 interface MaccmsClass {
@@ -250,31 +310,94 @@ export async function GET(request: NextRequest) {
       })
 
       // Map videos with canonical typeIds
-      videos = await Promise.all(dbVideos.map(async v => ({
-        vod_id: v.vodId,
-        vod_name: v.vodName,
-        type_id: await getCanonicalTypeId(v.typeName),
-        type_name: getCategoryChineseName(v.typeName),
-        vod_class: v.vodClass || getCategoryChineseName(v.typeName),
-        vod_en: v.vodEn || '',
-        vod_time: formatDate(v.vodTime),
-        vod_remarks: v.vodRemarks || '',
-        vod_play_from: v.vodPlayFrom,
-        vod_play_server: 'no',
-        vod_play_note: '',
-        vod_pic: v.vodPic || '',
-        vod_pic_thumb: v.vodPic || '',
-        vod_pic_slide: v.vodPic || '',
-        vod_pic_screenshot: v.vodPic || '',
-        vod_area: v.vodArea || '',
-        vod_lang: v.vodLang || '',
-        vod_year: v.vodYear || '',
-        vod_actor: v.vodActor || '',
-        vod_director: v.vodDirector || '',
-        vod_content: v.vodContent || '',
-        vod_play_url: v.vodPlayUrl,
-        vod_hits: v.views,
-      })))
+      videos = await Promise.all(dbVideos.map(async v => {
+        const typeId = await getCanonicalTypeId(v.typeName)
+        return {
+          vod_id: v.vodId,
+          type_id: typeId,
+          type_id_1: 1,
+          group_id: 0,
+          vod_name: v.vodName,
+          vod_sub: '',
+          vod_en: v.vodEn || '',
+          vod_status: 1,
+          vod_letter: (v.vodName.charAt(0) || '').toUpperCase(),
+          vod_color: '',
+          vod_tag: '',
+          vod_class: v.vodClass || getCategoryChineseName(v.typeName),
+          vod_pic: v.vodPic || '',
+          vod_pic_thumb: '',
+          vod_pic_slide: '',
+          vod_pic_screenshot: null,
+          vod_actor: v.vodActor || '',
+          vod_director: v.vodDirector || '',
+          vod_writer: '',
+          vod_behind: '',
+          vod_blurb: v.vodContent || '',
+          vod_remarks: v.vodRemarks || '',
+          vod_pubdate: '',
+          vod_total: 0,
+          vod_serial: '0',
+          vod_tv: '',
+          vod_weekday: '',
+          vod_area: v.vodArea || '',
+          vod_lang: v.vodLang || '',
+          vod_year: v.vodYear || '',
+          vod_version: '',
+          vod_state: '',
+          vod_author: '',
+          vod_jumpurl: '',
+          vod_tpl: '',
+          vod_tpl_play: '',
+          vod_tpl_down: '',
+          vod_isend: 1,
+          vod_lock: 0,
+          vod_level: 0,
+          vod_copyright: 0,
+          vod_points: 0,
+          vod_points_play: 0,
+          vod_points_down: 0,
+          vod_hits: v.views,
+          vod_hits_day: 0,
+          vod_hits_week: 0,
+          vod_hits_month: 0,
+          vod_duration: v.duration ? `${Math.floor(v.duration / 60)}:${(v.duration % 60).toString().padStart(2, '0')}` : '',
+          vod_up: 0,
+          vod_down: 0,
+          vod_score: '0.0',
+          vod_score_all: 0,
+          vod_score_num: 0,
+          vod_time: formatDate(v.vodTime),
+          vod_time_add: Math.floor(v.createdAt.getTime() / 1000),
+          vod_time_hits: Math.floor(v.updatedAt.getTime() / 1000),
+          vod_time_make: 0,
+          vod_trysee: 0,
+          vod_douban_id: 0,
+          vod_douban_score: '0.0',
+          vod_reurl: '',
+          vod_rel_vod: '',
+          vod_rel_art: '',
+          vod_pwd: '',
+          vod_pwd_url: '',
+          vod_pwd_play: '',
+          vod_pwd_play_url: '',
+          vod_pwd_down: '',
+          vod_pwd_down_url: '',
+          vod_content: v.vodContent || '',
+          vod_play_from: v.vodPlayFrom,
+          vod_play_server: 'no',
+          vod_play_note: '',
+          vod_play_url: v.vodPlayUrl,
+          vod_down_from: '',
+          vod_down_server: '',
+          vod_down_note: '',
+          vod_down_url: '',
+          vod_plot: 0,
+          vod_plot_name: '',
+          vod_plot_detail: '',
+          type_name: getCategoryChineseName(v.typeName),
+        }
+      }))
 
       totalCount = videos.length
 
@@ -344,31 +467,94 @@ export async function GET(request: NextRequest) {
       ])
 
       // Map videos with canonical typeIds
-      videos = await Promise.all(dbVideos.map(async v => ({
-        vod_id: v.vodId,
-        vod_name: v.vodName,
-        type_id: await getCanonicalTypeId(v.typeName),
-        type_name: getCategoryChineseName(v.typeName),
-        vod_class: v.vodClass || getCategoryChineseName(v.typeName),
-        vod_en: v.vodEn || '',
-        vod_time: formatDate(v.vodTime),
-        vod_remarks: v.vodRemarks || '',
-        vod_play_from: v.vodPlayFrom,
-        vod_play_server: 'no',
-        vod_play_note: '',
-        vod_pic: v.vodPic || '',
-        vod_pic_thumb: v.vodPic || '',
-        vod_pic_slide: v.vodPic || '',
-        vod_pic_screenshot: v.vodPic || '',
-        vod_area: v.vodArea || '',
-        vod_lang: v.vodLang || '',
-        vod_year: v.vodYear || '',
-        vod_actor: v.vodActor || '',
-        vod_director: v.vodDirector || '',
-        vod_content: v.vodContent || '',
-        vod_play_url: v.vodPlayUrl,
-        vod_hits: v.views,
-      })))
+      videos = await Promise.all(dbVideos.map(async v => {
+        const typeId = await getCanonicalTypeId(v.typeName)
+        return {
+          vod_id: v.vodId,
+          type_id: typeId,
+          type_id_1: 1,
+          group_id: 0,
+          vod_name: v.vodName,
+          vod_sub: '',
+          vod_en: v.vodEn || '',
+          vod_status: 1,
+          vod_letter: (v.vodName.charAt(0) || '').toUpperCase(),
+          vod_color: '',
+          vod_tag: '',
+          vod_class: v.vodClass || getCategoryChineseName(v.typeName),
+          vod_pic: v.vodPic || '',
+          vod_pic_thumb: '',
+          vod_pic_slide: '',
+          vod_pic_screenshot: null,
+          vod_actor: v.vodActor || '',
+          vod_director: v.vodDirector || '',
+          vod_writer: '',
+          vod_behind: '',
+          vod_blurb: v.vodContent || '',
+          vod_remarks: v.vodRemarks || '',
+          vod_pubdate: '',
+          vod_total: 0,
+          vod_serial: '0',
+          vod_tv: '',
+          vod_weekday: '',
+          vod_area: v.vodArea || '',
+          vod_lang: v.vodLang || '',
+          vod_year: v.vodYear || '',
+          vod_version: '',
+          vod_state: '',
+          vod_author: '',
+          vod_jumpurl: '',
+          vod_tpl: '',
+          vod_tpl_play: '',
+          vod_tpl_down: '',
+          vod_isend: 1,
+          vod_lock: 0,
+          vod_level: 0,
+          vod_copyright: 0,
+          vod_points: 0,
+          vod_points_play: 0,
+          vod_points_down: 0,
+          vod_hits: v.views,
+          vod_hits_day: 0,
+          vod_hits_week: 0,
+          vod_hits_month: 0,
+          vod_duration: v.duration ? `${Math.floor(v.duration / 60)}:${(v.duration % 60).toString().padStart(2, '0')}` : '',
+          vod_up: 0,
+          vod_down: 0,
+          vod_score: '0.0',
+          vod_score_all: 0,
+          vod_score_num: 0,
+          vod_time: formatDate(v.vodTime),
+          vod_time_add: Math.floor(v.createdAt.getTime() / 1000),
+          vod_time_hits: Math.floor(v.updatedAt.getTime() / 1000),
+          vod_time_make: 0,
+          vod_trysee: 0,
+          vod_douban_id: 0,
+          vod_douban_score: '0.0',
+          vod_reurl: '',
+          vod_rel_vod: '',
+          vod_rel_art: '',
+          vod_pwd: '',
+          vod_pwd_url: '',
+          vod_pwd_play: '',
+          vod_pwd_play_url: '',
+          vod_pwd_down: '',
+          vod_pwd_down_url: '',
+          vod_content: v.vodContent || '',
+          vod_play_from: v.vodPlayFrom,
+          vod_play_server: 'no',
+          vod_play_note: '',
+          vod_play_url: v.vodPlayUrl,
+          vod_down_from: '',
+          vod_down_server: '',
+          vod_down_note: '',
+          vod_down_url: '',
+          vod_plot: 0,
+          vod_plot_name: '',
+          vod_plot_detail: '',
+          type_name: getCategoryChineseName(v.typeName),
+        }
+      }))
 
       totalCount = total
     }
