@@ -30,21 +30,78 @@ export async function POST(request: NextRequest) {
 
     // Fetch categories directly from database (instant!)
     console.log('[Scraper] Fetching categories from database cache...')
-    const categories = await prisma.category.findMany({
+    let categories = await prisma.category.findMany({
       orderBy: [
         { isCustom: 'desc' }, // Custom categories first
         { id: 'asc' }
       ]
     })
 
+    // If no categories in DB, fetch from PornHub and save them
     if (categories.length === 0) {
-      return NextResponse.json({
-        success: false,
-        message: 'No categories found. Please visit /api/categories?refresh=true to fetch categories first.',
-      }, { status: 200 })
-    }
+      console.log('[Scraper] No categories in DB, fetching from PornHub...')
+      try {
+        const { PornHub } = await import('pornhub.js')
+        const { getRandomProxy } = await import('@/lib/proxy')
 
-    console.log(`[Scraper] ✓ Loaded ${categories.length} categories from cache (instant)`)
+        const pornhub = new PornHub()
+        const proxyInfo = getRandomProxy('Scraper Categories Fetch')
+        if (proxyInfo) {
+          pornhub.setAgent(proxyInfo.agent)
+        }
+
+        const pornhubCategories = await pornhub.webMaster.getCategories()
+        console.log(`[Scraper] Got ${pornhubCategories.length} categories from PornHub`)
+
+        // Save to database
+        for (const cat of pornhubCategories) {
+          await prisma.category.upsert({
+            where: { id: Number(cat.id) },
+            update: {},
+            create: {
+              id: Number(cat.id),
+              name: cat.category,
+              isCustom: false
+            }
+          })
+        }
+
+        // Also add custom categories
+        const customCats = [
+          { id: 9999, name: 'japanese' },
+          { id: 9998, name: 'chinese' }
+        ]
+        for (const cat of customCats) {
+          await prisma.category.upsert({
+            where: { id: cat.id },
+            update: {},
+            create: {
+              id: cat.id,
+              name: cat.name,
+              isCustom: true
+            }
+          })
+        }
+
+        // Fetch again from DB
+        categories = await prisma.category.findMany({
+          orderBy: [
+            { isCustom: 'desc' },
+            { id: 'asc' }
+          ]
+        })
+
+        console.log(`[Scraper] ✓ Saved and loaded ${categories.length} categories from PornHub`)
+      } catch (error) {
+        console.error('[Scraper] Failed to fetch categories from PornHub:', error)
+        return NextResponse.json({
+          success: false,
+          message: 'No categories found in database and failed to fetch from PornHub. Please check logs.',
+        }, { status: 500 })
+      }
+    } else {
+      console.log(`[Scraper] ✓ Loaded ${categories.length} categories from cache`)
+    }
 
 
     let totalScraped = 0
