@@ -51,11 +51,29 @@ function parseDuration(duration: string): number {
   return 0
 }
 
+const FETCH_TIMEOUT = 30000 // 30 second timeout
+
+// Helper to fetch with timeout
+async function fetchWithTimeout(url: string, options: RequestInit & { timeout?: number } = {}) {
+  const timeout = options.timeout || FETCH_TIMEOUT
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), timeout)
+
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    })
+  } finally {
+    clearTimeout(timeoutId)
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { page = 1, categoryId, categoryName } = await request.json()
 
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://md8av.com'
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
 
     // Fetch scraper filter settings from database
     const minViewsSetting = await prisma.siteSetting.findUnique({
@@ -91,7 +109,9 @@ export async function POST(request: NextRequest) {
 
     }
 
-    const response = await fetch(apiUrl)
+    const response = await fetchWithTimeout(apiUrl, {
+      timeout: 30000
+    })
 
     if (!response.ok) {
       throw new Error(`Failed to fetch videos: ${response.statusText}`)
