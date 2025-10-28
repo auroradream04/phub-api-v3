@@ -12,7 +12,6 @@ export async function POST(request: NextRequest) {
     const baseUrl = process.env.NEXTAUTH_URL || 'http://md8av.com'
 
     // Fetch categories directly from database (instant!)
-    console.log('[Scraper] Fetching categories from database cache...')
     let categories = await prisma.category.findMany({
       orderBy: [
         { isCustom: 'desc' }, // Custom categories first
@@ -22,7 +21,6 @@ export async function POST(request: NextRequest) {
 
     // If no categories in DB, fetch from PornHub and save them
     if (categories.length === 0) {
-      console.log('[Scraper] No categories in DB, fetching from PornHub...')
       try {
         const { PornHub } = await import('pornhub.js')
         const { getRandomProxy } = await import('@/lib/proxy')
@@ -34,7 +32,6 @@ export async function POST(request: NextRequest) {
         }
 
         const pornhubCategories = await pornhub.webMaster.getCategories()
-        console.log(`[Scraper] Got ${pornhubCategories.length} categories from PornHub`)
 
         // Save to database
         for (const cat of pornhubCategories) {
@@ -73,17 +70,13 @@ export async function POST(request: NextRequest) {
             { id: 'asc' }
           ]
         })
-
-        console.log(`[Scraper] ✓ Saved and loaded ${categories.length} categories from PornHub`)
       } catch (error) {
-        console.error('[Scraper] Failed to fetch categories from PornHub:', error)
         return NextResponse.json({
           success: false,
           message: 'No categories found in database and failed to fetch from PornHub. Please check logs.',
         }, { status: 500 })
       }
     } else {
-      console.log(`[Scraper] ✓ Loaded ${categories.length} categories from cache`)
     }
 
 
@@ -93,13 +86,11 @@ export async function POST(request: NextRequest) {
 
     if (parallel) {
       // Parallel scraping - scrape multiple categories at once
-      console.log(`[Scraper] 🚀 Parallel mode: Scraping up to 5 categories simultaneously`)
 
       const BATCH_SIZE = 5 // Scrape 5 categories at once
 
       for (let i = 0; i < categories.length; i += BATCH_SIZE) {
         const batch = categories.slice(i, i + BATCH_SIZE)
-        console.log(`[Scraper] Processing batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(categories.length/BATCH_SIZE)} (${batch.length} categories)`)
 
         // Scrape all categories in this batch in parallel
         const batchPromises = batch.map(async (category) => {
@@ -154,22 +145,18 @@ export async function POST(request: NextRequest) {
           totalErrors += result.errors
         }
 
-        console.log(`[Scraper] Batch complete: ${batchResults.reduce((sum, r) => sum + r.scraped, 0)} videos`)
       }
 
     } else {
       // Sequential scraping - one category at a time
-      console.log(`[Scraper] Sequential mode: Scraping categories one by one`)
 
       for (const category of categories) {
         let categoryScraped = 0
         let categoryErrors = 0
 
         // Scrape specified number of pages for this category
-        console.log(`[Scraper] Starting category: ${category.name} (ID: ${category.id})`)
         for (let page = 1; page <= pagesPerCategory; page++) {
           try {
-            console.log(`[Scraper] Fetching ${category.name} page ${page}...`)
             const scraperResponse = await fetch(`${baseUrl}/api/scraper/videos`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -181,25 +168,21 @@ export async function POST(request: NextRequest) {
             })
 
             if (!scraperResponse.ok) {
-              console.error(`[Scraper] Bad response for ${category.name} page ${page}: ${scraperResponse.status}`)
               categoryErrors++
               totalErrors++
               continue
             }
 
             const scraperData = await scraperResponse.json()
-            console.log(`[Scraper] Got response for ${category.name} page ${page}: ${scraperData.scraped || 0} videos`)
 
             if (scraperData.success) {
               categoryScraped += scraperData.scraped
               totalScraped += scraperData.scraped
 
               if (!scraperData.hasMore) {
-                console.log(`[Scraper] No more results for ${category.name}`)
                 break
               }
             } else {
-              console.error(`[Scraper] Failed to scrape ${category.name} page ${page}`)
               categoryErrors++
               totalErrors++
             }
@@ -207,12 +190,10 @@ export async function POST(request: NextRequest) {
             await new Promise(resolve => setTimeout(resolve, 500))
 
           } catch (error) {
-            console.error(`[Scraper] Error scraping ${category.name} page ${page}:`, error instanceof Error ? error.message : error)
             categoryErrors++
             totalErrors++
           }
         }
-        console.log(`[Scraper] Finished category: ${category.name} - Scraped: ${categoryScraped}, Errors: ${categoryErrors}`)
 
         results.push({
           category: category.name,
