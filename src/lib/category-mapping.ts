@@ -393,7 +393,18 @@ export function getCategoryChineseName(englishName: string): string {
   const normalized = englishName.toLowerCase().trim()
 
   // First check if this category should be consolidated
-  const consolidated = CATEGORY_CONSOLIDATION[normalized] || normalized
+  let consolidated = CATEGORY_CONSOLIDATION[normalized] || normalized
+
+  // If not found, try to match base category (before hyphen) for variants like "gaming-cam" → "gaming"
+  if (consolidated === normalized && normalized.includes('-')) {
+    const baseName = normalized.split('-')[0]
+    const baseConsolidated = CATEGORY_CONSOLIDATION[baseName] || baseName
+
+    // If base name has a consolidation rule, use it
+    if (CATEGORY_CONSOLIDATION[baseName]) {
+      consolidated = baseConsolidated
+    }
+  }
 
   // Then get the Chinese name
   const chineseName = CATEGORY_MAPPING[consolidated]

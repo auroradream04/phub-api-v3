@@ -87,28 +87,53 @@ export default function AdminSettingsPage() {
       )}
 
       <div className="mt-8 space-y-6">
-        {settings.map((setting) => (
-          <div key={setting.id} className="bg-card border border-border rounded-lg">
-            <div className="px-4 py-5 sm:p-6">
-              <label htmlFor={setting.key} className="block text-sm font-medium text-foreground">
-                {setting.key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-              </label>
-              <div className="mt-2">
-                <input
-                  type={setting.key.includes('min_views') || setting.key.includes('min_duration') ? 'number' : 'text'}
-                  id={setting.key}
-                  value={setting.value}
-                  onChange={(e) => updateSetting(setting.key, e.target.value)}
-                  className="block w-full rounded-md border-border bg-input text-foreground focus:border-primary focus:ring-2 focus:ring-primary sm:text-sm px-3 py-2 transition-colors"
-                  min={setting.key.includes('min_views') || setting.key.includes('min_duration') ? "0" : undefined}
-                />
+        {settings.map((setting) => {
+          const isBooleanSetting = setting.key === 'cors_proxy_enabled' || setting.key === 'auto_translate_titles'
+          const isNumberSetting = setting.key.includes('min_views') || setting.key.includes('min_duration')
+
+          return (
+            <div key={setting.id} className="bg-card border border-border rounded-lg">
+              <div className="px-4 py-5 sm:p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <label htmlFor={setting.key} className="block text-sm font-medium text-foreground">
+                      {setting.key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                    </label>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {getSettingDescription(setting.key)}
+                    </p>
+                  </div>
+
+                  <div className="ml-4">
+                    {isBooleanSetting ? (
+                      <button
+                        onClick={() => updateSetting(setting.key, setting.value === 'true' ? 'false' : 'true')}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                          setting.value === 'true' ? 'bg-primary' : 'bg-muted'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${
+                            setting.value === 'true' ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    ) : (
+                      <input
+                        type={isNumberSetting ? 'number' : 'text'}
+                        id={setting.key}
+                        value={setting.value}
+                        onChange={(e) => updateSetting(setting.key, e.target.value)}
+                        className="block w-64 rounded-md border-border bg-input text-foreground focus:border-primary focus:ring-2 focus:ring-primary sm:text-sm px-3 py-2 transition-colors"
+                        min={isNumberSetting ? "0" : undefined}
+                      />
+                    )}
+                  </div>
+                </div>
               </div>
-              <p className="mt-2 text-sm text-muted-foreground">
-                {getSettingDescription(setting.key)}
-              </p>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       <div className="mt-6 flex justify-end">
@@ -131,7 +156,8 @@ function getSettingDescription(key: string): string {
     'segments_to_skip': 'Number of video segments to skip at the beginning',
     'ads_script_url': 'External URL for fetching ad content',
     'scraper_min_views': 'Minimum view count required to scrape a video (e.g., 10000). Videos below this will be skipped.',
-    'scraper_min_duration': 'Minimum duration in seconds required to scrape a video (e.g., 60). Videos shorter than this will be skipped.'
+    'scraper_min_duration': 'Minimum duration in seconds required to scrape a video (e.g., 60). Videos shorter than this will be skipped.',
+    'auto_translate_titles': 'Automatically translate non-Chinese video titles to Chinese using Google Translate'
   }
   return descriptions[key] || 'No description available'
 }

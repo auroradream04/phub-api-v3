@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { isTranslationEnabled, translateBatch } from '@/lib/translate'
 
 export const revalidate = 7200 // 2 hours
 
@@ -44,6 +45,9 @@ export async function POST(request: NextRequest) {
 
     const minViews = minViewsSetting ? parseInt(minViewsSetting.value) : 0
     const minDuration = minDurationSetting ? parseInt(minDurationSetting.value) : 0
+
+    // Check if translation is enabled
+    const shouldTranslate = await isTranslationEnabled()
 
     // If categoryId is provided, scrape from specific category
     // If not, scrape from general homepage
@@ -96,39 +100,70 @@ export async function POST(request: NextRequest) {
     let errorCount = 0
     let skippedCount = 0
 
-    // Process ALL videos from the page
+    // Phase 1: Filter videos and prepare data
+    const videosToProcess: Array<{
+      video: any
+      views: number
+      durationSeconds: number
+      cleanTitle: string
+      publishDate: Date
+      year: string
+    }> = []
+
     for (const video of videos) {
+      // Parse views (e.g., "2.6K" -> 2600, "1.2M" -> 1200000)
+      const viewsStr = video.views || '0'
+      let views = 0
+      if (viewsStr.includes('K')) {
+        views = Math.floor(parseFloat(viewsStr.replace('K', '')) * 1000)
+      } else if (viewsStr.includes('M')) {
+        views = Math.floor(parseFloat(viewsStr.replace('M', '')) * 1000000)
+      } else {
+        views = parseInt(viewsStr.replace(/,/g, '')) || 0
+      }
+
+      const durationSeconds = parseDuration(video.duration)
+
+      // Apply filters: skip if video doesn't meet minimum requirements
+      if (minViews > 0 && views < minViews) {
+        skippedCount++
+        continue
+      }
+
+      if (minDuration > 0 && durationSeconds < minDuration) {
+        skippedCount++
+        continue
+      }
+
+      const publishDate = new Date()
+      const year = publishDate.getFullYear().toString()
+
+      // Clean title to remove emojis
+      const cleanTitle = stripEmojis(video.title)
+
+      videosToProcess.push({
+        video,
+        views,
+        durationSeconds,
+        cleanTitle,
+        publishDate,
+        year
+      })
+    }
+
+    // Phase 2: Batch translate all titles if enabled
+    let translatedTitles: string[] = []
+    if (shouldTranslate && videosToProcess.length > 0) {
+      const titlesToTranslate = videosToProcess.map(v => v.cleanTitle)
+      translatedTitles = await translateBatch(titlesToTranslate)
+    }
+
+    // Phase 3: Save to database
+    for (let i = 0; i < videosToProcess.length; i++) {
+      const item = videosToProcess[i]!
+      const finalTitle = shouldTranslate ? translatedTitles[i]! : item.cleanTitle
+
       try {
-        // Parse views (e.g., "2.6K" -> 2600, "1.2M" -> 1200000)
-        const viewsStr = video.views || '0'
-        let views = 0
-        if (viewsStr.includes('K')) {
-          views = Math.floor(parseFloat(viewsStr.replace('K', '')) * 1000)
-        } else if (viewsStr.includes('M')) {
-          views = Math.floor(parseFloat(viewsStr.replace('M', '')) * 1000000)
-        } else {
-          views = parseInt(viewsStr.replace(/,/g, '')) || 0
-        }
-
-        const durationSeconds = parseDuration(video.duration)
-
-        // Apply filters: skip if video doesn't meet minimum requirements
-        if (minViews > 0 && views < minViews) {
-          skippedCount++
-
-          continue
-        }
-
-        if (minDuration > 0 && durationSeconds < minDuration) {
-          skippedCount++
-
-          continue
-        }
-        const publishDate = new Date()
-        const year = publishDate.getFullYear().toString()
-
-        // Clean title to remove emojis
-        const cleanTitle = stripEmojis(video.title)
 
         // Determine category to use
         let typeId: number
@@ -138,9 +173,9 @@ export async function POST(request: NextRequest) {
           // Use the category we're scraping from
           typeId = currentCategory.id
           typeName = currentCategory.name
-        } else if (video.categories && video.categories.length > 0) {
+        } else if (item.video.categories && item.video.categories.length > 0) {
           // Use the first category from video metadata (if available from API)
-          const firstCat = video.categories[0]
+          const firstCat = item.video.categories[0]
           typeId = typeof firstCat === 'object' ? firstCat.id : 1
           typeName = typeof firstCat === 'object' ? firstCat.name : firstCat
         } else {
@@ -151,7 +186,7 @@ export async function POST(request: NextRequest) {
 
         // Check if video exists to merge categories
         const existingVideo = await prisma.video.findUnique({
-          where: { vodId: video.id },
+          where: { vodId: item.video.id },
           select: { vodClass: true, typeId: true, typeName: true },
         })
 
@@ -176,42 +211,44 @@ export async function POST(request: NextRequest) {
         // Upsert video to database
         await prisma.video.upsert({
           where: {
-            vodId: video.id,
+            vodId: item.video.id,
           },
           update: {
-            vodName: cleanTitle,
-            vodPic: video.preview,
-            vodTime: publishDate,
-            duration: durationSeconds,
-            vodRemarks: `HD ${video.duration}`,
-            views: views,
+            vodName: finalTitle,
+            originalTitle: shouldTranslate ? item.cleanTitle : undefined, // Only set if translated
+            vodPic: item.video.preview,
+            vodTime: item.publishDate,
+            duration: item.durationSeconds,
+            vodRemarks: `HD ${item.video.duration}`,
+            views: item.views,
             vodClass: vodClass,
-            vodYear: year,
+            vodYear: item.year,
           },
           create: {
-            vodId: video.id,
-            vodName: cleanTitle,
+            vodId: item.video.id,
+            vodName: finalTitle,
+            originalTitle: shouldTranslate ? item.cleanTitle : undefined, // Save original if translated
             typeId: typeId,
             typeName: typeName,
             vodClass: vodClass,
-            vodEn: cleanTitle
+            vodEn: finalTitle
               .toLowerCase()
               .replace(/[^a-z0-9]+/g, '-')
               .replace(/^-|-$/g, '')
               .substring(0, 50),
-            vodTime: publishDate,
-            vodRemarks: `HD ${video.duration}`,
+            vodTime: item.publishDate,
+            vodRemarks: `HD ${item.video.duration}`,
             vodPlayFrom: 'dplayer',
-            vodPic: video.preview,
+            vodPic: item.video.preview,
             vodArea: 'US',
             vodLang: 'en',
-            vodYear: year,
-            vodActor: video.provider || '',
+            vodYear: item.year,
+            vodActor: item.video.provider || '',
             vodDirector: '',
-            vodContent: cleanTitle,
-            vodPlayUrl: `HD$${baseUrl}/api/watch/${video.id}/stream.m3u8?q=720`,
-            views: views,
-            duration: durationSeconds,
+            vodContent: finalTitle,
+            vodPlayUrl: `HD$${baseUrl}/api/watch/${item.video.id}/stream.m3u8?q=720`,
+            views: item.views,
+            duration: item.durationSeconds,
           },
         })
 

@@ -2,9 +2,16 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Search, Eye, Star, User } from 'lucide-react'
+import { Search } from 'lucide-react'
 import HorizontalAds from '@/components/HorizontalAds'
-import VideoPreview from '@/components/VideoPreview'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 
 interface Video {
   id: string
@@ -14,20 +21,8 @@ interface Video {
   duration: string
   views: string
   rating?: string
-  provider?: string
-}
-
-// Helper function to format views with k/m suffixes
-function formatViews(views: string): string {
-  const num = parseInt(views.replace(/,/g, ''))
-  if (isNaN(num)) return views
-
-  if (num >= 1000000) {
-    return (num / 1000000).toFixed(1) + 'm'
-  } else if (num >= 1000) {
-    return (num / 1000).toFixed(1) + 'k'
-  }
-  return num.toString()
+  category?: string
+  createdAt?: string
 }
 
 export default function Home() {
@@ -36,6 +31,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
+  const [stats, setStats] = useState({ totalVideos: 0, todayUpdates: 0 })
 
   useEffect(() => {
     // Fetch featured videos when page changes
@@ -64,6 +60,11 @@ export default function Home() {
       }
 
       setFeaturedVideos(data.data)
+
+      // Update stats if available
+      if (data.stats) {
+        setStats(data.stats)
+      }
 
       // Check if there are more pages
       setHasMore(!data.paging?.isEnd)
@@ -101,39 +102,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-card/80 backdrop-blur-md border-b border-border sticky top-0 z-50">
-        <div className="px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-8">
-              <Link href="/" className="text-2xl font-bold text-primary">
-                视频中心
-              </Link>
-              <nav className="hidden md:flex space-x-6">
-                <Link href="/" className="text-foreground/80 hover:text-primary transition-colors">
-                  首页
-                </Link>
-                <Link href="/trending" className="text-foreground/80 hover:text-primary transition-colors">
-                  热门
-                </Link>
-                <Link href="/categories" className="text-foreground/80 hover:text-primary transition-colors">
-                  分类
-                </Link>
-                <Link href="/docs" className="text-foreground/80 hover:text-primary transition-colors font-medium">
-                  文档
-                </Link>
-              </nav>
-            </div>
-            <Link
-              href="/admin"
-              className="text-sm text-muted-foreground hover:text-primary transition-colors"
-            >
-              管理后台
-            </Link>
-          </div>
-        </div>
-      </header>
-
       {/* Hero Section with Search */}
       <section className="bg-gradient-to-b from-background to-card/50 py-16 relative overflow-hidden">
         {/* Gradient orbs for visual interest */}
@@ -191,74 +159,178 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Featured Videos Section */}
+      {/* Featured Videos Section - Table Layout */}
       <section className="py-12">
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="mb-8">
-            <h2 className="text-3xl font-bold text-foreground mb-2">热门推荐</h2>
+            <h2 className="text-3xl font-bold text-foreground mb-2">影片资源列表</h2>
             <div className="h-1 w-20 bg-gradient-to-r from-primary to-accent rounded-full"></div>
+            <p className="text-muted-foreground mt-2">
+              今日更新: <span className="text-primary font-semibold">{stats.todayUpdates}</span> |
+              本站总计: <span className="text-primary font-semibold">{stats.totalVideos}</span>
+            </p>
           </div>
 
           {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[...Array(24)].map((_, i) => (
-                <div key={i} className="bg-card rounded-xl overflow-hidden border border-border animate-pulse">
-                  <div className="w-full h-48 bg-muted"></div>
-                  <div className="p-4 space-y-3">
-                    <div className="h-4 bg-muted rounded w-3/4"></div>
-                    <div className="h-3 bg-muted rounded w-1/2"></div>
-                  </div>
-                </div>
+            <div className="space-y-0">
+              {[...Array(20)].map((_, i) => (
+                <div key={i} className="h-10 bg-card rounded-none border-b border-border/20 animate-pulse first:rounded-t last:rounded-b last:border-0"></div>
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {featuredVideos.map((video) => (
-                <Link
-                  key={video.id}
-                  href={`/watch/${video.id}${video.provider ? `?provider=${encodeURIComponent(video.provider)}` : ''}`}
-                  className="bg-card rounded-xl overflow-hidden border border-border hover:border-primary/50 transition-all group hover:shadow-lg hover:shadow-primary/10"
-                >
-                  <VideoPreview
-                    preview={video.preview}
-                    previewVideo={video.previewVideo}
-                    title={video.title}
-                    duration={video.duration}
-                    className="group-hover:scale-110 transition-transform duration-300"
-                  />
-                  <div className="p-4 flex flex-col h-[110px]">
-                    <h3 className="font-medium text-foreground mb-2 line-clamp-2 group-hover:text-primary transition-colors flex-1">
-                      {video.title}
-                    </h3>
-                    <div className="flex items-center justify-between text-sm text-muted-foreground mt-auto">
-                      <div className="flex items-center gap-3">
-                        <span className="flex items-center gap-1 leading-none">
-                          <Eye className="w-4 h-4 text-primary/60" />
-                          <span className="leading-none">{formatViews(video.views)}</span>
-                        </span>
-                        {video.provider && (
-                          <span className="flex items-center gap-1 max-w-[120px] leading-none">
-                            <User className="w-4 h-4 flex-shrink-0 text-primary/60" />
-                            <span className="truncate leading-none">{video.provider}</span>
-                          </span>
-                        )}
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden md:block bg-card rounded-lg border border-border/40 overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50 hover:bg-muted/50 border-b border-border/30">
+                      <TableHead className="font-bold text-foreground py-2 h-auto">影片名称</TableHead>
+                      <TableHead className="font-bold text-foreground w-[100px] text-center py-2 h-auto">影片类型</TableHead>
+                      <TableHead className="font-bold text-foreground w-[120px] text-center py-2 h-auto">获取地址</TableHead>
+                      <TableHead className="font-bold text-foreground w-[120px] text-center py-2 h-auto">更新时间</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {featuredVideos.map((video) => {
+                      // Determine tags to show - ORDER MATTERS! HOT first (leftmost)
+                      const tags = [];
+
+                      // Check if views > 100k for HOT tag (appears first/leftmost)
+                      // Parse views string like "1.2M" or "500K" to number
+                      const parseViews = (viewsStr: string) => {
+                        const str = viewsStr?.trim().toUpperCase() || '0';
+                        if (str.includes('M')) {
+                          return parseFloat(str) * 1000000;
+                        } else if (str.includes('K')) {
+                          return parseFloat(str) * 1000;
+                        }
+                        return parseInt(str) || 0;
+                      };
+                      const viewCount = parseViews(video.views);
+                      if (viewCount > 100000) tags.push({ label: '热门', color: 'from-red-600 to-red-500', pulse: true });
+
+                      // Check if video is from past 24 hours for NEW tag
+                      if (video.createdAt) {
+                        const videoDate = new Date(video.createdAt);
+                        const now = new Date();
+                        const hoursDiff = (now.getTime() - videoDate.getTime()) / (1000 * 60 * 60);
+                        if (hoursDiff < 24) {
+                          tags.push({ label: '新', color: 'from-green-600 to-green-500', pulse: false });
+                        }
+                      }
+
+                      if (video.duration) tags.push({ label: 'HD', color: 'from-amber-500 to-yellow-400', pulse: false });
+
+                      return (
+                      <TableRow key={video.id} className="hover:bg-muted/30 transition-colors border-b border-border/20 last:border-0">
+                        <TableCell className="font-medium text-foreground py-2 h-auto">
+                          <div className="flex items-center gap-2">
+                            {/* Tags on the left */}
+                            <div className="flex gap-1 flex-shrink-0">
+                              {tags.map((tag) => (
+                                <span
+                                  key={tag.label}
+                                  className={`px-2 py-0.5 text-xs font-semibold rounded text-white bg-gradient-to-r ${tag.color} whitespace-nowrap shadow-sm ${tag.pulse ? 'pulse-hot' : ''}`}
+                                >
+                                  {tag.label}
+                                </span>
+                              ))}
+                            </div>
+                            <span className="line-clamp-1">{video.title}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center text-muted-foreground py-2 h-auto">
+                          <span className="line-clamp-1">{video.category?.split(',')[0] || '未分类'}</span>
+                        </TableCell>
+                        <TableCell className="text-center py-2 h-auto">
+                          <Link href={`/watch/${video.id}`}>
+                            <button className="px-3 py-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded text-xs font-medium transition-colors whitespace-nowrap">
+                              点击进入
+                            </button>
+                          </Link>
+                        </TableCell>
+                        <TableCell className="text-center text-muted-foreground text-xs py-2 h-auto">
+                          <span className="line-clamp-1">2025-10-28</span>
+                        </TableCell>
+                      </TableRow>
+                    );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-2">
+                {featuredVideos.map((video) => {
+                  // Determine tags to show - ORDER MATTERS! HOT first (leftmost)
+                  const tags = [];
+
+                  // Check if views > 100k for HOT tag (appears first/leftmost)
+                  // Parse views string like "1.2M" or "500K" to number
+                  const parseViews = (viewsStr: string) => {
+                    const str = viewsStr?.trim().toUpperCase() || '0';
+                    if (str.includes('M')) {
+                      return parseFloat(str) * 1000000;
+                    } else if (str.includes('K')) {
+                      return parseFloat(str) * 1000;
+                    }
+                    return parseInt(str) || 0;
+                  };
+                  const viewCount = parseViews(video.views);
+                  if (viewCount > 100000) tags.push({ label: '热门', color: 'from-red-600 to-red-500', pulse: true });
+
+                  // Check if video is from past 24 hours for NEW tag
+                  if (video.createdAt) {
+                    const videoDate = new Date(video.createdAt);
+                    const now = new Date();
+                    const hoursDiff = (now.getTime() - videoDate.getTime()) / (1000 * 60 * 60);
+                    if (hoursDiff < 24) {
+                      tags.push({ label: '新', color: 'from-green-600 to-green-500', pulse: false });
+                    }
+                  }
+
+                  if (video.duration) tags.push({ label: 'HD', color: 'from-amber-500 to-yellow-400', pulse: false });
+
+                  return (
+                  <div key={video.id} className="bg-card rounded-lg border border-border/40 p-3 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 flex items-start gap-2">
+                        <div className="flex gap-1 flex-shrink-0 pt-0.5">
+                          {tags.map((tag) => (
+                            <span
+                              key={tag.label}
+                              className={`px-2 py-0.5 text-xs font-semibold rounded text-white bg-gradient-to-r ${tag.color} whitespace-nowrap ${tag.pulse ? 'pulse-hot' : ''}`}
+                            >
+                              {tag.label}
+                            </span>
+                          ))}
+                        </div>
+                        <h3 className="font-medium text-foreground text-sm line-clamp-2">
+                          {video.title}
+                        </h3>
                       </div>
-                      {video.rating && (
-                        <span className="flex items-center gap-1 leading-none">
-                          <Star className="w-4 h-4 text-accent fill-accent" />
-                          <span className="leading-none">{video.rating}%</span>
-                        </span>
-                      )}
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="space-y-0.5 text-muted-foreground">
+                        <div><span className="font-medium">类型:</span> {video.category?.split(',')[0] || '未分类'}</div>
+                        <div><span className="font-medium">时间:</span> 2025-10-28</div>
+                      </div>
+                      <Link href={`/watch/${video.id}`}>
+                        <button className="px-4 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded text-xs font-medium transition-colors whitespace-nowrap">
+                          点击进入
+                        </button>
+                      </Link>
                     </div>
                   </div>
-                </Link>
-              ))}
-            </div>
+                );
+                })}
+              </div>
+            </>
           )}
 
           {/* Pagination */}
           {!loading && featuredVideos.length > 0 && (
-            <div className="flex items-center justify-center gap-4 mt-12">
+            <div className="flex items-center justify-center gap-4 mt-8">
               <button
                 onClick={goToPrevPage}
                 disabled={currentPage === 1}
@@ -292,15 +364,6 @@ export default function Home() {
           )}
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="bg-card/50 border-t border-border py-8 mt-12">
-        <div className="px-4 sm:px-6 lg:px-8">
-          <div className="text-center text-muted-foreground text-sm">
-            <p>© 2024 视频中心. 保留所有权利.</p>
-          </div>
-        </div>
-      </footer>
     </div>
   )
 }

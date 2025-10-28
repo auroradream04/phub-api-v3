@@ -115,29 +115,40 @@ model SiteSetting {
   updatedAt DateTime @updatedAt
 }
 
+model Category {
+  id        Int      @id // PornHub category ID (or custom 9998, 9999)
+  name      String   @db.VarChar(100)
+  isCustom  Boolean  @default(false) // Custom categories like Japanese, Chinese
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isCustom])
+}
+
 model Video {
-  id          String   @id @default(cuid())
-  vodId       String   @unique // External video ID (e.g., ph123456)
-  vodName     String   @db.VarChar(255)
-  typeId      Int // Category type_id (primary category)
-  typeName    String   @db.VarChar(100)
-  vodClass    String?  @db.VarChar(500) // Comma-separated category names (e.g., "Asian,Babe,Teen")
-  vodEn       String?  @db.VarChar(255) // URL-friendly slug
-  vodTime     DateTime @default(now())
-  vodRemarks  String?  @db.VarChar(100) // HD, duration, etc.
-  vodPlayFrom String   @default("YourAPI") @db.VarChar(100)
-  vodPic      String?  @db.Text // Thumbnail URL
-  vodArea     String?  @db.VarChar(100)
-  vodLang     String?  @db.VarChar(50)
-  vodYear     String?  @db.VarChar(10)
-  vodActor    String?  @db.Text // Comma-separated
-  vodDirector String?  @db.Text
-  vodContent  String?  @db.Text // Description
-  vodPlayUrl  String   @db.Text // Episode$URL format
-  views       Int      @default(0)
-  duration    Int? // Duration in seconds
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  vodId         String   @unique // External video ID (e.g., ph123456)
+  vodName       String   @db.VarChar(255) // Translated title (if translation enabled) or original
+  originalTitle String?  @db.VarChar(255) // Original title before translation (for comparison)
+  typeId        Int // Category type_id (primary category)
+  typeName      String   @db.VarChar(100)
+  vodClass      String?  @db.VarChar(500) // Comma-separated category names (e.g., "Asian,Babe,Teen")
+  vodEn         String?  @db.VarChar(255) // URL-friendly slug
+  vodTime       DateTime @default(now())
+  vodRemarks    String?  @db.VarChar(100) // HD, duration, etc.
+  vodPlayFrom   String   @default("YourAPI") @db.VarChar(100)
+  vodPic        String?  @db.Text // Thumbnail URL
+  vodArea       String?  @db.VarChar(100)
+  vodLang       String?  @db.VarChar(50)
+  vodYear       String?  @db.VarChar(10)
+  vodActor      String?  @db.Text // Comma-separated
+  vodDirector   String?  @db.Text
+  vodContent    String?  @db.Text // Description
+  vodPlayUrl    String   @db.Text // Episode$URL format
+  views         Int      @default(0)
+  duration      Int? // Duration in seconds
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@index([typeId])
   @@index([vodTime])

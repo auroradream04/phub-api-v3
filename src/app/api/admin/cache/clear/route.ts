@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { revalidateTag } from 'next/cache'
+import { revalidateTag, revalidatePath } from 'next/cache'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { trackCacheClear } from '@/lib/cache-stats'
@@ -29,17 +29,27 @@ export async function POST(request: NextRequest) {
     if (videoId && videoId.trim() !== '') {
       // Clear specific video cache
       revalidateTag(`video-${videoId}`)
+      revalidatePath(`/api/video/${videoId}`)
+      revalidatePath(`/watch/${videoId}`)
       target = `video-${videoId}`
       cleared = `video-${videoId}`
       trackCacheClear(`video-${videoId}`)
 
     } else {
-      // Clear all video cache
+      // Clear all cache - both tags and paths
       revalidateTag('videos')
+
+      // Clear homepage and API routes
+      revalidatePath('/', 'page') // Homepage
+      revalidatePath('/api/home', 'page') // Home API
+      revalidatePath('/api/search/[query]', 'page') // Search API
+      revalidatePath('/api/videos', 'page') // Videos API
+
       target = 'all'
       cleared = 'all videos'
       trackCacheClear('all')
 
+      console.log('[Cache Clear] Cleared all paths: /, /api/home, /api/search, /api/videos')
     }
 
     // Log to database

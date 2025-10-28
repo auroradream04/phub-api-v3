@@ -1,89 +1,154 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
 
 export const revalidate = 7200 // 2 hours
 
 // POST endpoint to scrape videos from all categories
 export async function POST(request: NextRequest) {
   try {
-    const { pagesPerCategory = 5 } = await request.json()
+    const { pagesPerCategory = 5, parallel = false } = await request.json()
 
     const baseUrl = process.env.NEXTAUTH_URL || 'http://md8av.com'
 
-    // First, fetch all categories
-    const categoriesResponse = await fetch(`${baseUrl}/api/categories`)
-    if (!categoriesResponse.ok) {
-      throw new Error(`Failed to fetch categories: ${categoriesResponse.statusText}`)
-    }
-
-    const categoriesData = await categoriesResponse.json()
-    const categories = categoriesData.categories || []
+    // Fetch categories directly from database (instant!)
+    console.log('[Scraper] Fetching categories from database cache...')
+    const categories = await prisma.category.findMany({
+      orderBy: [
+        { isCustom: 'desc' }, // Custom categories first
+        { id: 'asc' }
+      ]
+    })
 
     if (categories.length === 0) {
       return NextResponse.json({
         success: false,
-        message: 'No categories found',
+        message: 'No categories found. Please visit /api/categories?refresh=true to fetch categories first.',
       }, { status: 200 })
     }
+
+    console.log(`[Scraper] ✓ Loaded ${categories.length} categories from cache (instant)`)
+
 
     let totalScraped = 0
     let totalErrors = 0
     const results = []
 
-    // Iterate through each category
-    for (const category of categories) {
-      let categoryScraped = 0
-      let categoryErrors = 0
+    if (parallel) {
+      // Parallel scraping - scrape multiple categories at once
+      console.log(`[Scraper] 🚀 Parallel mode: Scraping up to 5 categories simultaneously`)
 
+      const BATCH_SIZE = 5 // Scrape 5 categories at once
 
+      for (let i = 0; i < categories.length; i += BATCH_SIZE) {
+        const batch = categories.slice(i, i + BATCH_SIZE)
+        console.log(`[Scraper] Processing batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(categories.length/BATCH_SIZE)} (${batch.length} categories)`)
 
-      // Scrape specified number of pages for this category
-      for (let page = 1; page <= pagesPerCategory; page++) {
-        try {
-          const scraperResponse = await fetch(`${baseUrl}/api/scraper/videos`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              page,
-              categoryId: category.id,
-              categoryName: category.name
-            }),
-          })
+        // Scrape all categories in this batch in parallel
+        const batchPromises = batch.map(async (category) => {
+          let categoryScraped = 0
+          let categoryErrors = 0
 
-          const scraperData = await scraperResponse.json()
+          for (let page = 1; page <= pagesPerCategory; page++) {
+            try {
+              const scraperResponse = await fetch(`${baseUrl}/api/scraper/videos`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  page,
+                  categoryId: category.id,
+                  categoryName: category.name
+                }),
+              })
 
-          if (scraperData.success) {
-            categoryScraped += scraperData.scraped
-            totalScraped += scraperData.scraped
+              const scraperData = await scraperResponse.json()
 
+              if (scraperData.success) {
+                categoryScraped += scraperData.scraped
 
+                if (!scraperData.hasMore) {
+                  break
+                }
+              } else {
+                categoryErrors++
+              }
 
-            // If no more pages available for this category, break
-            if (!scraperData.hasMore) {
+              await new Promise(resolve => setTimeout(resolve, 200))
 
-              break
+            } catch (error) {
+              categoryErrors++
             }
-          } else {
-            categoryErrors++
-            totalErrors++
-
           }
 
-          // Small delay between requests to avoid rate limiting
-          await new Promise(resolve => setTimeout(resolve, 500))
+          return {
+            category: category.name,
+            categoryId: category.id,
+            scraped: categoryScraped,
+            errors: categoryErrors,
+          }
+        })
 
-        } catch (error) {
-          categoryErrors++
-          totalErrors++
+        const batchResults = await Promise.all(batchPromises)
+        results.push(...batchResults)
 
+        // Update totals
+        for (const result of batchResults) {
+          totalScraped += result.scraped
+          totalErrors += result.errors
         }
+
+        console.log(`[Scraper] Batch complete: ${batchResults.reduce((sum, r) => sum + r.scraped, 0)} videos`)
       }
 
-      results.push({
-        category: category.name,
-        categoryId: category.id,
-        scraped: categoryScraped,
-        errors: categoryErrors,
-      })
+    } else {
+      // Sequential scraping - one category at a time
+      console.log(`[Scraper] Sequential mode: Scraping categories one by one`)
+
+      for (const category of categories) {
+        let categoryScraped = 0
+        let categoryErrors = 0
+
+        // Scrape specified number of pages for this category
+        for (let page = 1; page <= pagesPerCategory; page++) {
+          try {
+            const scraperResponse = await fetch(`${baseUrl}/api/scraper/videos`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                page,
+                categoryId: category.id,
+                categoryName: category.name
+              }),
+            })
+
+            const scraperData = await scraperResponse.json()
+
+            if (scraperData.success) {
+              categoryScraped += scraperData.scraped
+              totalScraped += scraperData.scraped
+
+              if (!scraperData.hasMore) {
+                break
+              }
+            } else {
+              categoryErrors++
+              totalErrors++
+            }
+
+            await new Promise(resolve => setTimeout(resolve, 500))
+
+          } catch (error) {
+            categoryErrors++
+            totalErrors++
+          }
+        }
+
+        results.push({
+          category: category.name,
+          categoryId: category.id,
+          scraped: categoryScraped,
+          errors: categoryErrors,
+        })
+      }
     }
 
     return NextResponse.json({

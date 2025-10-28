@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PornHub, VideoListOrdering } from 'pornhub.js'
-import { getRandomProxy } from '@/lib/proxy'
 import { checkAndLogDomain } from '@/lib/domain-middleware'
+import { prisma } from '@/lib/prisma'
+import { getCategoryChineseName } from '@/lib/category-mapping'
 
-export const revalidate = 7200 // 2 hours
+export const revalidate = 3600 // 1 hour
 
 export async function GET(request: NextRequest) {
   const requestStart = Date.now()
@@ -19,81 +19,58 @@ export async function GET(request: NextRequest) {
 
     // Parse query parameters
     const pageParam = searchParams.get('page')
-    const orderParam = searchParams.get('order')
-
-    // Default to page 1
     const page = pageParam ? parseInt(pageParam, 10) : 1
+    const pageSize = 50
 
-    // Default to 'Featured Recently' if no order specified
-    const order = orderParam || 'Featured Recently'
+    // Fetch from database
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
 
-    // Validate order parameter (must match VideoListOrdering type)
-    const validOrders = [
-      'Featured Recently',
-      'Most Viewed',
-      'Top Rated',
-      'Hottest',
-      'Longest',
-      'Newest'
-    ]
-
-    const finalOrder = validOrders.includes(order) ? order : 'Featured Recently'
-
-    const pornhub = new PornHub()
-    let result = null
-
-    // ALWAYS use proxy - try up to 3 different proxies
-    let retries = 3
-    let attemptNum = 1
-
-    while (retries > 0 && !result) {
-      // Select proxy BEFORE making request
-      const proxyInfo = getRandomProxy('Home API')
-
-      if (!proxyInfo) {
-        console.error('[Home API] No proxy available from proxy list')
-        break
-      }
-
-      console.log(`[Home API] Attempt ${attemptNum}/3: Using proxy ${proxyInfo.proxyUrl}`)
-      pornhub.setAgent(proxyInfo.agent)
-
-      const startTime = Date.now()
-      try {
-        const response = await pornhub.videoList({
-          page,
-          order: finalOrder as VideoListOrdering
-        })
-
-        const duration = Date.now() - startTime
-
-        // Check for soft blocking (empty results)
-        if (!response.data || response.data.length === 0) {
-          console.warn(`[Home API] Proxy ${proxyInfo.proxyUrl} returned empty results (${duration}ms) - likely blocked`)
-        } else {
-          console.log(`[Home API] ✓ Success with proxy ${proxyInfo.proxyUrl} (${duration}ms, ${response.data.length} videos)`)
-          result = response
+    const [videos, totalCount, todayUpdates] = await Promise.all([
+      prisma.video.findMany({
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        orderBy: {
+          createdAt: 'desc' // Newest first
         }
-      } catch (error: unknown) {
-        const duration = Date.now() - startTime
-        console.error(`[Home API] Proxy ${proxyInfo.proxyUrl} failed (${duration}ms):`, error instanceof Error ? error.message : error)
-      }
-
-      retries--
-      attemptNum++
-    }
-
-    if (!result || !result.data) {
-      // Log failed request
-      await domainCheck.logRequest(500, Date.now() - requestStart)
-      console.error('[Home API] ❌ All proxy attempts failed - could not fetch videos')
-      throw new Error('Failed to fetch video list from PornHub')
-    }
+      }),
+      prisma.video.count(),
+      prisma.video.count({
+        where: {
+          createdAt: {
+            gte: today
+          }
+        }
+      })
+    ])
 
     // Log successful request
     await domainCheck.logRequest(200, Date.now() - requestStart)
 
-    return NextResponse.json(result, { status: 200 })
+    // Format videos to match expected response structure
+    const data = videos.map((video) => ({
+      id: video.vodId,
+      title: video.vodName,
+      preview: video.vodPic || '',
+      duration: video.vodRemarks || '',
+      views: video.views.toString(),
+      rating: '0',
+      category: getCategoryChineseName(video.typeName),
+      createdAt: video.createdAt.toISOString()
+    }))
+
+    const response = {
+      data,
+      paging: {
+        isEnd: (page * pageSize) >= totalCount
+      },
+      stats: {
+        totalVideos: totalCount,
+        todayUpdates
+      }
+    }
+
+    return NextResponse.json(response, { status: 200 })
 
   } catch (error) {
 

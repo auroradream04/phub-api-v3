@@ -266,4 +266,20 @@ html {
       transform: scale(0.95);
     }
   }
+
+  /* Fast, violent pulse for Chinese style energy */
+  .pulse-hot {
+    animation: pulse-hot 0.3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulse-hot {
+    0%, 100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.05);
+      opacity: 0.92;
+    }
+  }
 }

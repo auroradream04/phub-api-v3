@@ -38,6 +38,17 @@ async function main() {
   })
   console.log('✓ segments_to_skip set to: 2')
 
+  // Auto Translate Titles
+  await prisma.siteSetting.upsert({
+    where: { key: 'auto_translate_titles' },
+    update: {},
+    create: {
+      key: 'auto_translate_titles',
+      value: 'false',
+    },
+  })
+  console.log('✓ auto_translate_titles set to: false')
+
   console.log('Site settings seeded successfully!')
 }
 
