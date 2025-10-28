@@ -103,77 +103,40 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section with Search */}
-      <section className="py-20 md:py-32 border-b border-border/30">
+      <section className="py-8 md:py-12 border-b border-border/30">
         <div className="max-w-5xl mx-auto">
           {/* Header */}
-          <div className="mb-16">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-1 h-8 bg-primary rounded"></div>
-              <span className="text-sm font-semibold text-primary uppercase tracking-wider">视频平台</span>
+          <div className="mb-6">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-1 h-6 bg-primary rounded"></div>
+              <span className="text-xs font-semibold text-primary uppercase tracking-wider">视频平台</span>
             </div>
-            <h1 className="text-5xl md:text-6xl font-bold text-foreground mb-6 leading-tight">
+            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-3 leading-tight">
               探索无限视频世界
             </h1>
-            <p className="text-xl text-muted-foreground max-w-2xl">
-              数百万部高清视频库，涵盖多种类型和主题。搜索您喜爱的内容，随时随地享受最佳观影体验。
+            <p className="text-base md:text-lg text-muted-foreground max-w-2xl">
+              高清视频库，涵盖多种类型和主题。搜索您喜爱的内容，随时随地享受最佳观影体验。
             </p>
           </div>
 
           {/* Search Bar */}
-          <form onSubmit={handleSearch} className="mb-16">
+          <form onSubmit={handleSearch}>
             <div className="relative">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="搜索视频、演员、分类..."
-                className="w-full px-8 py-5 pr-16 rounded-xl border-2 border-border/50 bg-card text-foreground placeholder-muted-foreground/70 focus:border-primary focus:outline-none transition-all text-lg"
+                placeholder="搜索视频..."
+                className="w-full px-6 py-3 pr-14 rounded-lg border-2 border-border/50 bg-card text-foreground placeholder-muted-foreground/70 focus:border-primary focus:outline-none transition-all"
               />
               <button
                 type="submit"
-                className="absolute right-5 top-1/2 -translate-y-1/2 bg-primary hover:bg-primary/90 text-primary-foreground p-2.5 rounded-lg transition-colors"
+                className="absolute right-4 top-1/2 -translate-y-1/2 bg-primary hover:bg-primary/90 text-primary-foreground p-2 rounded-md transition-colors"
               >
-                <Search className="w-6 h-6" />
+                <Search className="w-5 h-5" />
               </button>
             </div>
           </form>
-
-          {/* Features Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="flex gap-4">
-              <div className="flex-shrink-0">
-                <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-primary/10 text-primary font-bold">
-                  4K
-                </div>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-foreground mb-1">超高清品质</h3>
-                <p className="text-muted-foreground text-sm">4K 分辨率，流畅播放体验</p>
-              </div>
-            </div>
-            <div className="flex gap-4">
-              <div className="flex-shrink-0">
-                <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-primary/10 text-primary font-bold">
-                  ✓
-                </div>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-foreground mb-1">日常更新</h3>
-                <p className="text-muted-foreground text-sm">每天添加新内容，保持最新</p>
-              </div>
-            </div>
-            <div className="flex gap-4">
-              <div className="flex-shrink-0">
-                <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-primary/10 text-primary font-bold">
-                  ∞
-                </div>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-foreground mb-1">无限选择</h3>
-                <p className="text-muted-foreground text-sm">{stats.totalVideos}+ 视频等你发现</p>
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
