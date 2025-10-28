@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PornHub } from 'pornhub.js'
 import type { VideoListOrdering } from 'pornhub.js'
+import { getRandomProxy } from '@/lib/proxy'
 
-// Initialize PornHub client
+// Initialize PornHub client with proxy
 const pornhub = new PornHub()
+const proxyInfo = getRandomProxy('Category API')
+if (proxyInfo) {
+  console.log(`[Category API] Initializing with proxy: ${proxyInfo.proxyUrl}`)
+  pornhub.setAgent(proxyInfo.agent)
+}
 
 // Custom categories that use search instead of PornHub category IDs
 // Map numeric IDs to category names for search
