@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Search } from 'lucide-react'
 import HorizontalAds from '@/components/HorizontalAds'
+import { getCategoryChineseName, getCanonicalCategory } from '@/lib/category-mapping'
 import {
   Table,
   TableBody,
@@ -46,7 +47,16 @@ export default function Home() {
       .then(res => res.json())
       .then(data => {
         if (data.categories) {
-          setAllCategories(data.categories.map((cat: any) => cat.name).sort())
+          // Consolidate and translate categories to Chinese
+          const consolidatedCategories = new Set<string>()
+          data.categories.forEach((cat: any) => {
+            // Get canonical category (consolidates variants)
+            const canonical = getCanonicalCategory(cat.name.toLowerCase())
+            // Get Chinese name
+            const chineseName = getCategoryChineseName(cat.name)
+            consolidatedCategories.add(chineseName)
+          })
+          setAllCategories(Array.from(consolidatedCategories).sort())
         }
       })
       .catch(error => {
@@ -118,9 +128,16 @@ export default function Home() {
 
   // Filter videos based on selected category
   const filteredVideos = selectedCategory
-    ? featuredVideos.filter(video =>
-        video.category?.includes(selectedCategory)
-      )
+    ? featuredVideos.filter(video => {
+        if (!video.category) return false
+        // Split video categories and check if any match the selected Chinese category
+        const videoCategories = video.category.split(',').map(cat => {
+          const trimmed = cat.trim().toLowerCase()
+          const chineseName = getCategoryChineseName(trimmed)
+          return chineseName
+        })
+        return videoCategories.includes(selectedCategory)
+      })
     : featuredVideos
 
   return (
@@ -279,7 +296,12 @@ export default function Home() {
                         </div>
                       </TableCell>
                       <TableCell className="text-center text-muted-foreground py-2 h-auto">
-                        <span className="line-clamp-1">{video.category?.split(',')[0] || '未分类'}</span>
+                        <span className="line-clamp-1">
+                          {video.category
+                            ? getCategoryChineseName(video.category.split(',')[0].trim())
+                            : '未分类'
+                          }
+                        </span>
                       </TableCell>
                       <TableCell className="text-center py-2 h-auto">
                         <Link href={`/watch/${video.id}`}>
