@@ -15,6 +15,16 @@ const CUSTOM_CATEGORIES: Record<number, string> = {
 
 export const revalidate = 7200 // 2 hours
 
+// Helper to add timeout to promises
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number = 30000): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`Request timeout after ${timeoutMs}ms`)), timeoutMs)
+    )
+  ])
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ categoryId: string }> }
@@ -65,23 +75,29 @@ export async function GET(
       }
     }
 
-    // Fetch videos from PornHub for this category
-    const result = await pornhub.videoList({
-      filterCategory: categoryId,
-      page,
-      order
-    })
+    // Fetch videos from PornHub for this category with 30 second timeout
+    const result = await withTimeout(
+      pornhub.videoList({
+        filterCategory: categoryId,
+        page,
+        order
+      }),
+      30000
+    )
 
-    // Get category name from the categories list
+    // Get category name from the categories list (with timeout)
     let categoryName = 'Unknown'
     try {
-      const categories = await pornhub.webMaster.getCategories()
+      const categories = await withTimeout(
+        pornhub.webMaster.getCategories(),
+        10000 // shorter timeout for metadata fetch
+      )
       const category = categories.find(cat => Number(cat.id) === categoryId)
       if (category) {
         categoryName = category.category
       }
     } catch (err) {
-
+      // Silently fail - categoryName defaults to 'Unknown'
     }
 
     // Add category info to the response
@@ -116,12 +132,13 @@ async function handleCustomCategory(request: NextRequest, categoryId: number) {
 
     const categoryName = CUSTOM_CATEGORIES[categoryId]
 
-
-
-    // Use PornHub search API to find videos
-    const result = await pornhub.searchVideo(categoryName, {
-      page
-    })
+    // Use PornHub search API to find videos with 30 second timeout
+    const result = await withTimeout(
+      pornhub.searchVideo(categoryName, {
+        page
+      }),
+      30000
+    )
 
     // Check if PornHub is rate limiting or returning errors
     if (!result.data || result.data.length === 0) {
