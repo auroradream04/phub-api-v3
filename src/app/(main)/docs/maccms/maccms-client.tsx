@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Copy, CheckCircle } from 'lucide-react'
 
-export function CopyButton({ text, id }: { text: string; id: string }) {
+export function CopyButton({ text }: { text: string; id: string }) {
   const [copied, setCopied] = useState(false)
 
   const handleCopy = () => {

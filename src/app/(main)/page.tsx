@@ -1,16 +1,8 @@
 import HorizontalAds from '@/components/HorizontalAds'
 import HomeClient from './home-client'
 
-interface Video {
-  id: string
-  title: string
-  preview: string
-  previewVideo?: string
-  duration: string
-  views: string
-  rating?: string
-  category?: string
-  createdAt?: string
+interface Category {
+  name: string
 }
 
 async function getInitialData() {
@@ -28,7 +20,7 @@ async function getInitialData() {
     console.log('[Homepage Server] Categories response:', categoriesData)
     console.log('[Homepage Server] Categories count:', categoriesData.categories?.length)
 
-    const categoryNames = categoriesData.categories?.map((cat: any) => cat.name) || []
+    const categoryNames = categoriesData.categories?.map((cat: Category) => cat.name) || []
     console.log('[Homepage Server] Category names:', categoryNames)
 
     return {

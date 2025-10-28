@@ -9,7 +9,7 @@ async function getCategories() {
     const categories = await prisma.category.findMany({
       select: {
         id: true,
-        typeName: true,
+        name: true,
       },
       orderBy: {
         id: 'asc'
@@ -18,7 +18,7 @@ async function getCategories() {
 
     return categories.map(cat => ({
       id: cat.id,
-      name: cat.typeName
+      name: cat.name
     }))
   } catch (error) {
     console.error('[Search] Error fetching categories:', error)
@@ -26,7 +26,16 @@ async function getCategories() {
   }
 }
 
-async function searchVideos(query: string, page: number = 1) {
+interface SearchVideo {
+  id: string
+  title: string
+  preview: string
+  duration: string
+  views: string
+  provider: string
+}
+
+async function searchVideos(query: string, page: number = 1): Promise<SearchVideo[]> {
   try {
     const skip = (page - 1) * 12
 
@@ -65,7 +74,7 @@ async function searchVideos(query: string, page: number = 1) {
   }
 }
 
-async function getVideosByCategory(categoryId: string, page: number = 1) {
+async function getVideosByCategory(categoryId: string, page: number = 1): Promise<{ videos: SearchVideo[], categoryName: string }> {
   try {
     const skip = (page - 1) * 12
 
@@ -103,7 +112,7 @@ async function getVideosByCategory(categoryId: string, page: number = 1) {
         views: video.views.toString(),
         provider: video.vodProvider || '',
       })),
-      categoryName: category.typeName
+      categoryName: category.name
     }
   } catch (error) {
     console.error('[Search] Error fetching category videos:', error)
@@ -121,7 +130,7 @@ export default async function SearchPage({
 
   const categories = await getCategories()
 
-  let videos = []
+  let videos: SearchVideo[] = []
   let categoryName = ''
 
   if (category) {

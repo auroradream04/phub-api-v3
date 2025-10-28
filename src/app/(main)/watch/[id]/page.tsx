@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Eye, Clock, ChevronLeft, User } from 'lucide-react'
+import { Eye, Clock, User } from 'lucide-react'
 import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { getCategoryChineseName } from '@/lib/category-mapping'
@@ -26,14 +26,6 @@ interface VideoInfo {
   categories?: Array<{ id?: number; name: string }>
 }
 
-interface RecommendedVideo {
-  id: string
-  title: string
-  preview: string
-  duration: string
-  views: string
-  provider?: string
-}
 
 async function getVideoData(videoId: string) {
   try {
