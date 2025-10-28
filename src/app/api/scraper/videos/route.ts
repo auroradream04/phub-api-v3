@@ -286,8 +286,8 @@ export async function POST(request: NextRequest) {
         scrapedCount++
 
       } catch (error) {
+        console.error(`[Scraper Videos] Failed to save video ${item.video.id}:`, error instanceof Error ? error.message : error)
         errorCount++
-
       }
     }
 
