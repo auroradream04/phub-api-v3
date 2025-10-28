@@ -12,6 +12,8 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '6', 10)
     const excludeId = searchParams.get('exclude')
 
+    console.log('[By-Provider API] Request:', { provider, typeName, excludeId, limit })
+
     if (!provider && !typeName) {
       return NextResponse.json(
         { error: 'Either provider or typeName parameter is required' },
@@ -53,6 +55,7 @@ export async function GET(request: NextRequest) {
         },
         take: limit,
       })
+      console.log(`[By-Provider API] Provider "${provider}" query returned ${videos.length} videos`)
     }
 
     // If no provider videos found and we have typeName, fallback to category-based recommendations
@@ -79,6 +82,7 @@ export async function GET(request: NextRequest) {
         },
         take: limit,
       })
+      console.log(`[By-Provider API] Category "${typeName}" fallback query returned ${videos.length} videos`)
 
       // If still empty, just get most popular videos as last resort
       if (videos.length === 0) {
@@ -100,6 +104,7 @@ export async function GET(request: NextRequest) {
           },
           take: limit,
         })
+        console.log(`[By-Provider API] Popular videos fallback returned ${videos.length} videos`)
       }
     }
 
@@ -113,6 +118,8 @@ export async function GET(request: NextRequest) {
       category: getCategoryChineseName(video.typeName),
       provider: video.vodProvider || '',
     }))
+
+    console.log(`[By-Provider API] Returning ${data.length} videos (usedFallback: ${usedFallback})`)
 
     return NextResponse.json({
       success: true,
