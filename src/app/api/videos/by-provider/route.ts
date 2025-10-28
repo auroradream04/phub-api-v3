@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     let videos: VideoRecord[] = []
     let usedFallback = false
 
-    // First, try to fetch videos from the same provider
+    // First, try exact provider match (some providers may exist in DB)
     if (provider) {
       videos = await prisma.video.findMany({
         where: {
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
         },
         take: limit,
       })
-      console.log(`[By-Provider API] Provider "${provider}" query returned ${videos.length} videos`)
+      console.log(`[By-Provider API] Provider "${provider}" exact match returned ${videos.length} videos`)
     }
 
     // If no provider videos found and we have typeName, fallback to category-based recommendations
