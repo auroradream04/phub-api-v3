@@ -44,11 +44,19 @@ export default function Home() {
   useEffect(() => {
     // Fetch categories from actual database videos (MACCMS import)
     fetch('/api/db/categories')
-      .then(res => res.json())
+      .then(res => {
+        console.log('[Homepage] Categories response status:', res.status)
+        return res.json()
+      })
       .then(data => {
-        if (data.categories) {
+        console.log('[Homepage] Categories response data:', data)
+        if (data.categories && data.categories.length > 0) {
           // Categories are already consolidated and translated from DB
-          setAllCategories(data.categories.map((cat: any) => cat.name).sort())
+          const catNames = data.categories.map((cat: any) => cat.name).sort()
+          console.log('[Homepage] Setting categories:', catNames)
+          setAllCategories(catNames)
+        } else {
+          console.warn('[Homepage] No categories in response')
         }
       })
       .catch(error => {
