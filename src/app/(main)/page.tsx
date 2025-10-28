@@ -40,6 +40,20 @@ export default function Home() {
     fetchFeaturedVideos(currentPage)
   }, [currentPage])
 
+  useEffect(() => {
+    // Fetch all categories on mount
+    fetch('/api/categories')
+      .then(res => res.json())
+      .then(data => {
+        if (data.categories) {
+          setAllCategories(data.categories.map((cat: any) => cat.name).sort())
+        }
+      })
+      .catch(error => {
+        console.error('[Homepage] Failed to fetch categories:', error)
+      })
+  }, [])
+
   const fetchFeaturedVideos = async (page: number) => {
     try {
       setLoading(true)
@@ -62,17 +76,6 @@ export default function Home() {
       }
 
       setFeaturedVideos(data.data)
-
-      // Extract unique categories from videos
-      const categories = new Set<string>()
-      data.data.forEach((video: Video) => {
-        if (video.category) {
-          video.category.split(',').forEach(cat => {
-            categories.add(cat.trim())
-          })
-        }
-      })
-      setAllCategories(Array.from(categories).sort())
 
       // Update stats if available
       if (data.stats) {
@@ -167,39 +170,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Category Filters */}
-      {allCategories.length > 0 && (
-        <section className="py-4 border-b border-border/20">
-          <div className="max-w-5xl mx-auto">
-            <div className="flex items-center gap-2 overflow-x-auto pb-2">
-              <button
-                onClick={() => setSelectedCategory(null)}
-                className={`px-4 py-2 rounded-lg whitespace-nowrap font-medium transition-all flex-shrink-0 ${
-                  selectedCategory === null
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-card text-foreground border border-border hover:border-primary'
-                }`}
-              >
-                全部
-              </button>
-              {allCategories.map((category) => (
-                <button
-                  key={category}
-                  onClick={() => setSelectedCategory(category)}
-                  className={`px-4 py-2 rounded-lg whitespace-nowrap font-medium transition-all flex-shrink-0 ${
-                    selectedCategory === category
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-card text-foreground border border-border hover:border-primary'
-                  }`}
-                >
-                  {category}
-                </button>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
       {/* Featured Videos Section - Table Layout */}
       <section className="py-12">
         <div className="mb-8">
@@ -210,6 +180,35 @@ export default function Home() {
             本站总计: <span className="text-primary font-semibold">{stats.totalVideos}</span>
           </p>
         </div>
+
+        {/* Category Filters */}
+        {allCategories.length > 0 && (
+          <div className="mb-6 flex items-center gap-2 overflow-x-auto pb-2">
+            <button
+              onClick={() => setSelectedCategory(null)}
+              className={`px-4 py-2 rounded-lg whitespace-nowrap font-medium transition-all flex-shrink-0 ${
+                selectedCategory === null
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-card text-foreground border border-border hover:border-primary'
+              }`}
+            >
+              全部
+            </button>
+            {allCategories.map((category) => (
+              <button
+                key={category}
+                onClick={() => setSelectedCategory(category)}
+                className={`px-4 py-2 rounded-lg whitespace-nowrap font-medium transition-all flex-shrink-0 ${
+                  selectedCategory === category
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-card text-foreground border border-border hover:border-primary'
+                }`}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
+        )}
 
         {loading ? (
           <div className="space-y-0">
