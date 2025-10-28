@@ -127,8 +127,10 @@ export async function POST(request: NextRequest) {
         let categoryErrors = 0
 
         // Scrape specified number of pages for this category
+        console.log(`[Scraper] Starting category: ${category.name} (ID: ${category.id})`)
         for (let page = 1; page <= pagesPerCategory; page++) {
           try {
+            console.log(`[Scraper] Fetching ${category.name} page ${page}...`)
             const scraperResponse = await fetchWithTimeout(`${baseUrl}/api/scraper/videos`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -140,16 +142,26 @@ export async function POST(request: NextRequest) {
               timeout: 30000,
             })
 
+            if (!scraperResponse.ok) {
+              console.error(`[Scraper] Bad response for ${category.name} page ${page}: ${scraperResponse.status}`)
+              categoryErrors++
+              totalErrors++
+              continue
+            }
+
             const scraperData = await scraperResponse.json()
+            console.log(`[Scraper] Got response for ${category.name} page ${page}: ${scraperData.scraped || 0} videos`)
 
             if (scraperData.success) {
               categoryScraped += scraperData.scraped
               totalScraped += scraperData.scraped
 
               if (!scraperData.hasMore) {
+                console.log(`[Scraper] No more results for ${category.name}`)
                 break
               }
             } else {
+              console.error(`[Scraper] Failed to scrape ${category.name} page ${page}`)
               categoryErrors++
               totalErrors++
             }
@@ -157,10 +169,12 @@ export async function POST(request: NextRequest) {
             await new Promise(resolve => setTimeout(resolve, 500))
 
           } catch (error) {
+            console.error(`[Scraper] Error scraping ${category.name} page ${page}:`, error instanceof Error ? error.message : error)
             categoryErrors++
             totalErrors++
           }
         }
+        console.log(`[Scraper] Finished category: ${category.name} - Scraped: ${categoryScraped}, Errors: ${categoryErrors}`)
 
         results.push({
           category: category.name,

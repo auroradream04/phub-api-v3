@@ -72,6 +72,7 @@ async function fetchWithTimeout(url: string, options: RequestInit & { timeout?: 
 export async function POST(request: NextRequest) {
   try {
     const { page = 1, categoryId, categoryName } = await request.json()
+    console.log(`[Scraper Videos] Processing: categoryId=${categoryId}, categoryName=${categoryName}, page=${page}`)
 
     const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
 
@@ -109,15 +110,18 @@ export async function POST(request: NextRequest) {
 
     }
 
+    console.log(`[Scraper Videos] Fetching from: ${apiUrl}`)
     const response = await fetchWithTimeout(apiUrl, {
       timeout: 30000
     })
+    console.log(`[Scraper Videos] Got response, status: ${response.status}`)
 
     if (!response.ok) {
       throw new Error(`Failed to fetch videos: ${response.statusText}`)
     }
 
     const data = await response.json()
+    console.log(`[Scraper Videos] Parsed JSON, got ${data.data?.length || 0} videos`)
 
     // Handle both /api/home and /api/videos/category response formats
     const videos = data.data || []
