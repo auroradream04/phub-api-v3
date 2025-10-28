@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PornHub } from 'pornhub.js'
 import type { VideoListOrdering } from 'pornhub.js'
-
-// Initialize PornHub client
-const pornhub = new PornHub()
+import { getRandomProxy } from '@/lib/proxy'
 
 // Custom categories that use search instead of PornHub category IDs
 // Map numeric IDs to category names for search
@@ -75,6 +73,13 @@ export async function GET(
       }
     }
 
+    // Initialize PornHub with proxy to avoid rate limiting
+    const pornhub = new PornHub()
+    const proxyInfo = getRandomProxy('Category API')
+    if (proxyInfo) {
+      pornhub.setAgent(proxyInfo.agent)
+    }
+
     // Fetch videos from PornHub for this category with 30 second timeout
     const result = await withTimeout(
       pornhub.videoList({
@@ -131,6 +136,13 @@ async function handleCustomCategory(request: NextRequest, categoryId: number) {
     const page = pageParam ? parseInt(pageParam, 10) : 1
 
     const categoryName = CUSTOM_CATEGORIES[categoryId]
+
+    // Initialize PornHub with proxy to avoid rate limiting
+    const pornhub = new PornHub()
+    const proxyInfo = getRandomProxy('Custom Category Search')
+    if (proxyInfo) {
+      pornhub.setAgent(proxyInfo.agent)
+    }
 
     // Use PornHub search API to find videos with 30 second timeout
     const result = await withTimeout(
