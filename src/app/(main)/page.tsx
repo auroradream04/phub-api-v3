@@ -154,7 +154,7 @@ export default function Home() {
 
       {/* Horizontal Ads */}
       <section className="py-6">
-        <div className="px-4 sm:px-6 lg:px-8">
+        <div>
           <HorizontalAds />
         </div>
       </section>

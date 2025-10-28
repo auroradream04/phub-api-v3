@@ -44,7 +44,7 @@ export default function HorizontalAds() {
         <button
           key={index}
           onClick={() => handleAdClick(ad)}
-          className="w-3/5 block border border-gray-200 rounded-lg overflow-hidden hover:border-blue-400 transition-colors relative"
+          className="w-full md:w-3/5 block rounded-lg overflow-hidden hover:opacity-90 transition-opacity relative"
         >
           <Image
             src={ad.image}
