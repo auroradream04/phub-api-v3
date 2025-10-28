@@ -39,6 +39,21 @@ export default function HomeClient({ initialVideos, initialStats, allCategories 
   const [loading, setLoading] = useState(false)
   const [hasMore, setHasMore] = useState(true)
 
+  const handleCategoryChange = async (category: string | null) => {
+    setSelectedCategory(category)
+    setCurrentPage(1)
+    setLoading(true)
+    try {
+      const categoryParam = category ? `&category=${encodeURIComponent(category)}` : ''
+      const response = await fetch(`/api/db/home?page=1${categoryParam}`)
+      const data = await response.json()
+      setFeaturedVideos(data.data)
+      setHasMore(!data.paging?.isEnd)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     if (searchQuery.trim()) {
@@ -78,19 +93,8 @@ export default function HomeClient({ initialVideos, initialStats, allCategories 
     }
   }
 
-  // Filter videos based on selected category
-  const filteredVideos = selectedCategory
-    ? featuredVideos.filter(video => {
-        if (!video.category) return false
-        // Split video categories and check if any match the selected Chinese category
-        const videoCategories = video.category.split(',').map(cat => {
-          const trimmed = cat.trim().toLowerCase()
-          const chineseName = getCategoryChineseName(trimmed)
-          return chineseName
-        })
-        return videoCategories.includes(selectedCategory)
-      })
-    : featuredVideos
+  // Videos are already filtered server-side based on selectedCategory
+  const filteredVideos = featuredVideos
 
   return (
     <>
@@ -147,7 +151,7 @@ export default function HomeClient({ initialVideos, initialStats, allCategories 
         {allCategories.length > 0 && (
           <div className="mb-6 flex flex-wrap gap-2">
             <button
-              onClick={() => setSelectedCategory(null)}
+              onClick={() => handleCategoryChange(null)}
               className={`px-4 py-2 rounded-lg font-medium transition-all ${
                 selectedCategory === null
                   ? 'bg-primary text-primary-foreground'
@@ -159,7 +163,7 @@ export default function HomeClient({ initialVideos, initialStats, allCategories 
             {allCategories.map((category) => (
               <button
                 key={category}
-                onClick={() => setSelectedCategory(category)}
+                onClick={() => handleCategoryChange(category)}
                 className={`px-4 py-2 rounded-lg font-medium transition-all ${
                   selectedCategory === category
                     ? 'bg-primary text-primary-foreground'
