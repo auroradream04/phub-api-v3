@@ -51,24 +51,6 @@ function parseDuration(duration: string): number {
   return 0
 }
 
-const FETCH_TIMEOUT = 30000 // 30 second timeout
-
-// Helper to fetch with timeout
-async function fetchWithTimeout(url: string, options: RequestInit & { timeout?: number } = {}) {
-  const timeout = options.timeout || FETCH_TIMEOUT
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), timeout)
-
-  try {
-    return await fetch(url, {
-      ...options,
-      signal: controller.signal,
-    })
-  } finally {
-    clearTimeout(timeoutId)
-  }
-}
-
 export async function POST(request: NextRequest) {
   try {
     const { page = 1, categoryId, categoryName } = await request.json()
@@ -111,9 +93,7 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`[Scraper Videos] Fetching from: ${apiUrl}`)
-    const response = await fetchWithTimeout(apiUrl, {
-      timeout: 30000
-    })
+    const response = await fetch(apiUrl)
     console.log(`[Scraper Videos] Got response, status: ${response.status}`)
 
     if (!response.ok) {

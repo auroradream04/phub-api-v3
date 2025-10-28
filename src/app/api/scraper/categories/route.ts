@@ -4,23 +4,6 @@ import { prisma } from '@/lib/prisma'
 export const revalidate = 7200 // 2 hours
 
 // POST endpoint to scrape videos from all categories
-const FETCH_TIMEOUT = 30000 // 30 second timeout for fetch requests
-
-// Helper to fetch with timeout
-async function fetchWithTimeout(url: string, options: RequestInit & { timeout?: number } = {}) {
-  const timeout = options.timeout || FETCH_TIMEOUT
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), timeout)
-
-  try {
-    return await fetch(url, {
-      ...options,
-      signal: controller.signal,
-    })
-  } finally {
-    clearTimeout(timeoutId)
-  }
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -125,7 +108,7 @@ export async function POST(request: NextRequest) {
 
           for (let page = 1; page <= pagesPerCategory; page++) {
             try {
-              const scraperResponse = await fetchWithTimeout(`${baseUrl}/api/scraper/videos`, {
+              const scraperResponse = await fetch(`${baseUrl}/api/scraper/videos`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -133,7 +116,6 @@ export async function POST(request: NextRequest) {
                   categoryId: category.id,
                   categoryName: category.name
                 }),
-                timeout: 30000,
               })
 
               const scraperData = await scraperResponse.json()
@@ -188,7 +170,7 @@ export async function POST(request: NextRequest) {
         for (let page = 1; page <= pagesPerCategory; page++) {
           try {
             console.log(`[Scraper] Fetching ${category.name} page ${page}...`)
-            const scraperResponse = await fetchWithTimeout(`${baseUrl}/api/scraper/videos`, {
+            const scraperResponse = await fetch(`${baseUrl}/api/scraper/videos`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -196,7 +178,6 @@ export async function POST(request: NextRequest) {
                 categoryId: category.id,
                 categoryName: category.name
               }),
-              timeout: 30000,
             })
 
             if (!scraperResponse.ok) {

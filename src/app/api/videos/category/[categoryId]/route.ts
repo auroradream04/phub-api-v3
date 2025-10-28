@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PornHub } from 'pornhub.js'
 import type { VideoListOrdering } from 'pornhub.js'
-import { getRandomProxy } from '@/lib/proxy'
+
+// Initialize PornHub client
+const pornhub = new PornHub()
 
 // Custom categories that use search instead of PornHub category IDs
 // Map numeric IDs to category names for search
@@ -12,16 +14,6 @@ const CUSTOM_CATEGORIES: Record<number, string> = {
 }
 
 export const revalidate = 7200 // 2 hours
-
-// Helper to add timeout to promises
-async function withTimeout<T>(promise: Promise<T>, timeoutMs: number = 30000): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error(`Request timeout after ${timeoutMs}ms`)), timeoutMs)
-    )
-  ])
-}
 
 export async function GET(
   request: NextRequest,
@@ -73,41 +65,23 @@ export async function GET(
       }
     }
 
-    // Initialize PornHub with proxy to avoid rate limiting
-    const pornhub = new PornHub()
-    const proxyInfo = getRandomProxy('Category API')
-    if (proxyInfo) {
-      console.log(`[Category API] Using proxy: ${proxyInfo.proxyUrl}`)
-      pornhub.setAgent(proxyInfo.agent)
-    } else {
-      console.log(`[Category API] No proxy available, using direct connection`)
-    }
+    // Fetch videos from PornHub for this category
+    const result = await pornhub.videoList({
+      filterCategory: categoryId,
+      page,
+      order
+    })
 
-    console.log(`[Category API] Fetching category ${categoryId}, page ${page}, order ${order}`)
-    // Fetch videos from PornHub for this category with 30 second timeout
-    const result = await withTimeout(
-      pornhub.videoList({
-        filterCategory: categoryId,
-        page,
-        order
-      }),
-      30000
-    )
-    console.log(`[Category API] Got ${result.data?.length || 0} videos`)
-
-    // Get category name from the categories list (with timeout)
+    // Get category name from the categories list
     let categoryName = 'Unknown'
     try {
-      const categories = await withTimeout(
-        pornhub.webMaster.getCategories(),
-        10000 // shorter timeout for metadata fetch
-      )
+      const categories = await pornhub.webMaster.getCategories()
       const category = categories.find(cat => Number(cat.id) === categoryId)
       if (category) {
         categoryName = category.category
       }
     } catch (err) {
-      // Silently fail - categoryName defaults to 'Unknown'
+
     }
 
     // Add category info to the response
@@ -142,25 +116,12 @@ async function handleCustomCategory(request: NextRequest, categoryId: number) {
 
     const categoryName = CUSTOM_CATEGORIES[categoryId]
 
-    // Initialize PornHub with proxy to avoid rate limiting
-    const pornhub = new PornHub()
-    const proxyInfo = getRandomProxy('Custom Category Search')
-    if (proxyInfo) {
-      console.log(`[Custom Category] Using proxy: ${proxyInfo.proxyUrl}`)
-      pornhub.setAgent(proxyInfo.agent)
-    } else {
-      console.log(`[Custom Category] No proxy available, using direct connection`)
-    }
 
-    console.log(`[Custom Category] Searching for: ${categoryName}, page ${page}`)
-    // Use PornHub search API to find videos with 30 second timeout
-    const result = await withTimeout(
-      pornhub.searchVideo(categoryName, {
-        page
-      }),
-      30000
-    )
-    console.log(`[Custom Category] Got ${result.data?.length || 0} results`)
+
+    // Use PornHub search API to find videos
+    const result = await pornhub.searchVideo(categoryName, {
+      page
+    })
 
     // Check if PornHub is rate limiting or returning errors
     if (!result.data || result.data.length === 0) {
