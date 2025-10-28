@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Search } from 'lucide-react'
 import HorizontalAds from '@/components/HorizontalAds'
-import { getCategoryChineseName, getCanonicalCategory } from '@/lib/category-mapping'
+import { getCategoryChineseName } from '@/lib/category-mapping'
 import {
   Table,
   TableBody,
@@ -42,21 +42,13 @@ export default function Home() {
   }, [currentPage])
 
   useEffect(() => {
-    // Fetch all categories on mount
-    fetch('/api/categories')
+    // Fetch categories from actual database videos (MACCMS import)
+    fetch('/api/db/categories')
       .then(res => res.json())
       .then(data => {
         if (data.categories) {
-          // Consolidate and translate categories to Chinese
-          const consolidatedCategories = new Set<string>()
-          data.categories.forEach((cat: any) => {
-            // Get canonical category (consolidates variants)
-            const canonical = getCanonicalCategory(cat.name.toLowerCase())
-            // Get Chinese name
-            const chineseName = getCategoryChineseName(cat.name)
-            consolidatedCategories.add(chineseName)
-          })
-          setAllCategories(Array.from(consolidatedCategories).sort())
+          // Categories are already consolidated and translated from DB
+          setAllCategories(data.categories.map((cat: any) => cat.name).sort())
         }
       })
       .catch(error => {
