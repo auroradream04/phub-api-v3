@@ -103,52 +103,31 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section with Search */}
-      <section className="bg-gradient-to-b from-background to-card/50 py-16 relative overflow-hidden">
-        {/* Gradient orbs for visual interest */}
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent/10 rounded-full blur-3xl"></div>
-
-        <div className="px-4 sm:px-6 lg:px-8 relative">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              探索精彩视频内容
-            </h1>
-            <p className="text-lg text-muted-foreground mb-8">
-              高清视频，流畅播放，精彩不断
-            </p>
+      <section className="py-8 border-b border-border/20">
+        <div className="space-y-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">发现更多精彩</h1>
+            <p className="text-sm text-muted-foreground">搜索您感兴趣的内容</p>
           </div>
 
           {/* Search Bar */}
-          <form onSubmit={handleSearch} className="max-w-2xl mx-auto">
+          <form onSubmit={handleSearch} className="max-w-2xl">
             <div className="relative">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="搜索您想看的内容..."
-                className="w-full px-6 py-4 pr-14 rounded-full border-2 border-border bg-input text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                placeholder="搜索视频..."
+                className="w-full px-4 py-3 pr-12 rounded-lg border border-border bg-card text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
               />
               <button
                 type="submit"
-                className="absolute right-2 top-1/2 -translate-y-1/2 bg-primary hover:bg-primary/90 text-primary-foreground p-3 rounded-full transition-all hover:scale-105"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
               >
                 <Search className="w-5 h-5" />
               </button>
             </div>
           </form>
-
-          {/* Quick Search Tags */}
-          <div className="flex flex-wrap justify-center gap-3 mt-6">
-            {['热门', '最新', '推荐', '高清', '精选'].map((tag) => (
-              <button
-                key={tag}
-                onClick={() => setSearchQuery(tag)}
-                className="px-4 py-2 bg-card text-foreground rounded-full hover:bg-primary hover:text-primary-foreground transition-all border border-border hover:border-primary hover:scale-105"
-              >
-                {tag}
-              </button>
-            ))}
-          </div>
         </div>
       </section>
 
