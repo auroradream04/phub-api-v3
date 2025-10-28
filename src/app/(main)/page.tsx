@@ -161,7 +161,6 @@ export default function Home() {
 
       {/* Featured Videos Section - Table Layout */}
       <section className="py-12">
-        <div className="px-4 md:px-0">
           <div className="mb-8">
             <h2 className="text-3xl font-bold text-foreground mb-2">影片资源列表</h2>
             <div className="h-1 w-20 bg-gradient-to-r from-primary to-accent rounded-full"></div>
@@ -352,7 +351,7 @@ export default function Home() {
               </button>
             </div>
           )}
-        </div>
+          </div>
       </section>
     </div>
   )
