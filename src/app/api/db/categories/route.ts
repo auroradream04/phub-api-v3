@@ -6,32 +6,26 @@ export const revalidate = 3600 // 1 hour
 
 export async function GET(request: NextRequest) {
   try {
-    // Get all unique categories from videos in database
+    // Get all unique typeName (categories) from videos in database
     const videos = await prisma.video.findMany({
-      select: { category: true },
+      select: { typeName: true },
       where: {
         AND: [
-          { category: { not: null } },
-          { category: { not: '' } }
+          { typeName: { not: null } },
+          { typeName: { not: '' } }
         ]
       },
-      distinct: ['category']
+      distinct: ['typeName']
     })
 
     // Extract and consolidate categories
     const categoriesSet = new Set<string>()
 
     videos.forEach(video => {
-      if (video.category) {
-        // Split by comma and process each category
-        video.category.split(',').forEach(cat => {
-          const trimmed = cat.trim()
-          if (trimmed) {
-            // Get consolidated Chinese name
-            const chineseName = getCategoryChineseName(trimmed)
-            categoriesSet.add(chineseName)
-          }
-        })
+      if (video.typeName) {
+        // Get consolidated Chinese name
+        const chineseName = getCategoryChineseName(video.typeName)
+        categoriesSet.add(chineseName)
       }
     })
 
