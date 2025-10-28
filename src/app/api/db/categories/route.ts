@@ -10,8 +10,8 @@ export async function GET(request: NextRequest) {
     const videos = await prisma.video.findMany({
       select: { typeName: true },
       where: {
-        NOT: {
-          typeName: null
+        typeName: {
+          not: ''
         }
       },
       distinct: ['typeName'],
