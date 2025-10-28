@@ -10,27 +10,33 @@ export async function GET(request: NextRequest) {
     const videos = await prisma.video.findMany({
       select: { typeName: true },
       where: {
-        AND: [
-          { typeName: { not: null } },
-          { typeName: { not: '' } }
-        ]
+        typeName: {
+          not: null
+        }
       },
-      distinct: ['typeName']
+      distinct: ['typeName'],
+      orderBy: {
+        typeName: 'asc'
+      }
     })
+
+    console.log('[DB Categories] Found videos with typeNames:', videos.length)
 
     // Extract and consolidate categories
     const categoriesSet = new Set<string>()
 
     videos.forEach(video => {
-      if (video.typeName) {
+      if (video.typeName && video.typeName.trim()) {
         // Get consolidated Chinese name
-        const chineseName = getCategoryChineseName(video.typeName)
+        const chineseName = getCategoryChineseName(video.typeName.trim())
         categoriesSet.add(chineseName)
       }
     })
 
-    const categories = Array.from(categoriesSet).sort().map(name => ({
-      id: categoriesSet.size, // Just use a simple ID
+    console.log('[DB Categories] Consolidated to:', categoriesSet.size, 'unique categories')
+
+    const categories = Array.from(categoriesSet).sort().map((name, index) => ({
+      id: index,
       name
     }))
 
