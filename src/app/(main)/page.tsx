@@ -32,6 +32,8 @@ export default function Home() {
   const [currentPage, setCurrentPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
   const [stats, setStats] = useState({ totalVideos: 0, todayUpdates: 0 })
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [allCategories, setAllCategories] = useState<string[]>([])
 
   useEffect(() => {
     // Fetch featured videos when page changes
@@ -60,6 +62,17 @@ export default function Home() {
       }
 
       setFeaturedVideos(data.data)
+
+      // Extract unique categories from videos
+      const categories = new Set<string>()
+      data.data.forEach((video: Video) => {
+        if (video.category) {
+          video.category.split(',').forEach(cat => {
+            categories.add(cat.trim())
+          })
+        }
+      })
+      setAllCategories(Array.from(categories).sort())
 
       // Update stats if available
       if (data.stats) {
@@ -99,6 +112,13 @@ export default function Home() {
       window.location.href = `/search?q=${encodeURIComponent(searchQuery)}`
     }
   }
+
+  // Filter videos based on selected category
+  const filteredVideos = selectedCategory
+    ? featuredVideos.filter(video =>
+        video.category?.includes(selectedCategory)
+      )
+    : featuredVideos
 
   return (
     <div className="min-h-screen bg-background">
@@ -140,6 +160,39 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Category Filters */}
+      {allCategories.length > 0 && (
+        <section className="py-4 border-b border-border/20">
+          <div className="max-w-5xl mx-auto">
+            <div className="flex items-center gap-2 overflow-x-auto pb-2">
+              <button
+                onClick={() => setSelectedCategory(null)}
+                className={`px-4 py-2 rounded-full whitespace-nowrap font-medium transition-all flex-shrink-0 ${
+                  selectedCategory === null
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-card text-foreground border border-border hover:border-primary'
+                }`}
+              >
+                全部
+              </button>
+              {allCategories.map((category) => (
+                <button
+                  key={category}
+                  onClick={() => setSelectedCategory(category)}
+                  className={`px-4 py-2 rounded-full whitespace-nowrap font-medium transition-all flex-shrink-0 ${
+                    selectedCategory === category
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-card text-foreground border border-border hover:border-primary'
+                  }`}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Horizontal Ads */}
       <section className="py-6">
         <div>
@@ -178,7 +231,7 @@ export default function Home() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {featuredVideos.map((video) => {
+                  {filteredVideos.map((video) => {
                     // Determine tags to show - ORDER MATTERS! HOT first (leftmost)
                     const tags = [];
 
@@ -248,7 +301,7 @@ export default function Home() {
 
             {/* Mobile Card View */}
             <div className="md:hidden space-y-0 border-t border-border/20">
-              {featuredVideos.map((video) => {
+              {filteredVideos.map((video) => {
                 // Determine tags to show - ORDER MATTERS! HOT first (leftmost)
                 const tags = [];
 
