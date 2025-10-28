@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
   try {
     const { pagesPerCategory = 5, parallel = false } = await request.json()
 
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://md8av.com'
 
     // Fetch categories directly from database (instant!)
     console.log('[Scraper] Fetching categories from database cache...')

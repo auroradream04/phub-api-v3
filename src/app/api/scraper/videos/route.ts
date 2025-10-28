@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
     const { page = 1, categoryId, categoryName } = await request.json()
     console.log(`[Scraper Videos] Processing: categoryId=${categoryId}, categoryName=${categoryName}, page=${page}`)
 
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://md8av.com'
 
     // Fetch scraper filter settings from database
     const minViewsSetting = await prisma.siteSetting.findUnique({
