@@ -60,7 +60,7 @@ export default function HorizontalAdsSlider() {
           <button
             key={index}
             onClick={handleAdClick}
-            className="w-full flex-shrink-0 border border-gray-200 rounded-lg overflow-hidden hover:border-blue-300 transition-colors"
+            className="w-full flex-shrink-0 rounded-lg overflow-hidden hover:opacity-90 transition-opacity cursor-pointer"
           >
             <Image
               src={ad.image}

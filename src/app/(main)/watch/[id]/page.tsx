@@ -78,12 +78,19 @@ export default function WatchPage() {
             )
             const providerData = await providerResponse.json()
 
-            if (providerData?.data) {
+            console.log('[Watch] Recommendations response:', {
+              provider: videoData.provider,
+              category: videoData.categories?.[0]?.name,
+              dataCount: providerData?.data?.length,
+              usedFallback: providerData?.usedFallback,
+            })
+
+            if (providerData?.data && providerData.data.length > 0) {
               setRecommendedVideos(providerData.data)
             }
           } catch (providerErr) {
             // If provider fetch fails, just skip recommendations
-            console.warn('Failed to fetch provider videos:', providerErr)
+            console.error('[Watch] Failed to fetch provider videos:', providerErr)
           }
         }
 

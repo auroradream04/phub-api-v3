@@ -58,6 +58,8 @@ export async function GET(request: NextRequest) {
     // If no provider videos found and we have typeName, fallback to category-based recommendations
     if (videos.length === 0 && typeName) {
       usedFallback = true
+
+      // Try exact match first
       videos = await prisma.video.findMany({
         where: {
           typeName: typeName,
@@ -77,6 +79,28 @@ export async function GET(request: NextRequest) {
         },
         take: limit,
       })
+
+      // If still empty, just get most popular videos as last resort
+      if (videos.length === 0) {
+        videos = await prisma.video.findMany({
+          where: {
+            ...(excludeId && { vodId: { not: excludeId } })
+          },
+          select: {
+            vodId: true,
+            vodName: true,
+            vodPic: true,
+            vodRemarks: true,
+            views: true,
+            typeName: true,
+            vodProvider: true,
+          },
+          orderBy: {
+            views: 'desc'
+          },
+          take: limit,
+        })
+      }
     }
 
     // Format response
