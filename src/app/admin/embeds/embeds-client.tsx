@@ -620,7 +620,7 @@ export default function EmbedsClient() {
                             </div>
                           )}
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">PornHub link - we'll auto-fetch the video ID and title</p>
+                        <p className="text-xs text-muted-foreground mt-1">PornHub link - we&apos;ll auto-fetch the video ID and title</p>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-foreground mb-1">Title *</label>
