@@ -580,7 +580,36 @@ export default function EmbedsClient() {
                             type="text"
                             value={formData.m3u8Url}
                             onChange={(e) => {
-                              setFormData({ ...formData, m3u8Url: e.target.value, previewSourceUrl: e.target.value })
+                              const link = e.target.value
+                              setFormData({ ...formData, m3u8Url: link, previewSourceUrl: link })
+
+                              // Auto-fetch from PornHub link
+                              if (link.includes('pornhub.com')) {
+                                if (manualTimeoutRef.current) {
+                                  clearTimeout(manualTimeoutRef.current)
+                                }
+                                setFetchingManualVideo(true)
+                                manualTimeoutRef.current = setTimeout(async () => {
+                                  try {
+                                    const params = new URLSearchParams({ q: link })
+                                    const res = await fetch('/api/admin/embeds/fetch-video?' + params.toString())
+                                    if (!res.ok) {
+                                      setFetchingManualVideo(false)
+                                      return
+                                    }
+                                    const video: SearchVideo = await res.json()
+                                    setFormData(prev => ({
+                                      ...prev,
+                                      title: video.title,
+                                      videoId: video.videoId,
+                                      previewSourceUrl: video.previewVideo || link
+                                    }))
+                                    setFetchingManualVideo(false)
+                                  } catch (error) {
+                                    setFetchingManualVideo(false)
+                                  }
+                                }, 1000)
+                              }
                             }}
                             placeholder="e.g., https://pornhub.com/view_video.php?viewkey=ph123456"
                             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
