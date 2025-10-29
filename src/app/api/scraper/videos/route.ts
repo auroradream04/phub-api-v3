@@ -242,6 +242,8 @@ export async function POST(request: NextRequest) {
           update: {
             vodName: finalTitle,
             originalTitle: shouldTranslate ? item.cleanTitle : undefined, // Only set if translated
+            typeId: typeId, // UPDATE: Now update category info on rescrape (prevents duplicates with different typeNames)
+            typeName: typeName, // UPDATE: Sync category name to match latest scrape category
             vodPic: item.video.preview,
             vodTime: item.publishDate,
             duration: item.durationSeconds,

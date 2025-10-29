@@ -1,0 +1,120 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║           CATEGORY DATA CORRUPTION FIX - PRODUCTION DEPLOYMENT               ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+PROBLEM:
+  Videos had duplicate (typeId, typeName) pairs
+  Example: typeId=#1 had BOTH "Asian" and "Unknown" in different videos
+  UI showed duplicate category entries
+
+ROOT CAUSE:
+  Video scraper's upsert logic never updated typeId/typeName on rescrape
+  Only fresh inserts set these fields, updates skipped them
+
+SOLUTION (3 PARTS):
+  ✅ 1. Code fix: Update upsert to refresh category fields
+  ✅ 2. Database cleanup: Fix existing bad data
+  ✅ 3. Add FK constraint: Prevent future corruption
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📁 FILES CREATED/MODIFIED:
+
+  1. src/app/api/scraper/videos/route.ts (MODIFIED)
+     - Lines 245-246: Added typeId and typeName to upsert update clause
+     - Future scrapes will now refresh category information
+
+  2. prisma/migrations/20241029_add_category_fk_and_fix_duplicates/migration.sql
+     - Fix orphaned typeIds
+     - Fix mismatched typeNames
+     - Add foreign key constraint
+     - Add index on (typeId, typeName)
+
+  3. src/scripts/cleanup-category-duplicates.ts (NEW)
+     - Analyze existing issues (dry-run mode)
+     - Fix corrupted data
+     - Verify FK constraint
+     - Idempotent (safe to run multiple times)
+
+  4. CATEGORY_CORRUPTION_FIX.md (DEPLOYMENT GUIDE)
+     - Step-by-step deployment instructions
+     - Verification queries
+     - Rollback plan
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚡ QUICK DEPLOYMENT:
+
+  1. Review deployment guide:
+     cat CATEGORY_CORRUPTION_FIX.md
+
+  2. Backup database (CRITICAL!)
+     # Your database backup tool here
+
+  3. Analyze issues (no changes):
+     npm run ts-node -- src/scripts/cleanup-category-duplicates.ts
+
+  4. Fix issues:
+     npm run ts-node -- src/scripts/cleanup-category-duplicates.ts --fix
+
+  5. Apply migration:
+     npm run migrate
+
+  6. Verify:
+     npm run ts-node -- src/scripts/cleanup-category-duplicates.ts
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔧 KEY CHANGES:
+
+  BEFORE:
+    update: {
+      vodName: finalTitle,
+      // ❌ typeId and typeName NOT updated
+    }
+
+  AFTER:
+    update: {
+      vodName: finalTitle,
+      typeId: typeId,         // ✅ Now updates
+      typeName: typeName,     // ✅ Now updates
+    }
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ WHAT THIS FIXES:
+
+  • Prevents duplicate (typeId, typeName) in future scrapes
+  • Fixes existing bad data in database
+  • Adds foreign key constraint for data integrity
+  • Creates index for faster duplicate detection
+  • Safe for production (backwards compatible)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⏱️  ESTIMATED TIME: 30 minutes
+
+  • Code review: 5 min
+  • Database backup: 5 min
+  • Cleanup analysis: 2 min
+  • Cleanup fix: 5 min
+  • Migration: 2 min
+  • Verification: 5 min
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚨 ROLLBACK:
+
+  If issues occur:
+    1. git revert 6e60d40
+    2. npm run migrate:rollback
+    3. Restore database backup if needed
+
+  See CATEGORY_CORRUPTION_FIX.md for detailed rollback steps
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Commit: 6e60d40
+Files changed: 4
+Insertions: 647
+Status: Ready for production deployment
