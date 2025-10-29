@@ -96,6 +96,7 @@ export async function POST(request: NextRequest) {
         const batchPromises = batch.map(async (category) => {
           let categoryScraped = 0
           let categoryErrors = 0
+          let consecutiveErrors = 0
 
           for (let page = 1; page <= pagesPerCategory; page++) {
             try {
@@ -109,10 +110,22 @@ export async function POST(request: NextRequest) {
                 }),
               })
 
+              if (!scraperResponse.ok) {
+                categoryErrors++
+                consecutiveErrors++
+
+                // Stop after 3 consecutive failures
+                if (consecutiveErrors >= 3) {
+                  break
+                }
+                continue
+              }
+
               const scraperData = await scraperResponse.json()
 
               if (scraperData.success) {
                 categoryScraped += scraperData.scraped
+                consecutiveErrors = 0 // Reset on success
 
                 // Stop if no videos were scraped (likely rate limited or no more content)
                 if (scraperData.scraped === 0 || !scraperData.hasMore) {
@@ -120,12 +133,24 @@ export async function POST(request: NextRequest) {
                 }
               } else {
                 categoryErrors++
+                consecutiveErrors++
+
+                // Stop after 3 consecutive failures
+                if (consecutiveErrors >= 3) {
+                  break
+                }
               }
 
               await new Promise(resolve => setTimeout(resolve, 200))
 
             } catch (error) {
               categoryErrors++
+              consecutiveErrors++
+
+              // Stop after 3 consecutive failures
+              if (consecutiveErrors >= 3) {
+                break
+              }
             }
           }
 
@@ -154,6 +179,7 @@ export async function POST(request: NextRequest) {
       for (const category of categories) {
         let categoryScraped = 0
         let categoryErrors = 0
+        let consecutiveErrors = 0
 
         // Scrape specified number of pages for this category
         for (let page = 1; page <= pagesPerCategory; page++) {
@@ -171,6 +197,12 @@ export async function POST(request: NextRequest) {
             if (!scraperResponse.ok) {
               categoryErrors++
               totalErrors++
+              consecutiveErrors++
+
+              // Stop after 3 consecutive failures (all proxies exhausted)
+              if (consecutiveErrors >= 3) {
+                break
+              }
               continue
             }
 
@@ -179,6 +211,7 @@ export async function POST(request: NextRequest) {
             if (scraperData.success) {
               categoryScraped += scraperData.scraped
               totalScraped += scraperData.scraped
+              consecutiveErrors = 0 // Reset on success
 
               // Stop if no videos were scraped (likely rate limited or no more content)
               if (scraperData.scraped === 0 || !scraperData.hasMore) {
@@ -187,6 +220,12 @@ export async function POST(request: NextRequest) {
             } else {
               categoryErrors++
               totalErrors++
+              consecutiveErrors++
+
+              // Stop after 3 consecutive failures
+              if (consecutiveErrors >= 3) {
+                break
+              }
             }
 
             await new Promise(resolve => setTimeout(resolve, 500))
@@ -194,6 +233,12 @@ export async function POST(request: NextRequest) {
           } catch (error) {
             categoryErrors++
             totalErrors++
+            consecutiveErrors++
+
+            // Stop after 3 consecutive failures
+            if (consecutiveErrors >= 3) {
+              break
+            }
           }
         }
 
