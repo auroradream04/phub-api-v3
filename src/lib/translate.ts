@@ -35,8 +35,19 @@ export function isChinese(text: string): boolean {
 }
 
 /**
+ * Helper to wrap a promise with timeout
+ */
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, timeoutError: string): Promise<T> {
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error(timeoutError)), timeoutMs)
+  )
+  return Promise.race([promise, timeout])
+}
+
+/**
  * Translate text to Chinese (Simplified)
  * Uses in-memory cache and rotating proxies with retry logic to avoid rate limits
+ * Each translation attempt has a 5-second timeout
  */
 export async function translateToZhCN(text: string): Promise<string> {
   // If already Chinese, return as-is
@@ -52,6 +63,7 @@ export async function translateToZhCN(text: string): Promise<string> {
 
   // Retry up to 3 times with different proxies
   const MAX_RETRIES = 3
+  const TIMEOUT_MS = 5000 // 5 second timeout per attempt
   let retries = MAX_RETRIES
 
   while (retries > 0) {
@@ -61,19 +73,27 @@ export async function translateToZhCN(text: string): Promise<string> {
 
       if (!proxyInfo) {
         console.warn('[Translation] No proxy available, translating without proxy')
-        const result = await translate(text, { to: 'zh-CN' })
+        const result = await withTimeout(
+          translate(text, { to: 'zh-CN' }),
+          TIMEOUT_MS,
+          'Translation timeout'
+        )
         const translated = result.text
         translationCache.set(cacheKey, translated)
         return translated
       }
 
-      // Translate with proxy
-      const result = await translate(text, {
-        to: 'zh-CN',
-        fetchOptions: {
-          agent: proxyInfo.agent
-        }
-      })
+      // Translate with proxy and timeout
+      const result = await withTimeout(
+        translate(text, {
+          to: 'zh-CN',
+          fetchOptions: {
+            agent: proxyInfo.agent
+          }
+        }),
+        TIMEOUT_MS,
+        'Translation timeout'
+      )
       const translated = result.text
 
       // Cache the result
@@ -85,18 +105,23 @@ export async function translateToZhCN(text: string): Promise<string> {
     } catch (error) {
       retries--
 
+      const errorMessage = error instanceof Error ? error.message : String(error)
+
       // Check if it's a rate limit error
       const isRateLimit = (error as { status?: number; statusCode?: number })?.status === 429 || (error as { status?: number; statusCode?: number })?.statusCode === 429
 
-      if (isRateLimit && retries > 0) {
-        console.warn(`[Translation] Rate limit hit, retrying with different proxy (${MAX_RETRIES - retries}/${MAX_RETRIES})...`)
+      // Check if it's a timeout
+      const isTimeout = errorMessage.includes('timeout')
+
+      if ((isRateLimit || isTimeout) && retries > 0) {
+        const reason = isTimeout ? 'Timeout' : 'Rate limit hit'
+        console.warn(`[Translation] ${reason}, retrying with different proxy (${MAX_RETRIES - retries}/${MAX_RETRIES})...`)
         // Small delay before retry
         await new Promise(resolve => setTimeout(resolve, 300))
         continue
       }
 
       // If no retries left or different error, return original
-      const errorMessage = error instanceof Error ? error.message : String(error)
       if (retries === 0) {
         console.error(`[Translation] Failed after ${MAX_RETRIES} retries:`, errorMessage)
       } else {
