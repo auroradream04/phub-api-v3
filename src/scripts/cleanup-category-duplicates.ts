@@ -17,7 +17,7 @@
  *   npm run ts-node -- src/scripts/cleanup-category-duplicates.ts --fix
  */
 
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from '../generated/prisma'
 
 const prisma = new PrismaClient()
 
