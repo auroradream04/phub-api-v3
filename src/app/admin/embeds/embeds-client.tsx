@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { encryptEmbedId } from '@/lib/embed-encryption'
-import { Copy, Eye, Trash2, Edit } from 'lucide-react'
+import { Copy, Eye, Trash2, Edit, Play } from 'lucide-react'
 
 interface VideoEmbed {
   id: string
@@ -68,6 +68,19 @@ export default function EmbedsClient() {
     m3u8Url: '', // Direct m3u8/video URL input (Option 3)
   })
 
+  // Helper to check if URL is a video file
+  const isVideoUrl = (url: string) => {
+    return url && (url.includes('.webm') || url.includes('.mp4') || url.includes('.m3u8'))
+  }
+
+  // Helper to check if input is a direct video URL
+  const isDirectVideoUrl = (input: string) => {
+    try {
+      return input && (input.includes('.webm') || input.includes('.mp4') || input.includes('.m3u8'))
+    } catch {
+      return false
+    }
+  }
 
   // Fetch embeds
   useEffect(() => {
@@ -154,7 +167,14 @@ export default function EmbedsClient() {
       clearTimeout(manualTimeoutRef.current)
     }
 
-    // Show loading state immediately
+    // Check if it's a direct video URL (not a PornHub link)
+    if (isDirectVideoUrl(input)) {
+      // Direct URL - don't call API, just set it and show preview
+      setFetchingManualVideo(false)
+      return
+    }
+
+    // Show loading state immediately for API calls
     if (input.length >= 2) {
       setFetchingManualVideo(true)
     } else {
@@ -429,9 +449,8 @@ export default function EmbedsClient() {
           <div className="bg-card border border-border rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <h2 className="text-lg font-bold text-foreground mb-4">Create New Embed</h2>
 
-            {!selectedVideo ? (
-              // Video Selection Step
-              <div className="space-y-4">
+            {/* Video Selection Step */}
+            <div className="space-y-4">
                 {/* Search Option */}
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">Option 1: Search for a Video</label>
@@ -465,13 +484,30 @@ export default function EmbedsClient() {
                           onClick={() => handleSelectVideo(video)}
                           className="text-left p-3 rounded-lg border border-border hover:border-primary hover:bg-muted/50 transition-all group"
                         >
-                          <div className="relative w-full aspect-video bg-muted rounded mb-2 overflow-hidden">
-                            <Image
-                              src={video.preview}
-                              alt={video.title}
-                              fill
-                              className="object-cover group-hover:scale-110 transition-transform"
-                            />
+                          <div className="relative w-full aspect-video bg-black rounded mb-2 overflow-hidden">
+                            {video.previewVideo ? (
+                              <video
+                                src={video.previewVideo}
+                                className="w-full h-full object-cover"
+                                onMouseEnter={(e) => {
+                                  const video = e.currentTarget as HTMLVideoElement
+                                  video.play().catch(() => {})
+                                }}
+                                onMouseLeave={(e) => {
+                                  const video = e.currentTarget as HTMLVideoElement
+                                  video.pause()
+                                  video.currentTime = 0
+                                }}
+                                muted
+                              />
+                            ) : (
+                              <Image
+                                src={video.preview}
+                                alt={video.title}
+                                fill
+                                className="object-cover group-hover:scale-110 transition-transform"
+                              />
+                            )}
                           </div>
                           <div className="text-xs font-medium text-foreground line-clamp-2">{video.title}</div>
                           <div className="text-xs text-muted-foreground">{video.videoId}</div>
@@ -488,55 +524,75 @@ export default function EmbedsClient() {
                   <div className="flex-1 border-t border-border"></div>
                 </div>
 
-                {/* Manual Entry Option */}
+                {/* Option 2: Enter Direct Video/M3U8 URL */}
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">Option 2: Enter Video ID or Link</label>
+                  <label className="block text-sm font-medium text-foreground mb-2">Option 2: Enter Direct Video/M3U8 URL</label>
                   <div className="relative">
                     <input
                       type="text"
                       value={manualVideoInput}
                       onChange={(e) => {
                         setManualVideoInput(e.target.value)
-                        handleFetchManualVideoDebounced(e.target.value)
                       }}
-                      placeholder="e.g., ph123456 or https://pornhub.com/view_video.php?viewkey=ph123456"
+                      placeholder="e.g., https://example.com/preview.webm or https://example.com/playlist.m3u8"
                       className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                     />
-                    {fetchingManualVideo && (
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                        <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></div>
-                      </div>
-                    )}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Paste a PornHub link or just the video ID - we&apos;ll auto-fetch all details
-                  </p>
-                </div>
-
-                {/* Divider */}
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 border-t border-border"></div>
-                  <span className="text-xs text-muted-foreground">OR</span>
-                  <div className="flex-1 border-t border-border"></div>
-                </div>
-
-                {/* Option 3: Direct M3U8/Video URL */}
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">Option 3: Direct Video/M3U8 URL</label>
-                  <input
-                    type="text"
-                    value={formData.m3u8Url}
-                    onChange={(e) => setFormData({ ...formData, m3u8Url: e.target.value, previewSourceUrl: e.target.value })}
-                    placeholder="https://example.com/preview.webm or https://example.com/playlist.m3u8"
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary mb-1"
-                  />
-                  <p className="text-xs text-muted-foreground mb-3">
-                    Provide a direct .webm, .mp4, or .m3u8 URL to download and self-host
+                    Paste a direct .webm, .mp4, or .m3u8 URL
                   </p>
 
-                  {/* Additional fields for Option 3 */}
-                  {formData.m3u8Url && (
+                  {/* Video Preview for Direct URLs */}
+                  {isVideoUrl(manualVideoInput) && (
+                    <div className="mt-4 mb-4 bg-muted rounded-lg overflow-hidden">
+                      <div className="w-full aspect-video bg-black relative flex items-center justify-center group">
+                        {manualVideoInput.includes('.m3u8') ? (
+                          // For m3u8 playlists, show play icon since we can't preview directly
+                          <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                            <Play size={48} className="group-hover:text-primary transition-colors" />
+                            <span className="text-sm">M3U8 Playlist Preview</span>
+                          </div>
+                        ) : (
+                          // For direct video files, try to load video preview
+                          <video
+                            src={manualVideoInput}
+                            className="w-full h-full object-cover"
+                            autoPlay
+                            loop
+                            muted
+                            controls
+                            onError={() => {
+                              console.error('Failed to load video preview')
+                            }}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Always show all form fields */}
+                  {manualVideoInput && (
                     <div className="space-y-3 pt-3 border-t border-border">
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-1">PornHub Video Link *</label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            value={formData.m3u8Url}
+                            onChange={(e) => {
+                              setFormData({ ...formData, m3u8Url: e.target.value, previewSourceUrl: e.target.value })
+                            }}
+                            placeholder="e.g., https://pornhub.com/view_video.php?viewkey=ph123456"
+                            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                          />
+                          {fetchingManualVideo && (
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                              <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></div>
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">PornHub link - we'll auto-fetch the video ID and title</p>
+                      </div>
                       <div>
                         <label className="block text-sm font-medium text-foreground mb-1">Title *</label>
                         <input
@@ -553,7 +609,7 @@ export default function EmbedsClient() {
                           type="text"
                           value={formData.videoId}
                           onChange={(e) => setFormData({ ...formData, videoId: e.target.value })}
-                          placeholder="e.g., ph123456"
+                          placeholder="e.g., ph123456 or custom-id"
                           className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                         />
                       </div>
@@ -581,94 +637,6 @@ export default function EmbedsClient() {
                   )}
                 </div>
               </div>
-            ) : (
-              // Details Step (from search)
-              <div className="space-y-4">
-                {/* Selected Video Preview */}
-                <div className="bg-muted rounded-lg p-4">
-                  <div className="flex gap-4">
-                    <div className="w-32 h-24 rounded overflow-hidden flex-shrink-0">
-                      <Image
-                        src={selectedVideo.preview}
-                        alt={selectedVideo.title}
-                        width={128}
-                        height={96}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-foreground mb-1">{selectedVideo.title}</h3>
-                      <p className="text-xs text-muted-foreground">ID: {selectedVideo.videoId}</p>
-                      <button
-                        onClick={() => {
-                          setSelectedVideo(null)
-                          setSearchResults([])
-                          setVideoSearch('')
-                        }}
-                        className="text-xs text-primary hover:text-primary/80 mt-2"
-                      >
-                        Change Video
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Display Name */}
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Custom Display Name (Optional)</label>
-                  <input
-                    type="text"
-                    value={formData.displayName}
-                    onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
-                    placeholder="e.g., Premium Video 1, Featured Content"
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Optional name to identify this embed in your dashboard (shows title if empty)
-                  </p>
-                </div>
-
-                {/* Redirect URL */}
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Redirect URL *</label>
-                  <input
-                    type="url"
-                    value={formData.redirectUrl}
-                    onChange={(e) => setFormData({ ...formData, redirectUrl: e.target.value })}
-                    placeholder="https://yoursite.com or https://affiliate-link.com"
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Where users will be taken when they click the embed
-                  </p>
-                </div>
-
-                {/* Preview Source URL (Optional) */}
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Preview Source (Optional)</label>
-                  <input
-                    type="text"
-                    value={formData.previewSourceUrl}
-                    onChange={(e) => setFormData({ ...formData, previewSourceUrl: e.target.value })}
-                    placeholder="m3u8 URL, video link, or leave empty to use video ID"
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Provide an m3u8 playlist URL or direct video link to download preview immediately (leave empty to download later using video ID)
-                  </p>
-                </div>
-
-                {/* Info */}
-                <div className="bg-muted/50 rounded p-3 text-xs text-muted-foreground">
-                  <p className="font-medium mb-1">Preview Details Auto-filled:</p>
-                  <ul className="space-y-1">
-                    <li>✓ Video ID: {formData.videoId}</li>
-                    <li>✓ Title: {formData.title}</li>
-                    <li>ℹ️ Download preview after creating to enable self-hosted preview</li>
-                  </ul>
-                </div>
-              </div>
-            )}
 
             {/* Buttons */}
             <div className="flex gap-2 mt-6">
@@ -678,10 +646,10 @@ export default function EmbedsClient() {
               >
                 Cancel
               </button>
-              {selectedVideo && (
+              {manualVideoInput && (
                 <button
                   onClick={handleCreateEmbed}
-                  disabled={!formData.redirectUrl}
+                  disabled={!formData.redirectUrl || !formData.title || !formData.videoId}
                   className="flex-1 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Create Embed
