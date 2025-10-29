@@ -2,6 +2,7 @@
 
 import { useSession } from 'next-auth/react'
 import { useState, useEffect, useRef } from 'react'
+import type { ScraperCheckpoint } from '@/lib/scraper-utils'
 
 interface Category {
   id: number
@@ -60,7 +61,7 @@ export default function AdminDashboard() {
   // Crash recovery scraper states
   const [recoveryScraping, setRecoveryScraping] = useState(false)
   const [recoveryCheckpointId, setRecoveryCheckpointId] = useState('')
-  const [recoveryCheckpoint, setRecoveryCheckpoint] = useState<{ status: string } | null>(null)
+  const [recoveryCheckpoint, setRecoveryCheckpoint] = useState<ScraperCheckpoint | null>(null)
   const [recoveryLoading, setRecoveryLoading] = useState(false)
   const [recoveryPages, setRecoveryPages] = useState(5)
 
