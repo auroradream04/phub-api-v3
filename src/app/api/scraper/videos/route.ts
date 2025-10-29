@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { isTranslationEnabled, translateBatch } from '@/lib/translate'
+import {
+  parseViews,
+  parseDuration,
+  mergeCategories,
+  updateVideoWithCategoryMerge,
+  CircuitBreaker,
+  createScraperCheckpoint,
+  updateScraperCheckpoint,
+  getScraperCheckpoint,
+} from '@/lib/scraper-utils'
 
 export const revalidate = 7200 // 2 hours
 
@@ -39,17 +49,7 @@ function stripEmojis(str: string): string {
     .trim()
 }
 
-// Helper to format duration from "MM:SS" to seconds
-function parseDuration(duration: string): number {
-  const parts = duration.split(':').map(Number)
-  if (parts.length === 2) {
-    return parts[0]! * 60 + parts[1]! // MM:SS
-  }
-  if (parts.length === 3) {
-    return parts[0]! * 3600 + parts[1]! * 60 + parts[2]! // HH:MM:SS
-  }
-  return 0
-}
+// parseDuration is now imported from scraper-utils
 
 export async function POST(request: NextRequest) {
   try {
@@ -137,17 +137,10 @@ export async function POST(request: NextRequest) {
     }> = []
 
     for (const video of videos) {
-      // Parse views (e.g., "2.6K" -> 2600, "1.2M" -> 1200000)
-      const viewsStr = video.views || '0'
-      let views = 0
-      if (viewsStr.includes('K')) {
-        views = Math.floor(parseFloat(viewsStr.replace('K', '')) * 1000)
-      } else if (viewsStr.includes('M')) {
-        views = Math.floor(parseFloat(viewsStr.replace('M', '')) * 1000000)
-      } else {
-        views = parseInt(viewsStr.replace(/,/g, '')) || 0
-      }
+      // Parse views with validation (handles "2.6K", "1.2M", "2,600", etc.)
+      const views = parseViews(video.views || '0')
 
+      // Parse duration with validation (handles "MM:SS", "HH:MM:SS", invalid formats)
       const durationSeconds = parseDuration(video.duration)
 
       // Apply filters: skip if video doesn't meet minimum requirements
@@ -210,79 +203,65 @@ export async function POST(request: NextRequest) {
           typeName = 'Amateur'
         }
 
-        // Check if video exists to merge categories
-        const existingVideo = await prisma.video.findUnique({
-          where: { vodId: item.video.id },
-          select: { vodClass: true, typeId: true, typeName: true },
-        })
+        // Atomic transaction for safe category merging with validation
+        await prisma.$transaction(async (tx) => {
+          // Read existing video with lock (for category merging)
+          const existing = await tx.video.findUnique({
+            where: { vodId: item.video.id },
+            select: { vodClass: true },
+          })
 
-        let vodClass: string
-        if (existingVideo) {
-          // Merge categories
-          const existingCategories = existingVideo.vodClass
-            ? existingVideo.vodClass.split(',').map(c => c.trim())
-            : [existingVideo.typeName]
+          // Safe category merging with length validation
+          const vodClass = mergeCategories(existing?.vodClass, typeName)
 
-          // Add new category if not already present
-          if (!existingCategories.includes(typeName)) {
-            existingCategories.push(typeName)
-          }
+          const vodEn = finalTitle
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-|-$/g, '')
+            .substring(0, 50)
 
-          vodClass = existingCategories.join(',')
-        } else {
-          // New video - use current category
-          vodClass = typeName
-        }
-
-        // Upsert video to database
-        await prisma.video.upsert({
-          where: {
-            vodId: item.video.id,
-          },
-          update: {
-            vodName: finalTitle,
-            originalTitle: shouldTranslate ? item.cleanTitle : undefined, // Only set if translated
-            typeId: typeId, // UPDATE: Now update category info on rescrape (prevents duplicates with different typeNames)
-            typeName: typeName, // UPDATE: Sync category name to match latest scrape category
-            vodPic: item.video.preview,
-            vodTime: item.publishDate,
-            duration: item.durationSeconds,
-            vodRemarks: `HD ${item.video.duration}`,
-            views: item.views,
-            vodClass: vodClass,
-            vodYear: item.year,
-            // NOTE: Do NOT update vodProvider - preserve existing MacCMS provider name
-            // vodProvider only gets set on create from PornHub API
-            vodLang: 'zh',
-            vodArea: 'CN',
-          },
-          create: {
-            vodId: item.video.id,
-            vodName: finalTitle,
-            originalTitle: shouldTranslate ? item.cleanTitle : undefined, // Save original if translated
-            typeId: typeId,
-            typeName: typeName,
-            vodClass: vodClass,
-            vodEn: finalTitle
-              .toLowerCase()
-              .replace(/[^a-z0-9]+/g, '-')
-              .replace(/^-|-$/g, '')
-              .substring(0, 50),
-            vodTime: item.publishDate,
-            vodRemarks: `HD ${item.video.duration}`,
-            vodPlayFrom: 'dplayer',
-            vodPic: item.video.preview,
-            vodArea: 'CN',
-            vodLang: 'zh',
-            vodYear: item.year,
-            vodActor: normalizeProvider(item.video.provider) || '',
-            vodDirector: '',
-            vodContent: finalTitle,
-            vodPlayUrl: `HD$${baseUrl}/api/watch/${item.video.id}/stream.m3u8?q=720`,
-            vodProvider: normalizeProvider(item.video.provider),
-            views: item.views,
-            duration: item.durationSeconds,
-          },
+          // Atomic upsert
+          await tx.video.upsert({
+            where: { vodId: item.video.id },
+            update: {
+              vodName: finalTitle,
+              originalTitle: shouldTranslate ? item.cleanTitle : undefined,
+              typeId,
+              typeName,
+              vodPic: item.video.preview,
+              vodTime: item.publishDate,
+              duration: item.durationSeconds,
+              vodRemarks: `HD ${item.video.duration}`,
+              views: item.views,
+              vodClass,
+              vodYear: item.year,
+              vodLang: 'zh',
+              vodArea: 'CN',
+            },
+            create: {
+              vodId: item.video.id,
+              vodName: finalTitle,
+              originalTitle: shouldTranslate ? item.cleanTitle : undefined,
+              typeId,
+              typeName,
+              vodClass: typeName,
+              vodEn,
+              vodTime: item.publishDate,
+              vodRemarks: `HD ${item.video.duration}`,
+              vodPlayFrom: 'dplayer',
+              vodPic: item.video.preview,
+              vodArea: 'CN',
+              vodLang: 'zh',
+              vodYear: item.year,
+              vodActor: normalizeProvider(item.video.provider) || '',
+              vodDirector: '',
+              vodContent: finalTitle,
+              vodPlayUrl: `HD$${baseUrl}/api/watch/${item.video.id}/stream.m3u8?q=720`,
+              vodProvider: normalizeProvider(item.video.provider),
+              views: item.views,
+              duration: item.durationSeconds,
+            },
+          })
         })
 
         scrapedCount++
