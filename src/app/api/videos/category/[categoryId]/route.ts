@@ -3,13 +3,6 @@ import { PornHub } from 'pornhub.js'
 import type { VideoListOrdering } from 'pornhub.js'
 import { getRandomProxy } from '@/lib/proxy'
 
-// Initialize PornHub client with proxy (reused across requests for performance)
-const pornhub = new PornHub()
-const proxyInfo = getRandomProxy('Category API')
-if (proxyInfo) {
-  pornhub.setAgent(proxyInfo.agent)
-}
-
 // Custom categories that use search instead of PornHub category IDs
 // Map numeric IDs to category names for search
 // IMPORTANT: PornHub has a bug where uppercase queries don't paginate correctly!
@@ -19,6 +12,50 @@ const CUSTOM_CATEGORIES: Record<number, string> = {
 }
 
 export const revalidate = 7200 // 2 hours
+
+// Helper to fetch with retry logic for soft-blocking (empty data responses)
+async function fetchWithRetry(
+  fetchFn: (pornhub: PornHub) => Promise<{ data: unknown[] }>,
+  maxRetries = 3
+): Promise<{ data: unknown[] }> {
+  let retries = maxRetries
+
+  while (retries > 0) {
+    // Create new PornHub instance with random proxy for this attempt
+    const pornhub = new PornHub()
+    const proxyInfo = getRandomProxy('Category API')
+    if (proxyInfo) {
+      pornhub.setAgent(proxyInfo.agent)
+    }
+
+    try {
+      const result = await fetchFn(pornhub)
+
+      // Check if PornHub is soft-blocking (returning empty data)
+      if (!result.data || result.data.length === 0) {
+        retries--
+        if (retries > 0) {
+          console.warn(`[Category API] Empty data received (soft-block), retrying with different proxy (${maxRetries - retries}/${maxRetries})...`)
+          await new Promise(resolve => setTimeout(resolve, 500))
+          continue
+        }
+      }
+
+      return result
+    } catch (error) {
+      retries--
+      if (retries > 0) {
+        console.warn(`[Category API] Request failed, retrying with different proxy (${maxRetries - retries}/${maxRetries})...`)
+        await new Promise(resolve => setTimeout(resolve, 500))
+        continue
+      }
+      throw error
+    }
+  }
+
+  // Return empty result after all retries exhausted
+  return { data: [] }
+}
 
 export async function GET(
   request: NextRequest,
@@ -70,23 +107,30 @@ export async function GET(
       }
     }
 
-    // Fetch videos from PornHub for this category
-    const result = await pornhub.videoList({
-      filterCategory: categoryId,
-      page,
-      order
-    })
+    // Fetch videos from PornHub with retry logic for soft-blocking
+    const result = await fetchWithRetry(
+      (pornhub) => pornhub.videoList({
+        filterCategory: categoryId,
+        page,
+        order
+      })
+    )
 
     // Get category name from the categories list
     let categoryName = 'Unknown'
     try {
+      // Use a fresh instance for category lookup
+      const pornhub = new PornHub()
+      const proxyInfo = getRandomProxy('Category Lookup')
+      if (proxyInfo) pornhub.setAgent(proxyInfo.agent)
+
       const categories = await pornhub.webMaster.getCategories()
       const category = categories.find(cat => Number(cat.id) === categoryId)
       if (category) {
         categoryName = category.category
       }
     } catch (err) {
-
+      // Ignore category name lookup errors
     }
 
     // Add category info to the response
@@ -121,17 +165,17 @@ async function handleCustomCategory(request: NextRequest, categoryId: number) {
 
     const categoryName = CUSTOM_CATEGORIES[categoryId]
 
-    // Use PornHub search API to find videos
-    const result = await pornhub.searchVideo(categoryName, {
-      page
-    })
+    // Use retry logic for custom categories too
+    const result = await fetchWithRetry(
+      (pornhub) => pornhub.searchVideo(categoryName, { page })
+    )
 
-    // Check if PornHub is rate limiting or returning errors
+    // Check if PornHub is still returning empty after retries
     if (!result.data || result.data.length === 0) {
       return NextResponse.json(
         {
           success: false,
-          error: 'PornHub returned no results - possible rate limiting. Try again in a few seconds.',
+          error: 'PornHub returned no results after retries - possible rate limiting. Try again later.',
           data: [],
           paging: { current: page, maxPage: 1, isEnd: true },
           counting: { from: 0, to: 0, total: 0 },
