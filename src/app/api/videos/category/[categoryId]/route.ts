@@ -7,7 +7,6 @@ import { getRandomProxy } from '@/lib/proxy'
 const pornhub = new PornHub()
 const proxyInfo = getRandomProxy('Category API')
 if (proxyInfo) {
-  console.log(`[Category API] Initializing with proxy: ${proxyInfo.proxyUrl}`)
   pornhub.setAgent(proxyInfo.agent)
 }
 

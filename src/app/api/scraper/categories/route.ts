@@ -114,7 +114,8 @@ export async function POST(request: NextRequest) {
               if (scraperData.success) {
                 categoryScraped += scraperData.scraped
 
-                if (!scraperData.hasMore) {
+                // Stop if no videos were scraped (likely rate limited or no more content)
+                if (scraperData.scraped === 0 || !scraperData.hasMore) {
                   break
                 }
               } else {
@@ -179,7 +180,8 @@ export async function POST(request: NextRequest) {
               categoryScraped += scraperData.scraped
               totalScraped += scraperData.scraped
 
-              if (!scraperData.hasMore) {
+              // Stop if no videos were scraped (likely rate limited or no more content)
+              if (scraperData.scraped === 0 || !scraperData.hasMore) {
                 break
               }
             } else {
