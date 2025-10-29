@@ -61,7 +61,7 @@ echo ""
 echo -e "${GREEN}[2/5]${NC} Analyzing category data issues..."
 echo ""
 
-npm run ts-node -- src/scripts/cleanup-category-duplicates.ts
+npx tsx src/scripts/cleanup-category-duplicates.ts
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -89,13 +89,13 @@ if [ "$DRY_RUN" == "false" ]; then
   echo -e "${GREEN}[4/5]${NC} Running cleanup fix..."
   echo ""
 
-  npm run ts-node -- src/scripts/cleanup-category-duplicates.ts --fix
+  npx tsx src/scripts/cleanup-category-duplicates.ts --fix
 
   echo ""
   echo -e "${GREEN}[5/5]${NC} Applying database migration..."
   echo ""
 
-  npm run migrate
+  npx prisma migrate deploy
 
   echo ""
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -117,6 +117,10 @@ else
   echo "For detailed information, see:"
   echo "  - CATEGORY_CORRUPTION_FIX.md (deployment guide)"
   echo "  - CATEGORY_FIX_SUMMARY.txt (quick reference)"
+  echo ""
+  echo "Or use npm scripts directly:"
+  echo "  npx tsx src/scripts/cleanup-category-duplicates.ts --fix"
+  echo "  npx prisma migrate deploy"
   echo ""
 fi
 

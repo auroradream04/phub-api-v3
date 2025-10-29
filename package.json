@@ -8,6 +8,10 @@
     "start": "next start",
     "lint": "eslint",
     "seed": "tsx prisma/seed.ts",
+    "ts-node": "tsx",
+    "migrate": "prisma migrate deploy",
+    "migrate:rollback": "echo 'Use prisma migrate resolve to rollback'",
+    "generate": "prisma generate",
     "aurora": "git pull && npm install && cd src/lib/pornhub.js && npm run build && cd - && npm run build"
   },
   "prisma": {
