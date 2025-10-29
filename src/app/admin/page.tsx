@@ -57,6 +57,13 @@ export default function AdminDashboard() {
   // Cancel ref
   const cancelRef = useRef(false)
 
+  // Crash recovery scraper states
+  const [recoveryScraping, setRecoveryScraping] = useState(false)
+  const [recoveryCheckpointId, setRecoveryCheckpointId] = useState('')
+  const [recoveryCheckpoint, setRecoveryCheckpoint] = useState<any>(null)
+  const [recoveryLoading, setRecoveryLoading] = useState(false)
+  const [recoveryPages, setRecoveryPages] = useState(5)
+
   // Stats and messages
   const [stats, setStats] = useState<{
     totalVideos: number
@@ -269,6 +276,105 @@ export default function AdminDashboard() {
     }
   }
 
+  // Crash recovery scraper
+  const startRecoveryScraper = async () => {
+    try {
+      setRecoveryScraping(true)
+      setMessage('Starting crash-recovery scraper...')
+
+      const res = await fetch('/api/scraper/categories-with-recovery', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pagesPerCategory: recoveryPages,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (data.success) {
+        setRecoveryCheckpointId(data.checkpointId)
+        setMessage(`✓ Scraper started! Checkpoint ID: ${data.checkpointId}`)
+        setCategoryProgress(`Scraping in progress. You can monitor or close this page.`)
+
+        // Auto-refresh checkpoint status
+        const interval = setInterval(async () => {
+          const checkRes = await fetch(`/api/scraper/categories-with-recovery?checkpointId=${data.checkpointId}`)
+          const checkData = await checkRes.json()
+          if (checkData.success) {
+            setRecoveryCheckpoint(checkData.checkpoint)
+          }
+        }, 10000) // Refresh every 10 seconds
+
+        return interval
+      } else {
+        setMessage(`✗ Failed to start scraper: ${data.message}`)
+      }
+    } catch (error) {
+      setMessage(`✗ Error starting scraper: ${error}`)
+    } finally {
+      setRecoveryScraping(false)
+    }
+  }
+
+  const resumeFromCheckpoint = async () => {
+    if (!recoveryCheckpointId.trim()) {
+      setMessage('❌ Please enter a checkpoint ID')
+      return
+    }
+
+    try {
+      setRecoveryScraping(true)
+      setMessage(`Resuming from checkpoint ${recoveryCheckpointId}...`)
+
+      const res = await fetch('/api/scraper/categories-with-recovery', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pagesPerCategory: recoveryPages,
+          resumeCheckpointId: recoveryCheckpointId,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (data.success) {
+        setMessage(`✓ Scraper resumed! Checkpoint ID: ${data.checkpointId}`)
+        setCategoryProgress(`Scraping in progress. You can monitor or close this page.`)
+      } else {
+        setMessage(`✗ Failed to resume: ${data.message}`)
+      }
+    } catch (error) {
+      setMessage(`✗ Error resuming scraper: ${error}`)
+    } finally {
+      setRecoveryScraping(false)
+    }
+  }
+
+  const checkCheckpointStatus = async () => {
+    if (!recoveryCheckpointId.trim()) {
+      setMessage('❌ Please enter a checkpoint ID')
+      return
+    }
+
+    try {
+      setRecoveryLoading(true)
+      const res = await fetch(`/api/scraper/categories-with-recovery?checkpointId=${recoveryCheckpointId}`)
+      const data = await res.json()
+
+      if (data.success) {
+        setRecoveryCheckpoint(data.checkpoint)
+        setMessage(`✓ Checkpoint found - Status: ${data.checkpoint.status}`)
+      } else {
+        setMessage(`✗ Checkpoint not found`)
+      }
+    } catch (error) {
+      setMessage(`✗ Error checking checkpoint: ${error}`)
+    } finally {
+      setRecoveryLoading(false)
+    }
+  }
+
   const clearVideos = async () => {
     if (!confirm('Are you sure you want to delete all videos?')) return
 
@@ -417,6 +523,100 @@ export default function AdminDashboard() {
               </button>
             )}
           </div>
+        </div>
+
+        {/* Crash Recovery Scraper */}
+        <div className="bg-muted/50 border border-border rounded-lg p-4 mb-4">
+          <h4 className="font-semibold text-foreground mb-3">
+            Crash-Recovery Scraper (Recommended)
+          </h4>
+          <p className="text-sm text-muted-foreground mb-4">
+            Scrapes all categories with automatic crash recovery. If it crashes, you can resume from the exact point it left off!
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Pages per Category
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="100"
+                value={recoveryPages}
+                onChange={(e) => setRecoveryPages(parseInt(e.target.value) || 5)}
+                disabled={recoveryScraping}
+                className="w-full px-4 py-2 border border-border bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                placeholder="5"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Checkpoint ID (to resume)
+              </label>
+              <input
+                type="text"
+                value={recoveryCheckpointId}
+                onChange={(e) => setRecoveryCheckpointId(e.target.value)}
+                disabled={recoveryScraping}
+                className="w-full px-4 py-2 border border-border bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                placeholder="scrape_xxx_xxx"
+              />
+            </div>
+
+            <div className="flex items-end gap-2">
+              <button
+                onClick={checkCheckpointStatus}
+                disabled={recoveryScraping || !recoveryCheckpointId}
+                className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+              >
+                {recoveryLoading ? 'Checking...' : 'Check Status'}
+              </button>
+            </div>
+          </div>
+
+          <div className="flex gap-3 flex-wrap">
+            <button
+              onClick={startRecoveryScraper}
+              disabled={recoveryScraping}
+              className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+            >
+              {recoveryScraping ? 'Starting...' : 'Start New Scrape'}
+            </button>
+
+            <button
+              onClick={resumeFromCheckpoint}
+              disabled={recoveryScraping || !recoveryCheckpointId}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+            >
+              {recoveryScraping ? 'Resuming...' : 'Resume from Checkpoint'}
+            </button>
+          </div>
+
+          {recoveryCheckpoint && (
+            <div className="mt-4 p-4 bg-card rounded-lg border border-border">
+              <h5 className="font-semibold text-foreground mb-2">Checkpoint Status</h5>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Status:</span>
+                  <p className="font-medium text-foreground capitalize">{recoveryCheckpoint.status}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Videos Scraped:</span>
+                  <p className="font-medium text-foreground">{recoveryCheckpoint.totalVideosScraped}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Errors:</span>
+                  <p className="font-medium text-foreground">{recoveryCheckpoint.totalVideosFailed}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Categories:</span>
+                  <p className="font-medium text-foreground">{recoveryCheckpoint.categories.length}</p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Enhanced Progress Display */}
