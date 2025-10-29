@@ -148,6 +148,12 @@ model Video {
   vodProvider   String?  @db.VarChar(100) // Video provider/platform name for recommendations
   views         Int      @default(0)
   duration      Int? // Duration in seconds
+
+  // Translation tracking fields
+  needsTranslation     Boolean   @default(false) // Flag for videos that need translation retry
+  translationFailedAt  DateTime? // Timestamp of last translation failure
+  translationRetryCount Int      @default(0) // Number of translation retry attempts
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -155,6 +161,7 @@ model Video {
   @@index([vodTime])
   @@index([views])
   @@index([vodProvider]) // Index for provider-based queries
+  @@index([needsTranslation]) // Index for bulk retry operations
 }
 
 // Domain access control - whitelist/blacklist management

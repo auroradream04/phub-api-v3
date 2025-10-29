@@ -162,16 +162,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Phase 2: Batch translate all titles if enabled
-    let translatedTitles: string[] = []
+    let translationResults: Array<{ text: string; success: boolean; wasCached: boolean }> = []
     if (shouldTranslate && videosToProcess.length > 0) {
       const titlesToTranslate = videosToProcess.map(v => v.cleanTitle)
-      translatedTitles = await translateBatch(titlesToTranslate)
+      translationResults = await translateBatch(titlesToTranslate)
     }
 
     // Phase 3: Save to database
     for (let i = 0; i < videosToProcess.length; i++) {
       const item = videosToProcess[i]!
-      const finalTitle = shouldTranslate ? translatedTitles[i]! : item.cleanTitle
+      const translationResult = shouldTranslate ? translationResults[i]! : null
+      const finalTitle = translationResult ? translationResult.text : item.cleanTitle
+      const translationFailed = translationResult ? !translationResult.success : false
 
       try {
 
@@ -228,6 +230,10 @@ export async function POST(request: NextRequest) {
               vodYear: item.year,
               vodLang: 'zh',
               vodArea: 'CN',
+              // Translation tracking
+              needsTranslation: translationFailed,
+              translationFailedAt: translationFailed ? new Date() : null,
+              translationRetryCount: translationFailed ? 0 : undefined, // Reset on new failure
             },
             create: {
               vodId: item.video.id,
@@ -251,6 +257,10 @@ export async function POST(request: NextRequest) {
               vodProvider: normalizeProvider(item.video.provider),
               views: item.views,
               duration: item.durationSeconds,
+              // Translation tracking
+              needsTranslation: translationFailed,
+              translationFailedAt: translationFailed ? new Date() : null,
+              translationRetryCount: 0,
             },
           })
         })

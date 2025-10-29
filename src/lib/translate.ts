@@ -45,20 +45,29 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, timeoutErr
 }
 
 /**
+ * Translation result with success status
+ */
+export interface TranslationResult {
+  text: string
+  success: boolean
+  wasCached: boolean
+}
+
+/**
  * Translate text to Chinese (Simplified)
  * Uses in-memory cache and rotating proxies with retry logic to avoid rate limits
  * Each translation attempt has a 5-second timeout
  */
-export async function translateToZhCN(text: string): Promise<string> {
+export async function translateToZhCN(text: string): Promise<TranslationResult> {
   // If already Chinese, return as-is
   if (isChinese(text)) {
-    return text
+    return { text, success: true, wasCached: false }
   }
 
   // Check cache first
   const cacheKey = `zh-cn:${text}`
   if (translationCache.has(cacheKey)) {
-    return translationCache.get(cacheKey)!
+    return { text: translationCache.get(cacheKey)!, success: true, wasCached: true }
   }
 
   // Retry up to 3 times with different proxies
@@ -80,7 +89,7 @@ export async function translateToZhCN(text: string): Promise<string> {
         )
         const translated = result.text
         translationCache.set(cacheKey, translated)
-        return translated
+        return { text: translated, success: true, wasCached: false }
       }
 
       // Translate with proxy and timeout
@@ -100,7 +109,7 @@ export async function translateToZhCN(text: string): Promise<string> {
       translationCache.set(cacheKey, translated)
 
       console.log(`[Translation] (${proxyInfo.proxyUrl}) "${text.substring(0, 50)}${text.length > 50 ? '...' : ''}" → "${translated.substring(0, 50)}${translated.length > 50 ? '...' : ''}"`)
-      return translated
+      return { text: translated, success: true, wasCached: false }
 
     } catch (error) {
       retries--
@@ -121,26 +130,26 @@ export async function translateToZhCN(text: string): Promise<string> {
         continue
       }
 
-      // If no retries left or different error, return original
+      // If no retries left or different error, return original with failure flag
       if (retries === 0) {
         console.error(`[Translation] Failed after ${MAX_RETRIES} retries:`, errorMessage)
       } else {
         console.error('[Translation] Failed to translate:', errorMessage)
       }
 
-      return text
+      return { text, success: false, wasCached: false }
     }
   }
 
   // Fallback (should never reach here)
-  return text
+  return { text, success: false, wasCached: false }
 }
 
 /**
  * Translate multiple texts in parallel using proxy rotation
  * Each request uses a different proxy to avoid rate limiting
  */
-export async function translateBatch(texts: string[]): Promise<string[]> {
+export async function translateBatch(texts: string[]): Promise<TranslationResult[]> {
   console.log(`[Translation] Starting parallel translation of ${texts.length} texts with proxy rotation...`)
 
   try {
@@ -149,14 +158,17 @@ export async function translateBatch(texts: string[]): Promise<string[]> {
       texts.map(text => translateToZhCN(text))
     )
 
-    const translatedCount = results.filter((r, i) => r !== texts[i]).length
-    console.log(`[Translation] ✓ Batch complete: ${translatedCount}/${texts.length} translated (${texts.length - translatedCount} already Chinese or cached)`)
+    const successCount = results.filter(r => r.success && !r.wasCached).length
+    const failedCount = results.filter(r => !r.success).length
+    const cachedCount = results.filter(r => r.wasCached).length
+
+    console.log(`[Translation] ✓ Batch complete: ${successCount}/${texts.length} translated, ${failedCount} failed, ${cachedCount} cached`)
 
     return results
   } catch (error) {
     console.error(`[Translation] Batch failed:`, error)
-    // Return originals if entire batch fails
-    return texts
+    // Return originals with failure flags if entire batch fails
+    return texts.map(text => ({ text, success: false, wasCached: false }))
   }
 }
 

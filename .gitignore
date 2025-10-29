@@ -51,3 +51,7 @@ next-env.d.ts
 
 # preview downloads
 /data
+
+# database exports
+/exports
+*.sql
