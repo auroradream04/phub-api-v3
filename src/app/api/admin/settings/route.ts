@@ -14,9 +14,32 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const settings = await prisma.siteSetting.findMany({
+    let settings = await prisma.siteSetting.findMany({
       orderBy: { key: 'asc' }
     })
+
+    // If no settings exist, create defaults
+    if (settings.length === 0) {
+      const defaultSettings = [
+        { key: 'cors_proxy_enabled', value: 'true' },
+        { key: 'cors_proxy_url', value: 'https://cors.freechatnow.net/' },
+        { key: 'ads_script_url', value: 'https://hcdream.com/berlin/ads/script.js' },
+        { key: 'auto_translate_titles', value: 'true' },
+        { key: 'scraper_min_duration', value: '60' },
+        { key: 'scraper_min_views', value: '10000' },
+        { key: 'segments_to_skip', value: '3' },
+      ]
+
+      await Promise.all(
+        defaultSettings.map(setting =>
+          prisma.siteSetting.create({ data: setting })
+        )
+      )
+
+      settings = await prisma.siteSetting.findMany({
+        orderBy: { key: 'asc' }
+      })
+    }
 
     return NextResponse.json(settings)
   } catch (error) {
