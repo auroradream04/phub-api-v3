@@ -13,12 +13,18 @@ async function withProxyRetry<T>(fn: (pornhub: PornHub) => Promise<T>, maxRetrie
       const proxyInfo = getRandomProxy('Category API')
 
       if (proxyInfo) {
+        console.log(`[Proxy Retry] Attempt ${attempt + 1}/${maxRetries} using proxy: ${proxyInfo.proxyUrl}`)
         pornhub.setAgent(proxyInfo.agent)
+      } else {
+        console.log(`[Proxy Retry] Attempt ${attempt + 1}/${maxRetries} - NO PROXY AVAILABLE`)
       }
 
-      return await fn(pornhub)
+      const result = await fn(pornhub)
+      console.log(`[Proxy Retry] Attempt ${attempt + 1} SUCCESS`)
+      return result
     } catch (error) {
       lastError = error instanceof Error ? error : new Error('Unknown error')
+      console.log(`[Proxy Retry] Attempt ${attempt + 1} FAILED: ${lastError.message}`)
       // Wait before retry (exponential backoff)
       if (attempt < maxRetries - 1) {
         await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)))
