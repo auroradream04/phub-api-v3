@@ -3,36 +3,11 @@ import { PornHub } from 'pornhub.js'
 import type { VideoListOrdering } from 'pornhub.js'
 import { getRandomProxy } from '@/lib/proxy'
 
-// Helper to execute PornHub API calls with retry logic and proxy rotation
-async function withProxyRetry<T>(fn: (pornhub: PornHub) => Promise<T>, maxRetries = 3): Promise<T> {
-  let lastError: Error | null = null
-
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    try {
-      const pornhub = new PornHub()
-      const proxyInfo = getRandomProxy('Category API')
-
-      if (proxyInfo) {
-        console.log(`[Proxy Retry] Attempt ${attempt + 1}/${maxRetries} using proxy: ${proxyInfo.proxyUrl}`)
-        pornhub.setAgent(proxyInfo.agent)
-      } else {
-        console.log(`[Proxy Retry] Attempt ${attempt + 1}/${maxRetries} - NO PROXY AVAILABLE`)
-      }
-
-      const result = await fn(pornhub)
-      console.log(`[Proxy Retry] Attempt ${attempt + 1} SUCCESS`)
-      return result
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error('Unknown error')
-      console.log(`[Proxy Retry] Attempt ${attempt + 1} FAILED: ${lastError.message}`)
-      // Wait before retry (exponential backoff)
-      if (attempt < maxRetries - 1) {
-        await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)))
-      }
-    }
-  }
-
-  throw lastError || new Error('Failed after retries')
+// Initialize PornHub client with proxy (reused across requests for performance)
+const pornhub = new PornHub()
+const proxyInfo = getRandomProxy('Category API')
+if (proxyInfo) {
+  pornhub.setAgent(proxyInfo.agent)
 }
 
 // Custom categories that use search instead of PornHub category IDs
@@ -95,21 +70,17 @@ export async function GET(
       }
     }
 
-    // Fetch videos from PornHub for this category with retry logic
-    const result = await withProxyRetry(async (pornhub) => {
-      return await pornhub.videoList({
-        filterCategory: categoryId,
-        page,
-        order
-      })
+    // Fetch videos from PornHub for this category
+    const result = await pornhub.videoList({
+      filterCategory: categoryId,
+      page,
+      order
     })
 
     // Get category name from the categories list
     let categoryName = 'Unknown'
     try {
-      const categories = await withProxyRetry(async (pornhub) => {
-        return await pornhub.webMaster.getCategories()
-      })
+      const categories = await pornhub.webMaster.getCategories()
       const category = categories.find(cat => Number(cat.id) === categoryId)
       if (category) {
         categoryName = category.category
@@ -150,11 +121,9 @@ async function handleCustomCategory(request: NextRequest, categoryId: number) {
 
     const categoryName = CUSTOM_CATEGORIES[categoryId]
 
-    // Use PornHub search API to find videos with retry logic
-    const result = await withProxyRetry(async (pornhub) => {
-      return await pornhub.searchVideo(categoryName, {
-        page
-      })
+    // Use PornHub search API to find videos
+    const result = await pornhub.searchVideo(categoryName, {
+      page
     })
 
     // Check if PornHub is rate limiting or returning errors
