@@ -1,16 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { isTranslationEnabled, translateBatch } from '@/lib/translate'
-import {
-  parseViews,
-  parseDuration,
-  mergeCategories,
-  updateVideoWithCategoryMerge,
-  CircuitBreaker,
-  createScraperCheckpoint,
-  updateScraperCheckpoint,
-  getScraperCheckpoint,
-} from '@/lib/scraper-utils'
+import { parseViews, parseDuration, mergeCategories } from '@/lib/scraper-utils'
 
 export const revalidate = 7200 // 2 hours
 
