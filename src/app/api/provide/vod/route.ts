@@ -146,7 +146,10 @@ async function getCategories(): Promise<MaccmsClass[]> {
     by: ['typeId', 'typeName'],
     _count: { id: true },
     where: {
-      typeName: { not: '' }
+      typeName: {
+        not: '',
+        notIn: ['Unknown', 'unknown', 'UNKNOWN']
+      }
     },
     orderBy: {
       typeId: 'asc'
