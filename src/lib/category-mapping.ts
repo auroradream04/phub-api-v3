@@ -196,11 +196,35 @@ export const CATEGORY_MAPPING: Record<string, string> = {
 
 /**
  * Category consolidation rules for MACCMS
- * Maps specific categories to broader ones to reduce clutter
+ * Maps specific categories to exactly 26 target categories
  *
- * SPECIAL CATEGORIES (NEVER CONSOLIDATE):
- * - japanese: Keep separate (custom category)
- * - chinese: Keep separate (custom category)
+ * TARGET CATEGORIES (26):
+ * 1. asian - 亚洲
+ * 2. threesome - 三人行
+ * 3. amateur - 业余
+ * 4. bbw - 大码美女
+ * 5. blonde - 金发女
+ * 6. fetish - 恋物癖
+ * 7. hardcore - 劲爆重口味
+ * 8. cumshot - 射精
+ * 9. interracial - 异族
+ * 10. masturbation - 自慰
+ * 11. toys - 玩具
+ * 12. lesbian - 女同性恋
+ * 13. mature - 成熟
+ * 14. hentai - 动漫
+ * 15. college-18 - 大学生
+ * 16. hd-porn - 高清
+ * 17. gay - 同性恋
+ * 18. pov - 第一视角
+ * 19. euro - 欧洲
+ * 20. cosplay - 角色扮演
+ * 21. transgender - 跨性别
+ * 22. latina - 拉丁
+ * 23. vr - 虚拟现实
+ * 24. japanese - 日本 (NEVER CONSOLIDATE)
+ * 25. verified-amateurs - 认证业余
+ * 26. chinese - 中文 (NEVER CONSOLIDATE)
  */
 export const CATEGORY_CONSOLIDATION: Record<string, string> = {
   // === ALL GAY VARIANTS → gay ===
@@ -263,6 +287,7 @@ export const CATEGORY_CONSOLIDATION: Record<string, string> = {
   // === SEX ACTS → hardcore ===
   'anal': 'hardcore',
   'blowjob': 'hardcore',
+  'deepthroat': 'hardcore',
   'handjob': 'hardcore',
   'fingering': 'hardcore',
   'pussy-licking': 'hardcore',
@@ -290,6 +315,7 @@ export const CATEGORY_CONSOLIDATION: Record<string, string> = {
 
   // === QUALITY/FORMAT → hd-porn ===
   '60fps-1': 'hd-porn',
+  '2d': 'hd-porn',
   '3d': 'hd-porn',
   'uncensored': 'hd-porn',
   'uncensored-1': 'hd-porn',
@@ -315,14 +341,15 @@ export const CATEGORY_CONSOLIDATION: Record<string, string> = {
   // === SOLO → masturbation ===
   'solo-female': 'masturbation',
   'solo-male': 'masturbation',
+  'female-orgasm': 'masturbation',
 
-  // === REGIONAL → asian ===
+  // === REGIONAL/ASIAN → asian (EXCEPT japanese/chinese) ===
   'korean': 'asian',
   'indian': 'asian',
+  'arab': 'asian',
   // NOTE: japanese and chinese are EXCLUDED - they stay separate!
 
-  'arab': 'asian',
-  'brazilian': 'latina',
+  // === EUROPEAN → euro ===
   'french': 'euro',
   'german': 'euro',
   'british': 'euro',
@@ -330,9 +357,11 @@ export const CATEGORY_CONSOLIDATION: Record<string, string> = {
   'russian': 'euro',
   'czech': 'euro',
 
+  // === LATIN AMERICAN → latina ===
+  'brazilian': 'latina',
+
   // === ETHNICITY → interracial ===
   'ebony': 'interracial',
-  'latina': 'interracial',
 
   // === KINK/FETISH → fetish ===
   'bondage': 'fetish',
@@ -347,6 +376,20 @@ export const CATEGORY_CONSOLIDATION: Record<string, string> = {
   'webcam': 'amateur',
   'party': 'amateur',
   'public': 'amateur',
+  'big-dick': 'amateur',
+  'pornstar': 'amateur',
+  'celebrity': 'amateur',
+  'compilation': 'amateur',
+  'striptease': 'amateur',
+  'massage': 'amateur',
+  'vintage': 'amateur',
+  'romantic': 'amateur',
+  'popular-with-women': 'amateur',
+  'bisexual-male': 'amateur',
+  'muscular-men': 'amateur',
+  'tattooed-men': 'amateur',
+  'tattooed-women': 'amateur',
+  'unknown': 'amateur',
 
   // === ENTERTAINMENT → hentai ===
   'cartoon': 'hentai',
@@ -368,23 +411,8 @@ export const CATEGORY_CONSOLIDATION: Record<string, string> = {
   'fmm': 'threesome',
   'orgy': 'threesome',
 
-  // === OTHER ===
-  'big-dick': 'amateur',
-  'pornstar': 'amateur',
-  'celebrity': 'amateur',
-  'compilation': 'amateur',
-  'striptease': 'amateur',
-  'massage': 'amateur',
-  'vintage': 'amateur',
-  'romantic': 'amateur',
-  'popular-with-women': 'amateur',
-  'bisexual-male': 'amateur',
-  'female-orgasm': 'masturbation',
+  // === LESBIAN → lesbian ===
   'scissoring': 'lesbian',
-  'muscular-men': 'amateur',
-  'tattooed-men': 'amateur',
-  'tattooed-women': 'amateur',
-  'unknown': 'amateur',
 }
 
 /**
