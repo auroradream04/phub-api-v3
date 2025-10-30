@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Search, MessageCircle } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { getCategoryChineseName } from '@/lib/category-mapping'
 import {
   Table,
@@ -196,11 +196,13 @@ export default function HomeClient({ initialVideos, initialStats, allCategories 
               href={telegramLink}
               target="_blank"
               rel="noopener noreferrer"
-              className="block group relative"
+              className="block group relative cursor-pointer"
             >
-              <div className="absolute inset-0 bg-[#0088cc]/20 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              <button className="relative w-full h-14 bg-[#0088cc] hover:bg-[#0077b5] text-white font-bold rounded-lg transition-all duration-200 flex items-center justify-center gap-3 shadow-md hover:shadow-lg">
-                <MessageCircle className="w-5 h-5" />
+              <div className="absolute inset-0 bg-[#2AABEE]/20 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <button className="relative w-full h-14 bg-[#2AABEE] hover:bg-[#229ED9] text-white font-bold rounded-lg transition-all duration-200 flex items-center justify-center gap-3 shadow-md hover:shadow-lg">
+                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295-.002 0-.003 0-.005 0l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.64-.203-.658-.64.135-.954l11.566-4.458c.538-.196 1.006.128.832.941z"/>
+                </svg>
                 <span className="text-base">立即加入 Telegram 群组</span>
               </button>
             </a>
