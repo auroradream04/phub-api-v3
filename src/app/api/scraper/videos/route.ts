@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { isTranslationEnabled, translateBatch } from '@/lib/translate'
 import { parseViews, parseDuration, mergeCategories } from '@/lib/scraper-utils'
+import { getCategoryChineseName } from '@/lib/category-mapping'
 
 export const revalidate = 7200 // 2 hours
 
@@ -46,6 +47,9 @@ export async function POST(request: NextRequest) {
   try {
     const { page = 1, categoryId, categoryName } = await request.json()
     console.log(`[Scraper Videos] Processing: categoryId=${categoryId}, categoryName=${categoryName}, page=${page}`)
+
+    // Track unmapped categories for this scraping session
+    const unmappedCategories = new Set<string>()
 
     const baseUrl = process.env.NEXTAUTH_URL || 'http://md8av.com'
 
@@ -185,11 +189,27 @@ export async function POST(request: NextRequest) {
           // Use the category we're scraping from
           typeId = currentCategory.id
           typeName = currentCategory.name
+
+          // Check if this category has a mapping
+          const mapped = getCategoryChineseName(typeName)
+          if (mapped === typeName) {
+            // No mapping exists
+            unmappedCategories.add(typeName)
+            console.warn(`[UNMAPPED CATEGORY] "${typeName}" - Add to CATEGORY_MAPPING in src/lib/category-mapping.ts`)
+          }
         } else if (item.video.categories && item.video.categories.length > 0) {
           // Use the first category from video metadata (if available from API)
           const firstCat = item.video.categories[0]
           typeId = typeof firstCat === 'object' ? firstCat.id : 1
           typeName = typeof firstCat === 'object' ? firstCat.name : firstCat
+
+          // Check if this category has a mapping
+          const mapped = getCategoryChineseName(typeName)
+          if (mapped === typeName) {
+            // No mapping exists
+            unmappedCategories.add(typeName)
+            console.warn(`[UNMAPPED CATEGORY] "${typeName}" - Add to CATEGORY_MAPPING in src/lib/category-mapping.ts`)
+          }
         } else {
           // Fallback to a default category
           typeId = 1
@@ -277,6 +297,11 @@ export async function POST(request: NextRequest) {
       ? ` (${skippedCount} filtered)`
       : ''
 
+    // Log summary of unmapped categories if any were found
+    if (unmappedCategories.size > 0) {
+      console.warn(`[SCRAPER] Found ${unmappedCategories.size} unmapped categories:`, Array.from(unmappedCategories))
+    }
+
     return NextResponse.json({
       success: true,
       message: currentCategory
@@ -293,6 +318,7 @@ export async function POST(request: NextRequest) {
       hasMore,
       category: currentCategory,
       totalVideos: await prisma.video.count(),
+      unmappedCategories: unmappedCategories.size > 0 ? Array.from(unmappedCategories) : undefined,
     }, { status: 200 })
 
   } catch (error) {
