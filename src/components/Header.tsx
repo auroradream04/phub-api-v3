@@ -56,7 +56,7 @@ export function Header() {
 
         {/* Telegram Link */}
         <Link
-          href="https://t.me/your_channel"
+          href={process.env.NEXT_PUBLIC_TELEGRAM_LINK || 'https://t.me/your_channel'}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center justify-center w-8 h-8 rounded-full bg-[#0088cc] hover:opacity-80 transition-opacity"

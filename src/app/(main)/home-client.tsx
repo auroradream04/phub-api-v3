@@ -123,7 +123,9 @@ export default function HomeClient({ initialVideos, initialStats, allCategories 
             <div className="flex items-center gap-2 mb-3">
               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">资源接口</span>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+
+            {/* API Links - 2 column grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
               {/* XML API Link */}
               <div className="group relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-accent/20 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -187,31 +189,21 @@ export default function HomeClient({ initialVideos, initialStats, allCategories 
                   </a>
                 </div>
               </div>
-
-              {/* Telegram Link */}
-              <div className="group relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-violet-500/20 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <div className="relative bg-card border-2 border-border/50 rounded-lg p-4 hover:border-purple-500/50 transition-all h-full">
-                  <div className="flex items-center justify-between gap-3 mb-2">
-                    <div className="flex items-center gap-2">
-                      <div className="px-2 py-1 bg-gradient-to-r from-purple-600 to-violet-600 text-white text-xs font-bold rounded">
-                        Telegram
-                      </div>
-                      <span className="text-sm font-medium text-foreground">加入群组</span>
-                    </div>
-                    <MessageCircle className="w-4 h-4 text-purple-600" />
-                  </div>
-                  <a
-                    href={telegramLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-muted-foreground hover:text-purple-600 transition-colors break-all font-mono flex items-center gap-2"
-                  >
-                    <span>点击加入 Telegram 群组</span>
-                  </a>
-                </div>
-              </div>
             </div>
+
+            {/* Telegram Button - Full width */}
+            <a
+              href={telegramLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block group relative"
+            >
+              <div className="absolute inset-0 bg-[#0088cc]/20 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <button className="relative w-full h-14 bg-[#0088cc] hover:bg-[#0077b5] text-white font-bold rounded-lg transition-all duration-200 flex items-center justify-center gap-3 shadow-md hover:shadow-lg">
+                <MessageCircle className="w-5 h-5" />
+                <span className="text-base">立即加入 Telegram 群组</span>
+              </button>
+            </a>
           </div>
 
           {/* Search Bar */}
