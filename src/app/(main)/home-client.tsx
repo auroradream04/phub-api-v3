@@ -115,6 +115,78 @@ export default function HomeClient({ initialVideos, initialStats, allCategories 
             </p>
           </div>
 
+          {/* API Endpoints */}
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">资源接口</span>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3">
+              {/* XML API Link */}
+              <div className="flex-1 group relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-accent/20 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div className="relative bg-card border-2 border-border/50 rounded-lg p-4 hover:border-primary/50 transition-all">
+                  <div className="flex items-center justify-between gap-3 mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="px-2 py-1 bg-gradient-to-r from-blue-600 to-blue-500 text-white text-xs font-bold rounded">
+                        XML
+                      </div>
+                      <span className="text-sm font-medium text-foreground">XML 接口</span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText('/api/provide/vod?ac=list&at=xml')
+                        // Optional: Add toast notification here
+                      }}
+                      className="px-3 py-1 bg-muted hover:bg-primary hover:text-primary-foreground text-xs font-medium rounded transition-colors"
+                    >
+                      复制
+                    </button>
+                  </div>
+                  <a
+                    href="/api/provide/vod?ac=list&at=xml"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-muted-foreground hover:text-primary transition-colors break-all font-mono"
+                  >
+                    /api/provide/vod?ac=list&at=xml
+                  </a>
+                </div>
+              </div>
+
+              {/* JSON API Link */}
+              <div className="flex-1 group relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-accent/20 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div className="relative bg-card border-2 border-border/50 rounded-lg p-4 hover:border-primary/50 transition-all">
+                  <div className="flex items-center justify-between gap-3 mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="px-2 py-1 bg-gradient-to-r from-green-600 to-green-500 text-white text-xs font-bold rounded">
+                        JSON
+                      </div>
+                      <span className="text-sm font-medium text-foreground">JSON 接口</span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText('/api/provide/vod?ac=list')
+                        // Optional: Add toast notification here
+                      }}
+                      className="px-3 py-1 bg-muted hover:bg-primary hover:text-primary-foreground text-xs font-medium rounded transition-colors"
+                    >
+                      复制
+                    </button>
+                  </div>
+                  <a
+                    href="/api/provide/vod?ac=list"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-muted-foreground hover:text-primary transition-colors break-all font-mono"
+                  >
+                    /api/provide/vod?ac=list
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Search Bar */}
           <form onSubmit={handleSearch}>
             <div className="relative">
