@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Search } from 'lucide-react'
+import { Search, MessageCircle } from 'lucide-react'
 import { getCategoryChineseName } from '@/lib/category-mapping'
 import {
   Table,
@@ -38,6 +38,9 @@ export default function HomeClient({ initialVideos, initialStats, allCategories 
   const [featuredVideos, setFeaturedVideos] = useState<Video[]>(initialVideos)
   const [loading, setLoading] = useState(false)
   const [hasMore, setHasMore] = useState(true)
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || ''
+  const telegramLink = process.env.NEXT_PUBLIC_TELEGRAM_LINK || 'https://t.me/your_group'
 
   const handleCategoryChange = async (category: string | null) => {
     setSelectedCategory(category)
@@ -120,9 +123,9 @@ export default function HomeClient({ initialVideos, initialStats, allCategories 
             <div className="flex items-center gap-2 mb-3">
               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">资源接口</span>
             </div>
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {/* XML API Link */}
-              <div className="flex-1 group relative">
+              <div className="group relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-accent/20 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 <div className="relative bg-card border-2 border-border/50 rounded-lg p-4 hover:border-primary/50 transition-all">
                   <div className="flex items-center justify-between gap-3 mb-2">
@@ -134,7 +137,7 @@ export default function HomeClient({ initialVideos, initialStats, allCategories 
                     </div>
                     <button
                       onClick={() => {
-                        navigator.clipboard.writeText('/api/provide/vod?ac=list&at=xml')
+                        navigator.clipboard.writeText(`${appUrl}/api/provide/vod?ac=list&at=xml`)
                         // Optional: Add toast notification here
                       }}
                       className="px-3 py-1 bg-muted hover:bg-primary hover:text-primary-foreground text-xs font-medium rounded transition-colors"
@@ -143,18 +146,18 @@ export default function HomeClient({ initialVideos, initialStats, allCategories 
                     </button>
                   </div>
                   <a
-                    href="/api/provide/vod?ac=list&at=xml"
+                    href={`${appUrl}/api/provide/vod?ac=list&at=xml`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-xs text-muted-foreground hover:text-primary transition-colors break-all font-mono"
                   >
-                    /api/provide/vod?ac=list&at=xml
+                    {appUrl}/api/provide/vod?ac=list&at=xml
                   </a>
                 </div>
               </div>
 
               {/* JSON API Link */}
-              <div className="flex-1 group relative">
+              <div className="group relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-accent/20 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 <div className="relative bg-card border-2 border-border/50 rounded-lg p-4 hover:border-primary/50 transition-all">
                   <div className="flex items-center justify-between gap-3 mb-2">
@@ -166,7 +169,7 @@ export default function HomeClient({ initialVideos, initialStats, allCategories 
                     </div>
                     <button
                       onClick={() => {
-                        navigator.clipboard.writeText('/api/provide/vod?ac=list')
+                        navigator.clipboard.writeText(`${appUrl}/api/provide/vod?ac=list`)
                         // Optional: Add toast notification here
                       }}
                       className="px-3 py-1 bg-muted hover:bg-primary hover:text-primary-foreground text-xs font-medium rounded transition-colors"
@@ -175,12 +178,36 @@ export default function HomeClient({ initialVideos, initialStats, allCategories 
                     </button>
                   </div>
                   <a
-                    href="/api/provide/vod?ac=list"
+                    href={`${appUrl}/api/provide/vod?ac=list`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-xs text-muted-foreground hover:text-primary transition-colors break-all font-mono"
                   >
-                    /api/provide/vod?ac=list
+                    {appUrl}/api/provide/vod?ac=list
+                  </a>
+                </div>
+              </div>
+
+              {/* Telegram Link */}
+              <div className="group relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-violet-500/20 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div className="relative bg-card border-2 border-border/50 rounded-lg p-4 hover:border-purple-500/50 transition-all h-full">
+                  <div className="flex items-center justify-between gap-3 mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="px-2 py-1 bg-gradient-to-r from-purple-600 to-violet-600 text-white text-xs font-bold rounded">
+                        Telegram
+                      </div>
+                      <span className="text-sm font-medium text-foreground">加入群组</span>
+                    </div>
+                    <MessageCircle className="w-4 h-4 text-purple-600" />
+                  </div>
+                  <a
+                    href={telegramLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-muted-foreground hover:text-purple-600 transition-colors break-all font-mono flex items-center gap-2"
+                  >
+                    <span>点击加入 Telegram 群组</span>
                   </a>
                 </div>
               </div>
