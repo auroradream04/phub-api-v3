@@ -27,15 +27,6 @@ const nextConfig: NextConfig = {
         source: '/api/watch/:id/stream.m3u8',
         destination: '/api/watch/:id/stream',
       },
-      // MacCMS API rewrites
-      {
-        source: '/api.php/provide/vod/at/xml',
-        destination: '/api/maccms/api.php/provide/vod/at/xml',
-      },
-      {
-        source: '/api.php/provide/vod',
-        destination: '/api/maccms/api.php/provide/vod',
-      },
     ];
   },
 };
