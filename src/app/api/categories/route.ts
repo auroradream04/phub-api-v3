@@ -95,14 +95,10 @@ export async function GET(request: NextRequest) {
       throw new Error('Failed to fetch categories from PornHub')
     }
 
-    // Format categories
+    // Store categories as-is from PornHub (no formatting)
     const formattedCategories = categories.map(cat => ({
       id: Number(cat.id),
-      name: cat.category
-        .replace(/-/g, ' ')
-        .split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-        .join(' '),
+      name: String(cat.category).toLowerCase(),
       isCustom: false
     }))
 
