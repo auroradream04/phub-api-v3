@@ -319,132 +319,148 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 p-6">
-      <div className="max-w-6xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            Admin Dashboard
-          </h1>
-          <p className="text-muted-foreground">Manage your video scraper and database</p>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-card border border-border rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Total Videos</p>
-                <p className="text-3xl font-bold text-primary">{stats?.totalVideos.toLocaleString() || 0}</p>
-              </div>
-              <Database className="w-12 h-12 text-primary/20" />
-            </div>
-          </div>
-
-          <div className="bg-card border border-border rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Categories</p>
-                <p className="text-3xl font-bold text-accent">{stats?.categories.length || 0}</p>
-              </div>
-              <PlayCircle className="w-12 h-12 text-accent/20" />
-            </div>
-          </div>
-
-          <div className="bg-card border border-border rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Need Translation</p>
-                <p className="text-3xl font-bold text-orange-500">{retryStats?.total || 0}</p>
-              </div>
-              <Languages className="w-12 h-12 text-orange-500/20" />
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      {/* Header Section */}
+      <div className="border-b border-border/50 bg-gradient-to-r from-primary/5 to-accent/5 backdrop-blur-sm">
+        <div className="px-8 py-12">
+          <div className="max-w-7xl mx-auto">
+            <div className="space-y-2">
+              <h1 className="text-5xl font-bold tracking-tight bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
+                Admin Dashboard
+              </h1>
+              <p className="text-lg text-muted-foreground font-medium">Manage your video scraper and database</p>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Main Actions */}
-        <div className="bg-card border border-border rounded-xl p-8 shadow-lg">
-          <h2 className="text-2xl font-bold text-foreground mb-6">Quick Actions</h2>
+      {/* Main Content */}
+      <div className="px-8 py-8">
+        <div className="max-w-7xl mx-auto space-y-8">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="relative group bg-gradient-to-br from-card to-card/50 border border-border/50 rounded-2xl p-8 overflow-hidden hover:border-primary/30 transition-all duration-300 shadow-sm hover:shadow-lg hover:-translate-y-1">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/5 to-primary/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="relative flex items-start justify-between">
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Total Videos</p>
+                  <p className="text-4xl font-bold text-primary">{stats?.totalVideos.toLocaleString() || 0}</p>
+                </div>
+                <div className="p-3 rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                  <Database className="w-8 h-8 text-primary" />
+                </div>
+              </div>
+            </div>
 
-          {/* Resume Operation Banner */}
-          {savedProgress && !scraping && (
-            <div className="mb-6 bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
-              <div className="flex items-center justify-between">
+            <div className="relative group bg-gradient-to-br from-card to-card/50 border border-border/50 rounded-2xl p-8 overflow-hidden hover:border-accent/30 transition-all duration-300 shadow-sm hover:shadow-lg hover:-translate-y-1">
+              <div className="absolute inset-0 bg-gradient-to-r from-accent/0 via-accent/5 to-accent/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="relative flex items-start justify-between">
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Categories</p>
+                  <p className="text-4xl font-bold text-accent">{stats?.categories.length || 0}</p>
+                </div>
+                <div className="p-3 rounded-xl bg-accent/10 group-hover:bg-accent/20 transition-colors">
+                  <PlayCircle className="w-8 h-8 text-accent" />
+                </div>
+              </div>
+            </div>
+
+            <div className="relative group bg-gradient-to-br from-card to-card/50 border border-border/50 rounded-2xl p-8 overflow-hidden hover:border-orange-500/30 transition-all duration-300 shadow-sm hover:shadow-lg hover:-translate-y-1">
+              <div className="absolute inset-0 bg-gradient-to-r from-orange-500/0 via-orange-500/5 to-orange-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="relative flex items-start justify-between">
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Need Translation</p>
+                  <p className="text-4xl font-bold text-orange-500">{retryStats?.total || 0}</p>
+                </div>
+                <div className="p-3 rounded-xl bg-orange-500/10 group-hover:bg-orange-500/20 transition-colors">
+                  <Languages className="w-8 h-8 text-orange-500" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Actions */}
+          <div className="bg-gradient-to-br from-card to-card/50 border border-border/50 rounded-2xl p-8 shadow-sm">
+            <h2 className="text-2xl font-bold text-foreground mb-8">Quick Actions</h2>
+
+            {/* Resume Operation Banner */}
+            {savedProgress && !scraping && (
+              <div className="mb-8 relative group bg-gradient-to-r from-blue-600/10 to-blue-600/5 border border-blue-500/30 rounded-2xl p-6 overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-600/0 via-blue-600/5 to-blue-600/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="relative flex items-center justify-between">
+                  <div className="flex-1 space-y-1">
+                    <h3 className="text-lg font-semibold text-blue-500">✨ Saved Progress Found</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {savedProgress.categoriesCompleted}/{savedProgress.totalCategories} categories completed · {savedProgress.totalVideosScraped.toLocaleString()} videos scraped
+                    </p>
+                    <p className="text-xs text-muted-foreground/70">
+                      Started: {new Date(savedProgress.startedAt).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="flex gap-3 ml-6">
+                    <button
+                      onClick={() => startScraping(savedProgress.checkpointId)}
+                      className="px-6 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all duration-200 font-semibold text-sm hover:shadow-lg hover:scale-105 whitespace-nowrap"
+                    >
+                      Resume Operation
+                    </button>
+                    <button
+                      onClick={clearProgress}
+                      className="px-4 py-2.5 bg-muted text-foreground rounded-xl hover:bg-muted/80 transition-all duration-200 font-semibold text-sm hover:shadow-md whitespace-nowrap"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+              {/* Primary Action: Start Scraping */}
+              <div className="flex items-end gap-4">
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-blue-600 mb-1">Saved Progress Found</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {savedProgress.categoriesCompleted}/{savedProgress.totalCategories} categories completed ·
-                    {' '}{savedProgress.totalVideosScraped.toLocaleString()} videos scraped
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Started: {new Date(savedProgress.startedAt).toLocaleString()}
-                  </p>
+                  <label className="block text-sm font-semibold text-foreground mb-3 uppercase tracking-wider">
+                    Pages per Category
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="50"
+                    value={pagesPerCategory}
+                    onChange={(e) => setPagesPerCategory(parseInt(e.target.value) || 5)}
+                    disabled={scraping}
+                    className="w-full px-5 py-3 border border-border/50 bg-input text-foreground rounded-xl focus:ring-2 focus:ring-primary focus:border-primary disabled:opacity-50 transition-colors hover:border-primary/50"
+                  />
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => startScraping(savedProgress.checkpointId)}
-                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all font-medium"
-                  >
-                    Resume Operation
-                  </button>
-                  <button
-                    onClick={clearProgress}
-                    className="px-4 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-all font-medium"
-                  >
-                    Clear
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Primary Action: Start Scraping */}
-          <div className="space-y-4 mb-6">
-            <div className="flex items-center gap-4">
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Pages per Category
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="50"
-                  value={pagesPerCategory}
-                  onChange={(e) => setPagesPerCategory(parseInt(e.target.value) || 5)}
+                <button
+                  onClick={() => startScraping()}
                   disabled={scraping}
-                  className="w-full px-4 py-3 border border-border bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-primary disabled:opacity-50"
-                />
+                  className="px-8 py-3 bg-gradient-to-r from-primary via-accent to-primary text-primary-foreground rounded-xl font-semibold hover:shadow-lg hover:shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 whitespace-nowrap"
+                >
+                  {scraping ? (
+                    <span className="flex items-center gap-2">
+                      <RefreshCw className="w-5 h-5 animate-spin" />
+                      Scraping...
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      <PlayCircle className="w-5 h-5" />
+                      Start Scraping
+                    </span>
+                  )}
+                </button>
               </div>
+
+              {/* Advanced Options Toggle */}
               <button
-                onClick={() => startScraping()}
-                disabled={scraping}
-                className="mt-7 px-8 py-3 bg-gradient-to-r from-primary to-accent text-primary-foreground rounded-lg font-semibold hover:shadow-lg hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                className="text-sm font-semibold text-muted-foreground hover:text-primary flex items-center gap-2 transition-colors uppercase tracking-wider"
               >
-                {scraping ? (
-                  <span className="flex items-center gap-2">
-                    <RefreshCw className="w-5 h-5 animate-spin" />
-                    Scraping...
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-2">
-                    <PlayCircle className="w-5 h-5" />
-                    Start Scraping
-                  </span>
-                )}
+                {showAdvanced ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                Advanced Options
               </button>
-            </div>
 
-            {/* Advanced Options Toggle */}
-            <button
-              onClick={() => setShowAdvanced(!showAdvanced)}
-              className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
-            >
-              {showAdvanced ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-              Advanced Options
-            </button>
-
-            {showAdvanced && (
-              <div className="bg-muted/30 border border-border rounded-lg p-4 space-y-3">
+              {showAdvanced && (
+                <div className="bg-muted/30 border border-border/50 rounded-xl p-6 space-y-4 mt-4">
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
                     Resume from Checkpoint (optional)
