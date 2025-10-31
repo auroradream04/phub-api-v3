@@ -17,6 +17,229 @@ const CUSTOM_CATEGORY_IDS: Record<string, number> = {
   'chinese': 9998,
 }
 
+// Background scraping function
+async function scrapeInBackground(checkpointId: string, pagesPerCategory: number) {
+  try {
+    console.log(`[Background Scraper] Starting for checkpoint ${checkpointId}`)
+
+    // Fetch categories
+    let categories = await prisma.category.findMany({
+      orderBy: [{ isCustom: 'desc' }, { id: 'asc' }],
+    })
+
+    if (categories.length === 0) {
+      console.log(`[Background Scraper] Fetching categories from PornHub...`)
+      const { PornHub } = await import('@/lib/pornhub.js')
+      const pornhub = new PornHub()
+
+      try {
+        const pornhubCategories = await pornhub.webMaster.getCategories()
+
+        for (const cat of pornhubCategories) {
+          await prisma.category.upsert({
+            where: { id: Number(cat.id) },
+            update: {},
+            create: {
+              id: Number(cat.id),
+              name: String(cat.category).toLowerCase(),
+              isCustom: false,
+            },
+          })
+        }
+
+        for (const [name, id] of Object.entries(CUSTOM_CATEGORY_IDS)) {
+          await prisma.category.upsert({
+            where: { id },
+            update: {},
+            create: { id, name, isCustom: true },
+          })
+        }
+
+        categories = await prisma.category.findMany({
+          orderBy: [{ isCustom: 'desc' }, { id: 'asc' }],
+        })
+
+        console.log(`[Background Scraper] Fetched ${categories.length} categories`)
+      } catch (error) {
+        console.error(`[Background Scraper] Failed to fetch categories:`, error)
+        const checkpoint = await getScraperCheckpoint(checkpointId)
+        if (checkpoint) {
+          checkpoint.status = 'failed'
+          checkpoint.errors.push('Failed to fetch categories from PornHub')
+          await updateScraperCheckpoint(checkpointId, checkpoint)
+        }
+        return
+      }
+    }
+
+    const checkpoint = await getScraperCheckpoint(checkpointId)
+    if (!checkpoint) {
+      console.error(`[Background Scraper] Checkpoint lost`)
+      return
+    }
+
+    const completedCategoryIds = new Set(
+      checkpoint.categories
+        .filter((c) => c.pagesCompleted >= c.pagesTotal)
+        .map((c) => c.categoryId)
+    )
+
+    const categoriesToScrape = categories.filter(
+      (cat) => !completedCategoryIds.has(cat.id)
+    )
+
+    console.log(
+      `[Background Scraper] Scraping ${categoriesToScrape.length} categories (${completedCategoryIds.size} already complete)`
+    )
+
+    const totalCategories = categoriesToScrape.length
+    let categoryIndex = 0
+
+    for (const category of categoriesToScrape) {
+      categoryIndex++
+      const categoryCheckpoint = checkpoint.categories.find(
+        (c) => c.categoryId === category.id
+      )
+      const pageStart = categoryCheckpoint ? categoryCheckpoint.pagesCompleted + 1 : 1
+
+      console.log(
+        `[Scraper Progress] Category ${categoryIndex}/${totalCategories}: ${category.name} (ID: ${category.id}) - Pages ${pageStart}-${pagesPerCategory}`
+      )
+
+      let categoryScraped = 0
+      let categoryFailed = 0
+      let consecutiveErrors = 0
+
+      for (let page = pageStart; page <= pagesPerCategory; page++) {
+        try {
+          const baseUrl = process.env.NEXTAUTH_URL || 'http://md8av.com'
+
+          // Add timeout to prevent hanging
+          const controller = new AbortController()
+          const timeout = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+
+          try {
+            const response = await fetch(`${baseUrl}/api/scraper/videos`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                page,
+                categoryId: category.id,
+                categoryName: category.name,
+              }),
+              signal: controller.signal,
+            })
+            clearTimeout(timeout)
+
+            if (!response.ok) {
+              consecutiveErrors++
+              categoryFailed++
+
+              if (consecutiveErrors >= 3) {
+                console.warn(
+                  `[Background Scraper] Stopping category ${category.id} after 3 consecutive errors`
+                )
+                break
+              }
+              continue
+            }
+
+            const data = await response.json()
+
+            if (data.success && data.scraped > 0) {
+              consecutiveErrors = 0
+              categoryScraped += data.scraped
+              categoryFailed += data.errors || 0
+
+              await prisma.$transaction(async (tx) => {
+                const current = await getScraperCheckpoint(checkpointId)
+                if (!current) return
+
+                const existingIndex = current.categories.findIndex(
+                  (c) => c.categoryId === category.id
+                )
+
+                if (existingIndex >= 0) {
+                  current.categories[existingIndex]!.pagesCompleted = page
+                  current.categories[existingIndex]!.videosScraped = categoryScraped
+                  current.categories[existingIndex]!.videosFailed = categoryFailed
+                } else {
+                  current.categories.push({
+                    categoryId: category.id,
+                    categoryName: category.name,
+                    pagesTotal: pagesPerCategory,
+                    pagesCompleted: page,
+                    videosScraped: categoryScraped,
+                    videosFailed: categoryFailed,
+                  })
+                }
+
+                current.totalVideosScraped += data.scraped
+                current.totalVideosFailed += data.errors || 0
+
+                await updateScraperCheckpoint(checkpointId, current)
+              })
+
+              console.log(
+                `[Scraper Progress] ✓ Category ${categoryIndex}/${totalCategories}: ${category.name} - Page ${page}/${pagesPerCategory} - ${data.scraped} videos scraped`
+              )
+
+              if (!data.hasMore || data.scraped === 0) {
+                break
+              }
+            } else {
+              categoryFailed++
+              console.warn(`[Background Scraper] No videos for category ${category.id} page ${page}`)
+              break
+            }
+
+            await new Promise((resolve) => setTimeout(resolve, 500))
+          } catch (timeoutError) {
+            clearTimeout(timeout)
+            consecutiveErrors++
+            categoryFailed++
+            console.error(
+              `[Background Scraper] Request timeout for category ${category.id} page ${page}:`,
+              timeoutError instanceof Error ? timeoutError.message : 'Request timeout'
+            )
+
+            if (consecutiveErrors >= 3) {
+              break
+            }
+          }
+        } catch (error) {
+          consecutiveErrors++
+          categoryFailed++
+          console.error(
+            `[Background Scraper] Error on category ${category.id} page ${page}:`,
+            error instanceof Error ? error.message : error
+          )
+
+          if (consecutiveErrors >= 3) {
+            break
+          }
+        }
+      }
+    }
+
+    const final = await getScraperCheckpoint(checkpointId)
+    if (final) {
+      final.status = 'completed'
+      await updateScraperCheckpoint(checkpointId, final)
+    }
+
+    console.log(`[Background Scraper] Completed for checkpoint ${checkpointId}`)
+  } catch (error) {
+    console.error('[Background Scraper] Fatal error:', error)
+    const checkpoint = await getScraperCheckpoint(checkpointId)
+    if (checkpoint) {
+      checkpoint.status = 'failed'
+      checkpoint.errors.push(error instanceof Error ? error.message : String(error))
+      await updateScraperCheckpoint(checkpointId, checkpoint)
+    }
+  }
+}
+
 export async function POST(request: NextRequest) {
   let checkpointId: string = ''
 
@@ -42,205 +265,30 @@ export async function POST(request: NextRequest) {
     } else {
       checkpointId = await createScraperCheckpoint()
       console.log(`[Scraper Categories] Created new checkpoint ${checkpointId}`)
+
+      // Return checkpoint ID immediately so client can start polling
+      // Continue scraping in background
+      const response = NextResponse.json({
+        success: true,
+        checkpointId,
+        message: 'Scraping started',
+        async: true
+      })
+
+      // Don't await this - let it run in background
+      scrapeInBackground(checkpointId, pagesPerCategory)
+
+      return response
     }
 
-    // Fetch or load categories
-    let categories = await prisma.category.findMany({
-      orderBy: [{ isCustom: 'desc' }, { id: 'asc' }],
-    })
-
-    if (categories.length === 0) {
-      console.log(`[Scraper Categories] Fetching categories from PornHub...`)
-      // Import PornHub library
-      const { PornHub } = await import('@/lib/pornhub.js')
-      const pornhub = new PornHub()
-
-      try {
-        const pornhubCategories = await pornhub.webMaster.getCategories()
-
-        for (const cat of pornhubCategories) {
-          await prisma.category.upsert({
-            where: { id: Number(cat.id) },
-            update: {},
-            create: {
-              id: Number(cat.id),
-              name: String(cat.category).toLowerCase(),
-              isCustom: false,
-            },
-          })
-        }
-
-        // Add custom categories
-        for (const [name, id] of Object.entries(CUSTOM_CATEGORY_IDS)) {
-          await prisma.category.upsert({
-            where: { id },
-            update: {},
-            create: { id, name, isCustom: true },
-          })
-        }
-
-        // Fetch again
-        categories = await prisma.category.findMany({
-          orderBy: [{ isCustom: 'desc' }, { id: 'asc' }],
-        })
-
-        console.log(`[Scraper Categories] Fetched ${categories.length} categories from PornHub`)
-      } catch (error) {
-        console.error(`[Scraper Categories] Failed to fetch categories from PornHub:`, error)
-        return NextResponse.json(
-          {
-            success: false,
-            message: 'Failed to fetch categories from PornHub',
-            checkpointId,
-          },
-          { status: 500 }
-        )
-      }
-    }
-
-    // Get checkpoint to find completed categories
-    const checkpoint = await getScraperCheckpoint(checkpointId)
-    if (!checkpoint) {
-      return NextResponse.json(
-        { success: false, message: 'Checkpoint lost' },
-        { status: 500 }
-      )
-    }
-
-    const completedCategoryIds = new Set(
-      checkpoint.categories
-        .filter((c) => c.pagesCompleted >= c.pagesTotal)
-        .map((c) => c.categoryId)
-    )
-
-    // Categories to scrape
-    const categoriesToScrape = categories.filter(
-      (cat) => !completedCategoryIds.has(cat.id)
-    )
-
-    console.log(
-      `[Scraper Categories] Scraping ${categoriesToScrape.length} categories (${completedCategoryIds.size} already complete)`
-    )
-
-    // Scrape categories
-    for (const category of categoriesToScrape) {
-      const categoryCheckpoint = checkpoint.categories.find(
-        (c) => c.categoryId === category.id
-      )
-      const pageStart = categoryCheckpoint ? categoryCheckpoint.pagesCompleted + 1 : 1
-
-      console.log(
-        `[Scraper Categories] Category ${category.id} (${category.name}) pages ${pageStart}-${pagesPerCategory}`
-      )
-
-      let categoryScraped = 0
-      let categoryFailed = 0
-      let consecutiveErrors = 0
-
-      for (let page = pageStart; page <= pagesPerCategory; page++) {
-        try {
-          const baseUrl = process.env.NEXTAUTH_URL || 'http://md8av.com'
-          const response = await fetch(`${baseUrl}/api/scraper/videos`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              page,
-              categoryId: category.id,
-              categoryName: category.name,
-            }),
-          })
-
-          if (!response.ok) {
-            consecutiveErrors++
-            categoryFailed++
-
-            // Stop after 3 consecutive errors
-            if (consecutiveErrors >= 3) {
-              console.warn(
-                `[Scraper Categories] Stopping category ${category.id} after 3 consecutive errors`
-              )
-              break
-            }
-            continue
-          }
-
-          const data = await response.json()
-
-          if (data.success && data.scraped > 0) {
-            consecutiveErrors = 0
-            categoryScraped += data.scraped
-            categoryFailed += data.errors || 0
-
-            // Atomically update checkpoint with transaction
-            await prisma.$transaction(async (tx) => {
-              const current = await getScraperCheckpoint(checkpointId)
-              if (!current) return
-
-              const existingIndex = current.categories.findIndex(
-                (c) => c.categoryId === category.id
-              )
-
-              if (existingIndex >= 0) {
-                current.categories[existingIndex]!.pagesCompleted = page
-                current.categories[existingIndex]!.videosScraped = categoryScraped
-                current.categories[existingIndex]!.videosFailed = categoryFailed
-              } else {
-                current.categories.push({
-                  categoryId: category.id,
-                  categoryName: category.name,
-                  pagesTotal: pagesPerCategory,
-                  pagesCompleted: page,
-                  videosScraped: categoryScraped,
-                  videosFailed: categoryFailed,
-                })
-              }
-
-              current.totalVideosScraped += data.scraped
-              current.totalVideosFailed += data.errors || 0
-
-              await updateScraperCheckpoint(checkpointId, current)
-            })
-
-            console.log(
-              `[Scraper Categories] ✓ Category ${category.id} page ${page}: ${data.scraped} videos`
-            )
-
-            if (!data.hasMore || data.scraped === 0) {
-              break
-            }
-          } else {
-            categoryFailed++
-            console.warn(`[Scraper Categories] No videos returned for category ${category.id} page ${page}`)
-            break
-          }
-
-          await new Promise((resolve) => setTimeout(resolve, 500))
-        } catch (error) {
-          consecutiveErrors++
-          categoryFailed++
-          console.error(
-            `[Scraper Categories] Error on category ${category.id} page ${page}:`,
-            error instanceof Error ? error.message : error
-          )
-
-          if (consecutiveErrors >= 3) {
-            break
-          }
-        }
-      }
-    }
-
-    // Mark as complete
-    const final = await getScraperCheckpoint(checkpointId)
-    if (final) {
-      final.status = 'completed'
-      await updateScraperCheckpoint(checkpointId, final)
-    }
+    // Resuming: run scraping in background too
+    scrapeInBackground(checkpointId, pagesPerCategory)
 
     return NextResponse.json({
       success: true,
       checkpointId,
-      message: 'Scraping completed',
+      message: 'Resuming scraping',
+      async: true
     })
   } catch (error) {
     console.error('[Scraper Categories] Fatal error:', error)
