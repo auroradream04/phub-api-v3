@@ -6,10 +6,10 @@ import { prisma } from '@/lib/prisma'
 
 // Custom categories that use search instead of PornHub category IDs
 // Use high numeric IDs (9998-9999) to avoid conflicts with PornHub category IDs
-// NOTE: Display names are capitalized but search queries must be lowercase (PornHub bug)
+// Keep names lowercase to match all other categories in the database
 const CUSTOM_CATEGORIES = [
-  { id: 9999, name: 'Japanese', isCustom: true },
-  { id: 9998, name: 'Chinese', isCustom: true }
+  { id: 9999, name: 'japanese', isCustom: true },
+  { id: 9998, name: 'chinese', isCustom: true }
 ]
 
 export const revalidate = 7200 // 2 hours
