@@ -322,21 +322,19 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       {/* Header Section */}
       <div className="border-b border-border/50 bg-gradient-to-r from-primary/5 to-accent/5 backdrop-blur-sm">
-        <div className="py-12">
-          <div className="max-w-7xl mx-auto">
-            <div className="space-y-2">
-              <h1 className="text-5xl font-bold tracking-tight bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-                Admin Dashboard
-              </h1>
-              <p className="text-lg text-muted-foreground font-medium">Manage your video scraper and database</p>
-            </div>
+        <div className="py-12 px-6">
+          <div className="space-y-2">
+            <h1 className="text-5xl font-bold tracking-tight bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
+              Admin Dashboard
+            </h1>
+            <p className="text-lg text-muted-foreground font-medium">Manage your video scraper and database</p>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="py-8">
-        <div className="max-w-7xl mx-auto space-y-8">
+      <div className="py-8 px-6">
+        <div className="space-y-8">
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="relative group bg-gradient-to-br from-card to-card/50 border border-border/50 rounded-2xl p-8 overflow-hidden hover:border-primary/30 transition-all duration-300 shadow-sm hover:shadow-lg hover:-translate-y-1">
