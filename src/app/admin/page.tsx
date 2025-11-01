@@ -606,8 +606,8 @@ export default function AdminDashboard() {
           <div className="bg-card border border-border rounded-xl p-6 shadow-lg">
             <h3 className="text-xl font-bold text-foreground mb-4">Category Breakdown</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {stats.categories.map(cat => (
-                <div key={cat.typeId} className="bg-muted/50 rounded-lg p-3 border border-border">
+              {stats.categories.map((cat, idx) => (
+                <div key={`${cat.typeId}-${cat.typeName}-${idx}`} className="bg-muted/50 rounded-lg p-3 border border-border">
                   <p className="text-sm font-medium text-foreground truncate">{cat.typeName}</p>
                   <p className="text-2xl font-bold text-primary">{cat._count.toLocaleString()}</p>
                 </div>
