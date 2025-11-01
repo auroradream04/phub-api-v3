@@ -80,7 +80,18 @@ export async function POST(request: NextRequest) {
         ? CUSTOM_CATEGORY_IDS[categoryId.toLowerCase()]!
         : (typeof categoryId === 'number' ? categoryId : parseInt(categoryId, 10))
 
-      currentCategory = { id: numericId, name: categoryName || 'Unknown' }
+      // ALWAYS use the category name from the database, never use the passed parameter
+      // This ensures consistency and prevents "Unknown" categories
+      const dbCategory = await prisma.category.findUnique({
+        where: { id: numericId },
+        select: { name: true }
+      })
+
+      if (!dbCategory) {
+        throw new Error(`Category with ID ${numericId} not found in database`)
+      }
+
+      currentCategory = { id: numericId, name: dbCategory.name }
 
     } else {
       apiUrl = `${baseUrl}/api/home?page=${page}`
