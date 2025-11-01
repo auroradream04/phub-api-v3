@@ -51,7 +51,7 @@ export default function AdminLayout({
   return (
     <div className="min-h-screen bg-background">
       <nav className="bg-card border-b border-border">
-        <div className="px-6">
+        <div>
           <div className="flex h-16 justify-between">
             <div className="flex">
               <div className="flex flex-shrink-0 items-center">
