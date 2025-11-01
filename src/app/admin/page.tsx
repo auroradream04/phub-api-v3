@@ -290,6 +290,41 @@ export default function AdminDashboard() {
     }
   }
 
+  // Clean up Unknown category videos
+  const cleanupUnknown = async () => {
+    setMessage('🔍 Checking for Unknown category videos...')
+
+    try {
+      // First check how many exist
+      const checkRes = await fetch('/api/scraper/cleanup-unknown')
+      const checkData = await checkRes.json()
+
+      if (!checkData.success || checkData.totalUnknownVideos === 0) {
+        setMessage('✅ No Unknown category videos found')
+        return
+      }
+
+      if (!confirm(`⚠️ Found ${checkData.totalUnknownVideos} videos with "Unknown" category.\nDelete them? These are corrupted entries from before the fix was deployed.`)) {
+        return
+      }
+
+      // Delete them
+      const deleteRes = await fetch('/api/scraper/cleanup-unknown', {
+        method: 'POST'
+      })
+      const deleteData = await deleteRes.json()
+
+      if (deleteData.success) {
+        setMessage(`✅ Cleaned up ${deleteData.deleted} Unknown category videos`)
+        await fetchStats()
+      } else {
+        setMessage(`❌ ${deleteData.message}`)
+      }
+    } catch (error) {
+      setMessage(`❌ Failed to cleanup Unknown videos`)
+    }
+  }
+
   // Clear cache
   const clearCache = async () => {
     try {
@@ -479,7 +514,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* Secondary Actions */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-6 border-t border-border">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 pt-6 border-t border-border">
             <button
               onClick={retryTranslations}
               disabled={!retryStats || retryStats.total === 0}
@@ -487,6 +522,14 @@ export default function AdminDashboard() {
             >
               <Languages className="w-5 h-5" />
               Retry Translations ({retryStats?.total || 0})
+            </button>
+
+            <button
+              onClick={cleanupUnknown}
+              className="px-4 py-3 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-all font-medium flex items-center justify-center gap-2"
+            >
+              <Database className="w-5 h-5" />
+              Clean Unknown
             </button>
 
             <button
