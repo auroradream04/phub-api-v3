@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { PornHub } from 'pornhub.js'
 import type { VideoListOrdering } from 'pornhub.js'
 import { getRandomProxy } from '@/lib/proxy'
+import { prisma } from '@/lib/prisma'
 
 // Custom categories that use search instead of PornHub category IDs
 // Map numeric IDs to category names for search
@@ -116,29 +117,18 @@ export async function GET(
       })
     )
 
-    // Get category name from the categories list
-    let categoryName = 'Unknown'
-    try {
-      // Use a fresh instance for category lookup
-      const pornhub = new PornHub()
-      const proxyInfo = getRandomProxy('Category Lookup')
-      if (proxyInfo) pornhub.setAgent(proxyInfo.agent)
-
-      const categories = await pornhub.webMaster.getCategories()
-      const category = categories.find(cat => Number(cat.id) === categoryId)
-      if (category) {
-        categoryName = category.category
-      }
-    } catch (err) {
-      // Ignore category name lookup errors
-    }
+    // Get category name from database (always authoritative)
+    const dbCategory = await prisma.category.findUnique({
+      where: { id: categoryId },
+      select: { name: true }
+    })
 
     // Add category info to the response
     const response = {
       ...result,
       category: {
         id: categoryId,
-        name: categoryName
+        name: dbCategory?.name || 'unknown'
       }
     }
 
