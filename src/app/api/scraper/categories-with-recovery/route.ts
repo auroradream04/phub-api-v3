@@ -17,10 +17,16 @@ const CUSTOM_CATEGORY_IDS: Record<string, number> = {
   'chinese': 9998,
 }
 
+// Track active scraping jobs to detect lost jobs after restart
+const ACTIVE_JOBS = new Map<string, { lastUpdateTime: number; pagesPerCategory: number }>()
+
 // Background scraping function
 async function scrapeInBackground(checkpointId: string, pagesPerCategory: number) {
   try {
     console.log(`[Background Scraper] Starting for checkpoint ${checkpointId}`)
+
+    // Register this job as active
+    ACTIVE_JOBS.set(checkpointId, { lastUpdateTime: Date.now(), pagesPerCategory })
 
     // Fetch categories
     let categories = await prisma.category.findMany({
@@ -178,6 +184,12 @@ async function scrapeInBackground(checkpointId: string, pagesPerCategory: number
                 current.totalVideosFailed += data.errors || 0
 
                 await updateScraperCheckpoint(checkpointId, current)
+
+                // Update job activity timestamp
+                const job = ACTIVE_JOBS.get(checkpointId)
+                if (job) {
+                  job.lastUpdateTime = Date.now()
+                }
               })
 
               console.log(
@@ -228,6 +240,9 @@ async function scrapeInBackground(checkpointId: string, pagesPerCategory: number
       await updateScraperCheckpoint(checkpointId, final)
     }
 
+    // Clean up job tracking
+    ACTIVE_JOBS.delete(checkpointId)
+
     console.log(`[Background Scraper] Completed for checkpoint ${checkpointId}`)
   } catch (error) {
     console.error('[Background Scraper] Fatal error:', error)
@@ -237,6 +252,8 @@ async function scrapeInBackground(checkpointId: string, pagesPerCategory: number
       checkpoint.errors.push(error instanceof Error ? error.message : String(error))
       await updateScraperCheckpoint(checkpointId, checkpoint)
     }
+    // Clean up job tracking on error
+    ACTIVE_JOBS.delete(checkpointId)
   }
 }
 
@@ -332,6 +349,25 @@ export async function GET(request: NextRequest) {
       { success: false, message: 'Checkpoint not found' },
       { status: 404 }
     )
+  }
+
+  // Auto-recover: if checkpoint is still "in progress" but no job is active,
+  // and the checkpoint hasn't been updated in 30+ seconds, restart the job
+  const isJobActive = ACTIVE_JOBS.has(checkpointId)
+  const jobData = ACTIVE_JOBS.get(checkpointId)
+  const timeSinceLastUpdate = jobData ? Date.now() - jobData.lastUpdateTime : Infinity
+  const hasBeenStuck = timeSinceLastUpdate > 30000 // 30 seconds
+
+  if (
+    checkpoint.status === 'in progress' &&
+    !isJobActive &&
+    hasBeenStuck
+  ) {
+    console.log(
+      `[Auto-Recovery] Restarting stuck job ${checkpointId} (stuck for ${Math.round(timeSinceLastUpdate / 1000)}s)`
+    )
+    const pagesPerCategory = checkpoint.categories[0]?.pagesTotal || 5
+    scrapeInBackground(checkpointId, pagesPerCategory)
   }
 
   return NextResponse.json({
