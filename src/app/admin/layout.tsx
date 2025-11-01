@@ -51,7 +51,7 @@ export default function AdminLayout({
   return (
     <div className="min-h-screen bg-background">
       <nav className="bg-card border-b border-border">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="px-6">
           <div className="flex h-16 justify-between">
             <div className="flex">
               <div className="flex flex-shrink-0 items-center">
@@ -89,7 +89,7 @@ export default function AdminLayout({
           </div>
         </div>
       </nav>
-      <main className="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">{children}</main>
+      <main>{children}</main>
     </div>
   )
 }
