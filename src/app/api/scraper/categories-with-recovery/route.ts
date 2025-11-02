@@ -94,12 +94,18 @@ async function scrapeInBackground(checkpointId: string, pagesPerCategory: number
       (cat) => !completedCategoryIds.has(cat.id)
     )
 
+    // Store original total in checkpoint if not already set
+    const totalCategories = checkpoint.totalCategories || categories.length
+    if (!checkpoint.totalCategories) {
+      checkpoint.totalCategories = categories.length
+      await updateScraperCheckpoint(checkpointId, checkpoint)
+    }
+
     console.log(
-      `[Background Scraper] Scraping ${categoriesToScrape.length} categories (${completedCategoryIds.size} already complete)`
+      `[Background Scraper] Scraping ${categoriesToScrape.length} categories (${completedCategoryIds.size} already complete) out of ${totalCategories} total`
     )
 
-    const totalCategories = categoriesToScrape.length
-    let categoryIndex = 0
+    let categoryIndex = completedCategoryIds.size
 
     for (const category of categoriesToScrape) {
       categoryIndex++
