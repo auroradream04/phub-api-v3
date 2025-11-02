@@ -86,7 +86,7 @@ async function scrapeInBackground(checkpointId: string, pagesPerCategory: number
 
     const totalCategories = categories.length
     const startCategoryIndex = checkpoint.lastCategoryIndex + 1 // Resume from next category
-    const startPageForFirstCategory = checkpoint.lastPageCompleted + 1 // Resume from next page in current category
+    const startPageForFirstCategory = checkpoint.lastPageCompleted + 1 // Resume from next page in that category
 
     console.log(
       `[Background Scraper] Resuming: Category ${startCategoryIndex}/${totalCategories}, Last completed page: ${checkpoint.lastPageCompleted}`
@@ -157,7 +157,7 @@ async function scrapeInBackground(checkpointId: string, pagesPerCategory: number
               categoryFailed += data.errors || 0
 
               try {
-                // Update checkpoint with current position (simple: just track where we are)
+                // Update checkpoint with current position
                 await updateScraperCheckpoint(checkpointId, {
                   lastCategoryIndex: categoryIndex,
                   lastPageCompleted: page,

@@ -147,8 +147,9 @@ export interface ScraperCheckpoint {
   status: 'running' | 'paused' | 'completed' | 'failed'
 
   // Current position in scraping
+  // We use index (not ID) because categories are only added at the end, never inserted in the middle
   lastCategoryIndex: number // 0-based index of last completed category (-1 if none completed)
-  lastPageCompleted: number // Last completed page of lastCategoryIndex (0 if just moved to new category)
+  lastPageCompleted: number // Last completed page of that category (0 if just moved to next category)
 
   // Stats only
   totalVideosScraped: number
@@ -170,7 +171,7 @@ export async function createScraperCheckpoint(): Promise<string> {
         startedAt: now,
         updatedAt: now,
         status: 'running',
-        lastCategoryIndex: -1,     // No categories started yet
+        lastCategoryIndex: -1,  // No categories started yet
         lastPageCompleted: 0,
         totalVideosScraped: 0,
         totalVideosFailed: 0,
