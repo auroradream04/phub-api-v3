@@ -109,6 +109,15 @@ async function scrapeInBackground(checkpointId: string, pagesPerCategory: number
 
     for (const category of categoriesToScrape) {
       categoryIndex++
+
+      // Force garbage collection every 10 categories to prevent memory leaks
+      if (categoryIndex % 10 === 0) {
+        if (global.gc) {
+          global.gc()
+          console.log(`[Background Scraper] Garbage collection triggered at category ${categoryIndex}/${totalCategories}`)
+        }
+      }
+
       const categoryCheckpoint = checkpoint.categories.find(
         (c) => c.categoryId === category.id
       )
@@ -124,7 +133,7 @@ async function scrapeInBackground(checkpointId: string, pagesPerCategory: number
 
       for (let page = pageStart; page <= pagesPerCategory; page++) {
         try {
-          const baseUrl = process.env.NEXTAUTH_URL || 'http://md8av.com'
+          const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:4444'
 
           // Add timeout to prevent hanging
           const controller = new AbortController()
@@ -163,40 +172,45 @@ async function scrapeInBackground(checkpointId: string, pagesPerCategory: number
               categoryScraped += data.scraped
               categoryFailed += data.errors || 0
 
-              await prisma.$transaction(async (tx) => {
-                const current = await getScraperCheckpoint(checkpointId)
-                if (!current) return
+              try {
+                await prisma.$transaction(async (tx) => {
+                  const current = await getScraperCheckpoint(checkpointId)
+                  if (!current) return
 
-                const existingIndex = current.categories.findIndex(
-                  (c) => c.categoryId === category.id
-                )
+                  const existingIndex = current.categories.findIndex(
+                    (c) => c.categoryId === category.id
+                  )
 
-                if (existingIndex >= 0) {
-                  current.categories[existingIndex]!.pagesCompleted = page
-                  current.categories[existingIndex]!.videosScraped = categoryScraped
-                  current.categories[existingIndex]!.videosFailed = categoryFailed
-                } else {
-                  current.categories.push({
-                    categoryId: category.id,
-                    categoryName: category.name,
-                    pagesTotal: pagesPerCategory,
-                    pagesCompleted: page,
-                    videosScraped: categoryScraped,
-                    videosFailed: categoryFailed,
-                  })
-                }
+                  if (existingIndex >= 0) {
+                    current.categories[existingIndex]!.pagesCompleted = page
+                    current.categories[existingIndex]!.videosScraped = categoryScraped
+                    current.categories[existingIndex]!.videosFailed = categoryFailed
+                  } else {
+                    current.categories.push({
+                      categoryId: category.id,
+                      categoryName: category.name,
+                      pagesTotal: pagesPerCategory,
+                      pagesCompleted: page,
+                      videosScraped: categoryScraped,
+                      videosFailed: categoryFailed,
+                    })
+                  }
 
-                current.totalVideosScraped += data.scraped
-                current.totalVideosFailed += data.errors || 0
+                  current.totalVideosScraped += data.scraped
+                  current.totalVideosFailed += data.errors || 0
 
-                await updateScraperCheckpoint(checkpointId, current)
+                  await updateScraperCheckpoint(checkpointId, current)
 
-                // Update job activity timestamp
-                const job = ACTIVE_JOBS.get(checkpointId)
-                if (job) {
-                  job.lastUpdateTime = Date.now()
-                }
-              })
+                  // Update job activity timestamp
+                  const job = ACTIVE_JOBS.get(checkpointId)
+                  if (job) {
+                    job.lastUpdateTime = Date.now()
+                  }
+                }, { timeout: 30000 }) // 30 second transaction timeout
+              } catch (txError) {
+                console.error(`[Background Scraper] Failed to save checkpoint for category ${category.id}:`, txError)
+                // Continue anyway - we'll retry on next page or next resume
+              }
 
               console.log(
                 `[Scraper Progress] ✓ Category ${categoryIndex}/${totalCategories}: ${category.name} - Page ${page}/${pagesPerCategory} - ${data.scraped} videos scraped`
@@ -234,10 +248,17 @@ async function scrapeInBackground(checkpointId: string, pagesPerCategory: number
           )
 
           if (consecutiveErrors >= 3) {
+            console.warn(
+              `[Background Scraper] Skipping category ${category.id} after 3 consecutive errors`
+            )
             break
           }
         }
       }
+
+      // Add delay between categories to reduce memory pressure and database load
+      // This gives garbage collection and connection pooling time to recover
+      await new Promise((resolve) => setTimeout(resolve, 2000))
     }
 
     const final = await getScraperCheckpoint(checkpointId)
@@ -256,6 +277,9 @@ async function scrapeInBackground(checkpointId: string, pagesPerCategory: number
     if (checkpoint) {
       checkpoint.status = 'failed'
       checkpoint.errors.push(error instanceof Error ? error.message : String(error))
+      console.error(
+        `[Background Scraper] Saved error to checkpoint. Current progress: ${checkpoint.totalVideosScraped} videos, ${checkpoint.categories.filter((c) => c.pagesCompleted >= c.pagesTotal).length}/${checkpoint.categories.length} categories`
+      )
       await updateScraperCheckpoint(checkpointId, checkpoint)
     }
     // Clean up job tracking on error
