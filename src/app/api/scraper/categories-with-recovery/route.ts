@@ -359,8 +359,8 @@ export async function GET(request: NextRequest) {
     console.log(
       `[Auto-Recovery] Restarting stuck job ${checkpointId} (stuck for ${Math.round(timeSinceLastUpdate / 1000)}s)`
     )
-    const pagesPerCategory = checkpoint.categories[0]?.pagesTotal || 5
-    scrapeInBackground(checkpointId, pagesPerCategory)
+    // Use 5 pages as default (can be any number, doesn't really matter since we resume from checkpoint)
+    scrapeInBackground(checkpointId, 5)
   }
 
   return NextResponse.json({
@@ -370,10 +370,8 @@ export async function GET(request: NextRequest) {
       status: checkpoint.status,
       totalVideosScraped: checkpoint.totalVideosScraped,
       totalVideosFailed: checkpoint.totalVideosFailed,
-      categoriesCompleted: checkpoint.categories.filter(
-        (c) => c.pagesCompleted >= c.pagesTotal
-      ).length,
-      categoriesTotal: checkpoint.categories.length,
+      categoriesCompleted: checkpoint.lastCategoryIndex + 1, // 0-based index, so +1 for display
+      categoriesTotal: 165, // Total number of categories in database
     },
   })
 }
