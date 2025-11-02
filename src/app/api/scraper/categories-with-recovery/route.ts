@@ -84,47 +84,31 @@ async function scrapeInBackground(checkpointId: string, pagesPerCategory: number
       return
     }
 
-    const completedCategoryIds = new Set(
-      checkpoint.categories
-        .filter((c) => c.pagesCompleted >= c.pagesTotal)
-        .map((c) => c.categoryId)
-    )
-
-    const categoriesToScrape = categories.filter(
-      (cat) => !completedCategoryIds.has(cat.id)
-    )
-
-    // Store original total in checkpoint if not already set
-    const totalCategories = checkpoint.totalCategories || categories.length
-    if (!checkpoint.totalCategories) {
-      checkpoint.totalCategories = categories.length
-      await updateScraperCheckpoint(checkpointId, checkpoint)
-    }
+    const totalCategories = categories.length
+    const startCategoryIndex = checkpoint.lastCategoryIndex + 1 // Resume from next category
+    const startPageForFirstCategory = checkpoint.lastPageCompleted + 1 // Resume from next page in current category
 
     console.log(
-      `[Background Scraper] Scraping ${categoriesToScrape.length} categories (${completedCategoryIds.size} already complete) out of ${totalCategories} total`
+      `[Background Scraper] Resuming: Category ${startCategoryIndex}/${totalCategories}, Last completed page: ${checkpoint.lastPageCompleted}`
     )
 
-    let categoryIndex = completedCategoryIds.size
-
-    for (const category of categoriesToScrape) {
-      categoryIndex++
+    // Iterate through remaining categories
+    for (let categoryIndex = startCategoryIndex; categoryIndex < totalCategories; categoryIndex++) {
+      const category = categories[categoryIndex]!
 
       // Force garbage collection every 10 categories to prevent memory leaks
-      if (categoryIndex % 10 === 0) {
+      if ((categoryIndex + 1) % 10 === 0) {
         if (global.gc) {
           global.gc()
-          console.log(`[Background Scraper] Garbage collection triggered at category ${categoryIndex}/${totalCategories}`)
+          console.log(`[Background Scraper] Garbage collection triggered at category ${categoryIndex + 1}/${totalCategories}`)
         }
       }
 
-      const categoryCheckpoint = checkpoint.categories.find(
-        (c) => c.categoryId === category.id
-      )
-      const pageStart = categoryCheckpoint ? categoryCheckpoint.pagesCompleted + 1 : 1
+      // Start from page 1 for new categories, or from lastPageCompleted+1 for the first category being resumed
+      const pageStart = categoryIndex === startCategoryIndex ? startPageForFirstCategory : 1
 
       console.log(
-        `[Scraper Progress] Category ${categoryIndex}/${totalCategories}: ${category.name} (ID: ${category.id}) - Pages ${pageStart}-${pagesPerCategory}`
+        `[Scraper Progress] Category ${categoryIndex + 1}/${totalCategories}: ${category.name} (ID: ${category.id}) - Pages ${pageStart}-${pagesPerCategory}`
       )
 
       let categoryScraped = 0
@@ -173,42 +157,21 @@ async function scrapeInBackground(checkpointId: string, pagesPerCategory: number
               categoryFailed += data.errors || 0
 
               try {
-                await prisma.$transaction(async (tx) => {
-                  const current = await getScraperCheckpoint(checkpointId)
-                  if (!current) return
+                // Update checkpoint with current position (simple: just track where we are)
+                await updateScraperCheckpoint(checkpointId, {
+                  lastCategoryIndex: categoryIndex,
+                  lastPageCompleted: page,
+                  totalVideosScraped: checkpoint.totalVideosScraped + data.scraped,
+                  totalVideosFailed: checkpoint.totalVideosFailed + (data.errors || 0),
+                })
 
-                  const existingIndex = current.categories.findIndex(
-                    (c) => c.categoryId === category.id
-                  )
-
-                  if (existingIndex >= 0) {
-                    current.categories[existingIndex]!.pagesCompleted = page
-                    current.categories[existingIndex]!.videosScraped = categoryScraped
-                    current.categories[existingIndex]!.videosFailed = categoryFailed
-                  } else {
-                    current.categories.push({
-                      categoryId: category.id,
-                      categoryName: category.name,
-                      pagesTotal: pagesPerCategory,
-                      pagesCompleted: page,
-                      videosScraped: categoryScraped,
-                      videosFailed: categoryFailed,
-                    })
-                  }
-
-                  current.totalVideosScraped += data.scraped
-                  current.totalVideosFailed += data.errors || 0
-
-                  await updateScraperCheckpoint(checkpointId, current)
-
-                  // Update job activity timestamp
-                  const job = ACTIVE_JOBS.get(checkpointId)
-                  if (job) {
-                    job.lastUpdateTime = Date.now()
-                  }
-                }, { timeout: 30000 }) // 30 second transaction timeout
+                // Update job activity timestamp
+                const job = ACTIVE_JOBS.get(checkpointId)
+                if (job) {
+                  job.lastUpdateTime = Date.now()
+                }
               } catch (txError) {
-                console.error(`[Background Scraper] Failed to save checkpoint for category ${category.id}:`, txError)
+                console.error(`[Background Scraper] Failed to save checkpoint at category ${categoryIndex} page ${page}:`, txError)
                 // Continue anyway - we'll retry on next page or next resume
               }
 
@@ -261,26 +224,26 @@ async function scrapeInBackground(checkpointId: string, pagesPerCategory: number
       await new Promise((resolve) => setTimeout(resolve, 2000))
     }
 
-    const final = await getScraperCheckpoint(checkpointId)
-    if (final) {
-      final.status = 'completed'
-      await updateScraperCheckpoint(checkpointId, final)
-    }
+    // Mark as completed
+    await updateScraperCheckpoint(checkpointId, {
+      status: 'completed'
+    })
 
     // Clean up job tracking
     ACTIVE_JOBS.delete(checkpointId)
 
-    console.log(`[Background Scraper] Completed for checkpoint ${checkpointId}`)
+    const final = await getScraperCheckpoint(checkpointId)
+    console.log(`[Background Scraper] Completed for checkpoint ${checkpointId}. Total: ${final?.totalVideosScraped || 0} videos scraped`)
   } catch (error) {
     console.error('[Background Scraper] Fatal error:', error)
     const checkpoint = await getScraperCheckpoint(checkpointId)
     if (checkpoint) {
-      checkpoint.status = 'failed'
-      checkpoint.errors.push(error instanceof Error ? error.message : String(error))
+      await updateScraperCheckpoint(checkpointId, {
+        status: 'failed'
+      })
       console.error(
-        `[Background Scraper] Saved error to checkpoint. Current progress: ${checkpoint.totalVideosScraped} videos, ${checkpoint.categories.filter((c) => c.pagesCompleted >= c.pagesTotal).length}/${checkpoint.categories.length} categories`
+        `[Background Scraper] Checkpoint updated to failed status. Completed up to: Category ${checkpoint.lastCategoryIndex + 1}, Page ${checkpoint.lastPageCompleted}. Total: ${checkpoint.totalVideosScraped} videos`
       )
-      await updateScraperCheckpoint(checkpointId, checkpoint)
     }
     // Clean up job tracking on error
     ACTIVE_JOBS.delete(checkpointId)
