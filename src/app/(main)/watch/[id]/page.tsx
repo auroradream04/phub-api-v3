@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   try {
     const video = await prisma.video.findUnique({
       where: { vodId: id },
-      select: { vodName: true, vodContent: true, vodBlurb: true }
+      select: { vodName: true, vodContent: true, vodRemarks: true }
     })
 
     if (!video) {
@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       }
     }
 
-    const description = video.vodBlurb || video.vodContent?.substring(0, 160) || `观看 ${video.vodName} - MD8AV提供高质量的视频播放体验`
+    const description = video.vodRemarks || video.vodContent?.substring(0, 160) || `观看 ${video.vodName} - MD8AV提供高质量的视频播放体验`
 
     return {
       title: `${video.vodName} - MD8AV`,
