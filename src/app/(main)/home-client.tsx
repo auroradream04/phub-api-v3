@@ -433,17 +433,17 @@ export default function HomeClient({ initialVideos, initialStats, allCategories 
 
         {/* Pagination */}
         {!loading && filteredVideos.length > 0 && (
-          <div className="flex items-center justify-between gap-4 mt-8 flex-wrap">
-            <div className="text-sm text-muted-foreground">
-              共 <span className="text-primary font-bold">{totalCount.toLocaleString()}</span> 个视频
-            </div>
-            <div className="flex items-center justify-center gap-2">
+          <div className="px-4 py-3 border-t border-border bg-muted/30 flex items-center justify-between w-full">
+            <span className="text-xs text-muted-foreground">
+              {totalCount.toLocaleString()} 个视频
+            </span>
+            <div className="flex gap-2 items-center text-xs">
               <button
                 onClick={goToPrevPage}
                 disabled={currentPage === 1}
                 className="px-2 py-1 text-xs rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                上一页
+                ← Prev
               </button>
               <span className="text-xs text-muted-foreground">
                 {currentPage} / {totalPages || 1}
@@ -453,7 +453,7 @@ export default function HomeClient({ initialVideos, initialStats, allCategories 
                 disabled={!hasMore}
                 className="px-2 py-1 text-xs rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                下一页
+                Next →
               </button>
             </div>
           </div>
