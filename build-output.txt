@@ -1,0 +1,240 @@
+
+> phub-api-v3@0.1.0 build
+> next build --turbopack
+
+   ▲ Next.js 15.5.4 (Turbopack)
+   - Environments: .env
+
+   Creating an optimized production build ...
+ ⚠ Webpack is configured while Turbopack is not, which may cause problems.
+ ⚠ See instructions if you need to configure Turbopack:
+  https://nextjs.org/docs/app/api-reference/next-config-js/turbopack
+
+ ✓ Finished writing to disk in 487ms
+ ✓ Compiled successfully in 4.2s
+   Linting and checking validity of types ...
+
+Failed to compile.
+
+./src/app/(auth)/login/page.tsx
+70:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/(auth)/register/page.tsx
+68:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/admin/categories/page.tsx
+9:3  Warning: 'DATABASE_TO_CONSOLIDATED' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+47:6  Warning: React Hook useEffect has a missing dependency: 'buildConsolidatedCategories'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+245:29  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/admin/embeds/[id]/edit/embed-edit-client.tsx
+41:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/admin/embeds/[id]/embed-detail-client.tsx
+62:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+84:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/admin/embeds/[id]/page.tsx
+81:16  Warning: 'err' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/admin/embeds/embeds-client.tsx
+105:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+144:16  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+202:16  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+249:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+273:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+608:44  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/admin/page.tsx
+51:22  Warning: 'setRetryLimit' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+175:9  Warning: 'totalPages' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+428:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+463:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+483:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+1145:37  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/admin/settings/page.tsx
+26:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+48:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/api/admin/ads/[id]/playlist/route.ts
+60:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/api/admin/ads/detail/[id]/route.ts
+205:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/api/admin/ads/route.ts
+43:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+77:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+138:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/api/admin/ads/upload/route.ts
+111:16  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+175:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/api/admin/cache/clear/route.ts
+66:14  Warning: 'dbError' is defined but never used.  @typescript-eslint/no-unused-vars
+94:14  Warning: 'dbError' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/api/admin/domains/[id]/route.ts
+47:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+90:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/api/admin/domains/logs/detail/route.ts
+119:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/api/admin/domains/logs/route.ts
+93:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/api/admin/domains/route.ts
+79:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+143:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/api/admin/domains/stats/route.ts
+110:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/api/admin/embeds/[id]/analytics/route.ts
+189:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/api/admin/embeds/[id]/route.ts
+45:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+95:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/api/admin/embeds/fetch-video/route.ts
+57:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+70:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/api/admin/embeds/route.ts
+83:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/api/admin/embeds/search-video/route.ts
+50:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/api/admin/settings/route.ts
+45:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+77:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/api/ads/script/route.ts
+25:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/api/ads/serve/[id]/[segment]/route.ts
+64:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/api/ads/serve/[id]/route.ts
+66:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/api/auth/register/route.ts
+59:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/api/categories/route.ts
+90:7  Warning: 'attemptNum' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/app/api/db/categories/route.ts
+7:27  Warning: 'request' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/app/api/db/home/route.ts
+3:10  Warning: 'getCategoryChineseName' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+23:27  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/api/embed/[embedId]/script/route.ts
+161:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/api/embed/[embedId]/search/route.ts
+108:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/api/embed/[embedId]/widget/route.ts
+81:15  Warning: 'searchTime' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+90:16  Warning: 'err' is defined but never used.  @typescript-eslint/no-unused-vars
+97:11  Warning: 'totalTime' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+119:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/api/internal/check-domain/route.ts
+19:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/api/proxy/segment/route.ts
+57:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/api/scraper/categories/route.ts
+73:16  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+146:22  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+233:20  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/api/scraper/categories-with-recovery/route.ts
+155:15  Warning: 'categoryScraped' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+206:11  Warning: 'categoryFailed' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/app/api/scraper/cleanup-unknown/route.ts
+10:28  Warning: 'request' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/app/api/scraper/videos/route.ts
+359:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+377:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/api/search/[query]/route.ts
+64:16  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+69:7  Warning: 'attemptNum' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/app/api/video/[id]/route.ts
+53:15  Warning: 'duration' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+62:16  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+63:15  Warning: 'duration' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+68:7  Warning: 'attemptNum' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+87:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/api/watch/[id]/route.ts
+4:10  Warning: 'prisma' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+100:5  Warning: 'apiCallTime' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+196:11  Warning: 'responseTime' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/app/api/watch/[id]/stream/route.ts
+322:18  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+352:7  Warning: 'segmentCount' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/app/embed/[embedId]/route.ts
+161:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/components/HorizontalAds.server.tsx
+3:11  Warning: 'HorizontalAd' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/components/HorizontalAdsSlider.tsx
+25:14  Warning: 'error' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/components/VideoPreview.tsx
+33:38  Warning: 'err' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/lib/domain-checker.ts
+60:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+96:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/lib/domain-middleware.ts
+186:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+211:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+280:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/lib/ffmpeg-hls.ts
+30:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+129:21  Warning: 'err' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/lib/ffmpeg-simple.ts
+34:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/lib/geo.ts
+44:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/lib/proxy.ts
+51:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+61:32  Warning: 'route' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+93:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/lib/scraper-utils.ts
+198:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+226:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+243:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/lib/site-settings.ts
+27:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/lib/video.ts
+37:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules

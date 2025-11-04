@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getCategoryChineseName } from '@/lib/category-mapping'
 import { getConsolidatedFromDatabase, getVariantsForConsolidated, CONSOLIDATED_TO_CHINESE } from '@/lib/maccms-mappings'
 
 export const revalidate = 3600 // 1 hour
@@ -20,7 +19,7 @@ export async function GET(request: NextRequest) {
     today.setHours(0, 0, 0, 0)
 
     // Get variants for the consolidated category if provided
-    let dbCategoryFilter: any = undefined
+    let dbCategoryFilter: { typeName: { in: string[] } } | undefined = undefined
     if (categoryParam) {
       const variants = getVariantsForConsolidated(categoryParam)
       if (variants.length > 0) {
