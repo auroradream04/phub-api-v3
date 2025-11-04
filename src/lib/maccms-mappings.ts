@@ -144,8 +144,6 @@ export const DATABASE_TO_CONSOLIDATED: Record<string, string> = {
   'cartoon': 'anime',
   '3d': 'anime',
   '2d': 'anime',
-  'sfw': 'anime',
-  'podcast': 'anime',
 
   // === VR (Virtual Reality) ===
   'vr': 'vr',
@@ -189,6 +187,8 @@ export const DATABASE_TO_CONSOLIDATED: Record<string, string> = {
   'public': 'niche',
   'vintage': 'niche',
   'music': 'niche',
+  'sfw': 'niche',
+  'podcast': 'niche',
 };
 
 /**

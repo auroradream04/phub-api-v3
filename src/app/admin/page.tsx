@@ -774,7 +774,7 @@ export default function AdminDashboard() {
                             >
                               <div className="min-w-0 flex-1">
                                 <p className="text-sm font-bold text-foreground">{CONSOLIDATED_TO_CHINESE[item.cat]}</p>
-                                <p className="text-xs text-muted-foreground">{item.cat}</p>
+                                <p className="text-xs text-muted-foreground capitalize">{item.cat.replace(/-/g, ' ')}</p>
                               </div>
                               <span className="text-xs bg-muted px-2 py-1 rounded whitespace-nowrap font-bold">
                                 {item.count.toLocaleString()}
