@@ -176,6 +176,10 @@ export default function AdminDashboard() {
   const startIndex = (videoPage - 1) * videosPerPage
   const paginatedVideos = filteredVideos.slice(startIndex, startIndex + videosPerPage)
 
+  // For category pagination: API already returns paginated results, so use categoryVideos directly
+  // For search pagination: apply client-side pagination to filtered results
+  const videosToDisplay = videoSearchQuery ? paginatedVideos : categoryVideos
+
   // Calculate total pages for selected category
   let selectedCategoryCount = 0
   if (selectedConsolidated) {
@@ -1133,7 +1137,7 @@ export default function AdminDashboard() {
                               <div className="p-8 text-center text-muted-foreground">No videos match your search</div>
                             ) : (
                               <div className="divide-y divide-border">
-                                {paginatedVideos.map((video) => (
+                                {videosToDisplay.map((video) => (
                             <div key={video.vod_id} className="px-3 py-2 hover:bg-muted/50 transition-colors">
                               <div className="flex gap-2 items-start justify-between">
                                 <div className="flex gap-2 flex-1 min-w-0">
@@ -1227,17 +1231,14 @@ export default function AdminDashboard() {
                               setLoadingCategoryVideos(true)
                               try {
                                 let url = ''
-                                console.log('Prev clicked. selectedConsolidated:', selectedConsolidated, 'selectedCategory:', selectedCategory)
                                 if (selectedConsolidated) {
                                   const variantParams = selectedConsolidated.variants.map(v => `variants=${encodeURIComponent(v)}`).join('&')
                                   url = `/api/admin/videos/by-category?${variantParams}&page=${newPage}`
                                 } else {
                                   url = `/api/admin/videos/by-category?category=${encodeURIComponent(selectedCategory || '')}&page=${newPage}`
                                 }
-                                console.log('Fetching:', url)
                                 const res = await fetch(url)
                                 const data = await res.json()
-                                console.log('Got data:', data.list?.length)
                                 setCategoryVideos(data.list || [])
                                 setVideoPage(newPage)
                               } catch (error) {
@@ -1253,6 +1254,7 @@ export default function AdminDashboard() {
                           </button>
                           <span className="text-xs text-muted-foreground">
                             {videoPage} / {categoryTotalPages}
+                            <button onClick={() => console.log('Debug:', {videoPage, categoryTotalPages, selectedConsolidated})} className="ml-2 text-xs opacity-50">?</button>
                           </span>
                           <button
                             onClick={async () => {
