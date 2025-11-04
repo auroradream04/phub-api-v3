@@ -60,6 +60,7 @@ export default function AdminDashboard() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [categoryVideos, setCategoryVideos] = useState<MaccmsVideo[]>([])
   const [loadingCategoryVideos, setLoadingCategoryVideos] = useState(false)
+  const [expandedVariants, setExpandedVariants] = useState<string | null>(null)
 
   // Check for saved progress on load
   useEffect(() => {
@@ -764,23 +765,55 @@ export default function AdminDashboard() {
                         })
                         .sort((a, b) => b.count - a.count)
                         .map((item, idx) => (
-                          <button
-                            key={idx}
-                            onClick={() => handleSelectConsolidatedCategory(item.cat, CONSOLIDATED_TYPE_IDS[item.cat])}
-                            className={`w-full text-left px-4 py-3 hover:bg-muted transition-colors ${
-                              selectedCategory?.includes(item.cat) ? 'bg-primary/10' : ''
-                            }`}
-                          >
-                            <div className="flex justify-between items-center gap-2">
-                              <div className="min-w-0">
+                          <div key={idx} className="border-b border-border last:border-b-0">
+                            <button
+                              onClick={() => handleSelectConsolidatedCategory(item.cat, CONSOLIDATED_TYPE_IDS[item.cat])}
+                              className={`w-full text-left px-4 py-3 hover:bg-muted transition-colors flex justify-between items-center gap-2 ${
+                                selectedCategory?.includes(item.cat) ? 'bg-primary/10' : ''
+                              }`}
+                            >
+                              <div className="min-w-0 flex-1">
                                 <p className="text-sm font-bold text-foreground">{CONSOLIDATED_TO_CHINESE[item.cat]}</p>
                                 <p className="text-xs text-muted-foreground">{item.cat}</p>
                               </div>
                               <span className="text-xs bg-muted px-2 py-1 rounded whitespace-nowrap font-bold">
                                 {item.count.toLocaleString()}
                               </span>
-                            </div>
-                          </button>
+                            </button>
+                            {/* Expandable variants */}
+                            <button
+                              onClick={() => setExpandedVariants(expandedVariants === item.cat ? null : item.cat)}
+                              className="w-full text-left px-4 py-2 text-xs text-muted-foreground hover:bg-muted/50 transition-colors border-t border-border/50 flex items-center gap-1"
+                            >
+                              {expandedVariants === item.cat ? (
+                                <ChevronUp className="w-3 h-3" />
+                              ) : (
+                                <ChevronDown className="w-3 h-3" />
+                              )}
+                              {item.variants.length} variant{item.variants.length !== 1 ? 's' : ''}
+                            </button>
+                            {expandedVariants === item.cat && (
+                              <div className="bg-muted/20 px-4 py-2 border-t border-border/50">
+                                <div className="space-y-1">
+                                  {item.variants
+                                    .sort((a, b) => {
+                                      const countA = stats.categories.find(c => c.typeName.toLowerCase() === a)?._count || 0
+                                      const countB = stats.categories.find(c => c.typeName.toLowerCase() === b)?._count || 0
+                                      return countB - countA
+                                    })
+                                    .map((variant, vidx) => {
+                                      const variantCount = stats.categories.find(c => c.typeName.toLowerCase() === variant)?._count || 0
+                                      return (
+                                        <div key={vidx} className="flex justify-between items-center text-xs py-1 px-2 rounded hover:bg-muted/30 transition-colors">
+                                          <span className="text-muted-foreground truncate">{variant}</span>
+                                          <span className="text-muted-foreground font-semibold ml-2">{variantCount.toLocaleString()}</span>
+                                        </div>
+                                      )
+                                    })}
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         ))}
                     </div>
                   )}
