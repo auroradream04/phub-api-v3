@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const videos = await prisma.video.findMany({
+    const dbVideos = await prisma.video.findMany({
       where: whereClause,
       select: {
         vodId: true,
@@ -39,6 +39,15 @@ export async function GET(request: NextRequest) {
       },
       take: 20,
     })
+
+    // Transform to match MACCMS format (vod_id, vod_name, etc.)
+    const videos = dbVideos.map(v => ({
+      vod_id: v.vodId,
+      vod_name: v.vodName,
+      vod_pic: v.vodPic || undefined,
+      vod_hits: v.views,
+      type_name: v.typeName,
+    }))
 
     return NextResponse.json({ list: videos })
   } catch (error) {
