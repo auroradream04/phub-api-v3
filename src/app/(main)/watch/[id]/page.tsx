@@ -36,7 +36,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
         type: 'video.other',
       },
     }
-  } catch (error) {
+  } catch {
     return {
       title: '视频加载中 - MD8AV',
       description: 'MD8AV - 高品质视频内容聚合平台',

@@ -86,7 +86,7 @@ export default function TermsPage() {
         <section className="bg-card border border-border p-6">
           <h2 className="text-2xl font-semibold mb-4">6. 免责声明</h2>
           <p className="mb-4 text-muted-foreground">
-            我们的服务按"现状"和"可用"基础提供。我们不作任何明示或暗示的保证，包括但不限于：
+            我们的服务按&ldquo;现状&rdquo;和&ldquo;可用&rdquo;基础提供。我们不作任何明示或暗示的保证，包括但不限于：
           </p>
           <ul className="space-y-2">
             {[

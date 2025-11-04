@@ -153,7 +153,7 @@ export default function DMCAPage() {
         <section className="bg-card border border-border p-6">
           <h2 className="text-2xl font-semibold mb-4">10. 政策更新</h2>
           <p className="text-muted-foreground">
-            我们可能会不时更新本DMCA政策。任何更改将在本页面上发布，并注明"最后更新"日期。
+            我们可能会不时更新本DMCA政策。任何更改将在本页面上发布，并注明&ldquo;最后更新&rdquo;日期。
           </p>
         </section>
 

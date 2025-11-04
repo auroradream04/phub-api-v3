@@ -9,10 +9,6 @@ export const metadata: Metadata = {
   keywords: ['视频平台', '在线视频', '视频聚合', 'MD8AV', '高清视频', '视频内容'],
 }
 
-interface Category {
-  name: string
-}
-
 async function getInitialData() {
   const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
 
