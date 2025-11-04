@@ -288,18 +288,16 @@ export default function HomeClient({ initialVideos, initialStats, allCategories 
         ) : (
           <>
             {/* Pagination Bar - Top */}
-            {!loading && filteredVideos.length > 0 && (
-              <div className="px-4 py-3 border border-border bg-muted/30 flex items-center justify-between w-full rounded-tl-lg rounded-tr-lg border-b">
+            <div className="hidden md:block px-4 py-3 border border-b border-border bg-muted/30 flex items-center justify-between w-full rounded-tl-lg rounded-tr-lg">
+              <span className="text-xs text-muted-foreground">
+                <span className="text-primary font-bold">{totalCount.toLocaleString()}</span> 个视频
+              </span>
+              <div className="flex gap-2 items-center text-xs">
                 <span className="text-xs text-muted-foreground">
-                  <span className="text-primary font-bold">{totalCount.toLocaleString()}</span> 个视频
+                  {currentPage} / {totalPages || 1}
                 </span>
-                <div className="flex gap-2 items-center text-xs">
-                  <span className="text-xs text-muted-foreground">
-                    {currentPage} / {totalPages || 1}
-                  </span>
-                </div>
               </div>
-            )}
+            </div>
 
             {/* Desktop Table View */}
             <div className="hidden md:block bg-card border border-border/40 overflow-hidden pb-1 border-t-0">
