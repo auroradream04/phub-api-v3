@@ -54,7 +54,7 @@ export default function EmbedsClient() {
   const [videoSearch, setVideoSearch] = useState('')
   const [searchResults, setSearchResults] = useState<SearchVideo[]>([])
   const [searching, setSearching] = useState(false)
-  const [selectedVideo, setSelectedVideo] = useState<SearchVideo | null>(null)
+  const [_selectedVideo, setSelectedVideo] = useState<SearchVideo | null>(null)
   const [manualVideoInput, setManualVideoInput] = useState('')
   const [fetchingManualVideo, setFetchingManualVideo] = useState(false)
   const searchTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
@@ -161,7 +161,7 @@ export default function EmbedsClient() {
     })
   }
 
-  function handleFetchManualVideoDebounced(input: string) {
+  function _handleFetchManualVideoDebounced(input: string) {
     // Clear previous timeout
     if (manualTimeoutRef.current) {
       clearTimeout(manualTimeoutRef.current)
