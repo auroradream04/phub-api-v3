@@ -462,36 +462,20 @@ export function getCategoryEnglishName(chineseName: string): string {
 
 /**
  * Get the canonical category for a given category name
- * Returns the base category if this is a variant (e.g., 'amateur-gay' → 'gay')
- * Also handles compound categories like 'gaming gay' → 'gaming' → 'hentai'
+ * Returns the consolidated category if one exists, otherwise returns the original
  */
 export function getCanonicalCategory(categoryName: string): string {
   const normalized = categoryName.toLowerCase().trim()
 
-  // Check direct consolidation first
+  // Check if this category has a consolidation rule
   if (CATEGORY_CONSOLIDATION[normalized]) {
     return CATEGORY_CONSOLIDATION[normalized]
   }
 
-  // Handle compound categories with spaces (e.g., "Gaming Gay" → consolidate "gaming")
-  // Split by space and check if last word is a consolidation target
-  if (normalized.includes(' ')) {
-    const parts = normalized.split(' ')
-    const lastPart = parts[parts.length - 1]
-
-    // If last part (e.g., 'gay', 'women', etc) is a consolidation source, check the base
-    if (CATEGORY_CONSOLIDATION[lastPart]) {
-      const basePart = parts.slice(0, -1).join(' ')
-      // Try consolidating just the base part
-      const baseConsolidated = CATEGORY_CONSOLIDATION[basePart] || basePart
-      return baseConsolidated
-    }
-
-    // Try consolidating the whole thing with hyphens instead of spaces
-    const hyphenated = normalized.replace(/\s+/g, '-')
-    if (CATEGORY_CONSOLIDATION[hyphenated]) {
-      return CATEGORY_CONSOLIDATION[hyphenated]
-    }
+  // Try with hyphens instead of spaces (for compound categories)
+  const hyphenated = normalized.replace(/\s+/g, '-')
+  if (CATEGORY_CONSOLIDATION[hyphenated]) {
+    return CATEGORY_CONSOLIDATION[hyphenated]
   }
 
   // No consolidation found, return normalized name

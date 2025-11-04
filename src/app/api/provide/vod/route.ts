@@ -124,97 +124,77 @@ function formatDate(date: Date): string {
   return date.toISOString().replace('T', ' ').split('.')[0]
 }
 
-// Cache for categories (refreshed every hour)
-let cachedCategories: MaccmsClass[] | null = null
-let categoriesCacheTime = 0
-const CATEGORIES_CACHE_TTL = 3600000 // 1 hour in ms
+// Hardcoded 26 consolidated categories for MACCMS
+// These correspond to the CATEGORY_CONSOLIDATION rules
+const MACCMS_CATEGORIES: MaccmsClass[] = [
+  { type_id: 1, type_name: '亚洲' },          // asian
+  { type_id: 2, type_name: '三人行' },        // threesome
+  { type_id: 3, type_name: '业余' },          // amateur
+  { type_id: 6, type_name: '大码美女' },      // bbw
+  { type_id: 9, type_name: '金发女' },        // blonde
+  { type_id: 10, type_name: '恋物癖' },       // fetish
+  { type_id: 13, type_name: '劲爆重口味' },   // hardcore
+  { type_id: 14, type_name: '射精' },         // cumshot
+  { type_id: 17, type_name: '异族' },         // interracial
+  { type_id: 22, type_name: '自慰' },         // masturbation
+  { type_id: 23, type_name: '玩具' },         // toys
+  { type_id: 26, type_name: '拉丁' },         // latina
+  { type_id: 27, type_name: '女同性恋' },     // lesbian
+  { type_id: 28, type_name: '成熟' },         // mature
+  { type_id: 32, type_name: '动漫' },         // hentai
+  { type_id: 37, type_name: '大学生' },       // college-18
+  { type_id: 38, type_name: '高清' },         // hd-porn
+  { type_id: 40, type_name: '同性恋' },       // gay
+  { type_id: 68, type_name: '第一视角' },     // pov
+  { type_id: 94, type_name: '欧洲' },         // euro
+  { type_id: 81, type_name: '角色扮演' },     // cosplay
+  { type_id: 83, type_name: '跨性别' },       // transgender
+  { type_id: 104, type_name: '虚拟现实' },    // vr
+  { type_id: 111, type_name: '日本' },        // japanese (NEVER consolidate)
+  { type_id: 115, type_name: '认证业余' },    // verified-amateurs
+  { type_id: 138, type_name: '中文' }          // chinese (NEVER consolidate)
+]
 
-// Cache for typeId mapping (typeName → canonical typeId)
-let cachedTypeIdMap: Map<string, number> | null = null
+// Map canonical category names to typeIds for quick lookup
+const CANONICAL_TO_TYPE_ID: Record<string, number> = {
+  'asian': 1,
+  'threesome': 2,
+  'amateur': 3,
+  'bbw': 6,
+  'blonde': 9,
+  'fetish': 10,
+  'hardcore': 13,
+  'cumshot': 14,
+  'interracial': 17,
+  'masturbation': 22,
+  'toys': 23,
+  'latina': 26,
+  'lesbian': 27,
+  'mature': 28,
+  'hentai': 32,
+  'college-18': 37,
+  'hd-porn': 38,
+  'gay': 40,
+  'pov': 68,
+  'euro': 94,
+  'cosplay': 81,
+  'transgender': 83,
+  'vr': 104,
+  'japanese': 111,
+  'verified-amateurs': 115,
+  'chinese': 138
+}
 
-// Helper function to fetch categories from database
-async function getCategories(): Promise<MaccmsClass[]> {
-  const now = Date.now()
-
-  // Return cached categories if still valid
-  if (cachedCategories && (now - categoriesCacheTime) < CATEGORIES_CACHE_TTL) {
-    return cachedCategories
-  }
-
-  // Fetch categories from database
-  const dbCategories = await prisma.video.groupBy({
-    by: ['typeId', 'typeName'],
-    _count: { id: true },
-    where: {
-      typeName: {
-        not: '',
-        notIn: ['Unknown', 'unknown', 'UNKNOWN']
-      }
-    },
-    orderBy: {
-      typeId: 'asc'
-    }
-  })
-
-  // Group categories by their canonical name and merge counts
-  // IMPORTANT: japanese and chinese must NEVER be consolidated
-  const categoryMap = new Map<string, { typeId: number; typeName: string; count: number }>()
-  const typeIdMap = new Map<string, number>() // Map: typeName (any variant) → canonical typeId
-
-  for (const cat of dbCategories) {
-    const normalized = cat.typeName.toLowerCase().trim()
-
-    // Special handling: NEVER consolidate japanese or chinese
-    let key: string
-    if (normalized === 'japanese' || normalized === 'chinese') {
-      key = normalized // Use original name as key
-    } else {
-      key = getCanonicalCategory(cat.typeName) // Use canonical for everything else
-    }
-
-    const chineseName = getCategoryChineseName(cat.typeName)
-
-    if (categoryMap.has(key)) {
-      // Add count to existing category
-      const existing = categoryMap.get(key)!
-      existing.count += cat._count.id
-      // Map this typeName variant to the canonical typeId
-      typeIdMap.set(normalized, existing.typeId)
-    } else {
-      // Create new category entry
-      categoryMap.set(key, {
-        typeId: cat.typeId,
-        typeName: chineseName,
-        count: cat._count.id
-      })
-      // Map this typeName to its own typeId (it's the canonical one)
-      typeIdMap.set(normalized, cat.typeId)
-    }
-  }
-
-  // Transform to MaccmsClass format
-  const categories: MaccmsClass[] = Array.from(categoryMap.values()).map(cat => ({
-    type_id: cat.typeId,
-    type_name: cat.typeName
-  }))
-
-  // Update cache
-  cachedCategories = categories
-  cachedTypeIdMap = typeIdMap
-  categoriesCacheTime = now
-
-  return categories
+// Helper function to get hardcoded categories
+function getCategories(): Promise<MaccmsClass[]> {
+  return Promise.resolve(MACCMS_CATEGORIES)
 }
 
 // Helper function to get canonical typeId for a typeName
-async function getCanonicalTypeId(typeName: string): Promise<number> {
-  // Ensure categories are loaded
-  if (!cachedTypeIdMap) {
-    await getCategories()
-  }
-
-  const normalized = typeName.toLowerCase().trim()
-  return cachedTypeIdMap?.get(normalized) || 0 // Return 0 if not found (shouldn't happen)
+function getCanonicalTypeId(typeName: string): Promise<number> {
+  const canonical = getCanonicalCategory(typeName)
+  const typeId = CANONICAL_TO_TYPE_ID[canonical] || 0
+  return Promise.resolve(typeId)
 }
 
 // Helper function to convert JSON response to XML
