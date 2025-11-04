@@ -1107,7 +1107,25 @@ export default function AdminDashboard() {
                       // Videos tab
                       <>
                         {loadingCategoryVideos ? (
-                          <div className="p-8 text-center text-muted-foreground">Loading videos...</div>
+                          <div className="divide-y divide-border">
+                            {Array.from({ length: 5 }).map((_, idx) => (
+                              <div key={idx} className="px-3 py-2">
+                                <div className="flex gap-2 items-start justify-between">
+                                  <div className="flex gap-2 flex-1 min-w-0">
+                                    <div className="w-20 aspect-video rounded bg-muted animate-pulse flex-shrink-0" />
+                                    <div className="flex-1 space-y-1">
+                                      <div className="h-4 bg-muted rounded animate-pulse" />
+                                      <div className="h-3 bg-muted rounded animate-pulse w-3/4" />
+                                    </div>
+                                  </div>
+                                  <div className="flex gap-1 flex-shrink-0">
+                                    <div className="w-6 h-6 bg-muted rounded animate-pulse" />
+                                    <div className="w-6 h-6 bg-muted rounded animate-pulse" />
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         ) : categoryVideos.length > 0 ? (
                           <>
                             {filteredVideos.length === 0 ? (
@@ -1205,15 +1223,23 @@ export default function AdminDashboard() {
                           <button
                             onClick={async () => {
                               const newPage = Math.max(1, videoPage - 1)
+                              setLoadingCategoryVideos(true)
                               try {
-                                const res = await fetch(
-                                  `/api/admin/videos/by-category?category=${encodeURIComponent(selectedCategory || '')}&page=${newPage}`
-                                )
+                                let url = ''
+                                if (selectedConsolidated) {
+                                  const variantParams = selectedConsolidated.variants.map(v => `variants=${encodeURIComponent(v)}`).join('&')
+                                  url = `/api/admin/videos/by-category?${variantParams}&page=${newPage}`
+                                } else {
+                                  url = `/api/admin/videos/by-category?category=${encodeURIComponent(selectedCategory || '')}&page=${newPage}`
+                                }
+                                const res = await fetch(url)
                                 const data = await res.json()
-                                setCategoryVideos(prev => [...prev.slice(0, (newPage - 1) * videosPerPage), ...(data.list || [])])
+                                setCategoryVideos(data.list || [])
                                 setVideoPage(newPage)
                               } catch (error) {
                                 console.error('Failed to fetch page:', error)
+                              } finally {
+                                setLoadingCategoryVideos(false)
                               }
                             }}
                             disabled={videoPage === 1}
@@ -1227,15 +1253,23 @@ export default function AdminDashboard() {
                           <button
                             onClick={async () => {
                               const newPage = Math.min(categoryTotalPages, videoPage + 1)
+                              setLoadingCategoryVideos(true)
                               try {
-                                const res = await fetch(
-                                  `/api/admin/videos/by-category?category=${encodeURIComponent(selectedCategory || '')}&page=${newPage}`
-                                )
+                                let url = ''
+                                if (selectedConsolidated) {
+                                  const variantParams = selectedConsolidated.variants.map(v => `variants=${encodeURIComponent(v)}`).join('&')
+                                  url = `/api/admin/videos/by-category?${variantParams}&page=${newPage}`
+                                } else {
+                                  url = `/api/admin/videos/by-category?category=${encodeURIComponent(selectedCategory || '')}&page=${newPage}`
+                                }
+                                const res = await fetch(url)
                                 const data = await res.json()
-                                setCategoryVideos(prev => [...prev.slice(0, (newPage - 1) * videosPerPage), ...(data.list || [])])
+                                setCategoryVideos(data.list || [])
                                 setVideoPage(newPage)
                               } catch (error) {
                                 console.error('Failed to fetch page:', error)
+                              } finally {
+                                setLoadingCategoryVideos(false)
                               }
                             }}
                             disabled={videoPage === categoryTotalPages}
