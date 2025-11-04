@@ -210,7 +210,8 @@ export default function AdminDashboard() {
   const globalPaginatedVideos = globalSearchResults.slice(globalStartIndex, globalStartIndex + videosPerPage)
 
   const handleSelectConsolidatedCategory = async (consolidated: string, _typeId: number) => {
-    setSelectedCategory(`${consolidated} (${CONSOLIDATED_TO_CHINESE[consolidated]})`)
+    const capitalizedName = consolidated.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+    setSelectedCategory(`${capitalizedName} (${CONSOLIDATED_TO_CHINESE[consolidated]})`)
     const variants = getVariantsForConsolidated(consolidated)
     setSelectedConsolidated({ name: consolidated, variants })
     setVideoPage(1)
@@ -1010,7 +1011,7 @@ export default function AdminDashboard() {
                             >
                               <div className="min-w-0 flex-1">
                                 <p className="text-sm font-bold text-foreground">{CONSOLIDATED_TO_CHINESE[item.cat]}</p>
-                                <p className="text-xs text-muted-foreground capitalize">{item.cat.replace(/-/g, ' ')}</p>
+                                <p className="text-xs text-muted-foreground capitalize">{item.cat.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}</p>
                               </div>
                               <span className="text-xs bg-muted px-2 py-1 rounded whitespace-nowrap font-bold">
                                 {item.count.toLocaleString()}
@@ -1226,14 +1227,17 @@ export default function AdminDashboard() {
                               setLoadingCategoryVideos(true)
                               try {
                                 let url = ''
+                                console.log('Prev clicked. selectedConsolidated:', selectedConsolidated, 'selectedCategory:', selectedCategory)
                                 if (selectedConsolidated) {
                                   const variantParams = selectedConsolidated.variants.map(v => `variants=${encodeURIComponent(v)}`).join('&')
                                   url = `/api/admin/videos/by-category?${variantParams}&page=${newPage}`
                                 } else {
                                   url = `/api/admin/videos/by-category?category=${encodeURIComponent(selectedCategory || '')}&page=${newPage}`
                                 }
+                                console.log('Fetching:', url)
                                 const res = await fetch(url)
                                 const data = await res.json()
+                                console.log('Got data:', data.list?.length)
                                 setCategoryVideos(data.list || [])
                                 setVideoPage(newPage)
                               } catch (error) {
