@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
-import { getCategoryChineseName, getCanonicalCategory, getConsolidatedCategories } from '@/lib/category-mapping'
+import {
+  DATABASE_TO_CONSOLIDATED,
+  CONSOLIDATED_CATEGORIES,
+  CONSOLIDATED_TYPE_IDS,
+  CONSOLIDATED_TO_CHINESE,
+  getVariantsForConsolidated,
+} from '@/lib/maccms-mappings'
 
 export const revalidate = 7200 // 2 hours
 
@@ -124,117 +130,29 @@ function formatDate(date: Date): string {
   return date.toISOString().replace('T', ' ').split('.')[0]
 }
 
-// UNIQUE consolidated categories for MACCMS API
-// Only main type_ids are shown, but queries will return videos from ALL variant type_ids
-const MACCMS_CATEGORIES: MaccmsClass[] = [
-  { type_id: 1, type_name: '亚洲' },          // asian
-  { type_id: 2, type_name: '三人行' },        // threesome
-  { type_id: 3, type_name: '业余' },          // amateur
-  { type_id: 6, type_name: '大码美女' },      // bbw
-  { type_id: 8, type_name: '大奶' },          // big-tits
-  { type_id: 9, type_name: '金发女' },        // blonde
-  { type_id: 10, type_name: '恋物癖' },       // fetish
-  { type_id: 13, type_name: '劲爆重口味' },   // hardcore
-  { type_id: 14, type_name: '射精' },         // cumshot
-  { type_id: 17, type_name: '异族' },         // interracial
-  { type_id: 22, type_name: '自慰' },         // masturbation
-  { type_id: 23, type_name: '玩具' },         // toys
-  { type_id: 26, type_name: '拉丁' },         // latina
-  { type_id: 27, type_name: '女同性恋' },     // lesbian
-  { type_id: 28, type_name: '成熟' },         // mature
-  { type_id: 32, type_name: '动漫' },         // hentai
-  { type_id: 38, type_name: '高清' },         // hd-porn
-  { type_id: 40, type_name: '同性恋' },       // gay (includes 45, 48, 70, 77, 82, 84, 85, 107, 252, 262, 272, 312, 322, 332, 342, 352, 362, 372, 382, 392, 402, 412, 422, 552, 702, 731, 742, 901)
-  { type_id: 67, type_name: '粗暴性爱' },     // rough-sex
-  { type_id: 68, type_name: '大学生' },       // college-18 (includes 37, 79, 88)
-  { type_id: 72, type_name: '双插' },         // double-penetration
-  { type_id: 73, type_name: '女性喜爱' },     // popular-with-women
-  { type_id: 76, type_name: '双性恋男' },     // bisexual-male
-  { type_id: 81, type_name: '角色扮演' },     // cosplay (includes 241)
-  { type_id: 83, type_name: '跨性别' },       // transgender (includes 572, 582, 602)
-  { type_id: 89, type_name: '保姆' },         // babysitter
-  { type_id: 92, type_name: '男性自慰' },     // solo-male
-  { type_id: 94, type_name: '欧洲' },         // euro
-  { type_id: 104, type_name: '虚拟现实' },    // vr (includes 106, 612, 622)
-  { type_id: 105, type_name: '60帧' },        // 60fps
-  { type_id: 131, type_name: '舔阴' },        // pussy-licking
-  { type_id: 141, type_name: '幕后花絮' },    // behind-the-scenes
-  { type_id: 181, type_name: '老少配' },      // old-young
-  { type_id: 231, type_name: '描述视频' },    // described-video
-  { type_id: 444, type_name: '继家庭幻想' },  // step-fantasy
-  { type_id: 482, type_name: '认证情侣' },    // verified-couples
-  { type_id: 492, type_name: '女性自慰' },    // solo-female
-  { type_id: 502, type_name: '女性高潮' },    // female-orgasm
-  { type_id: 512, type_name: '肌肉男' },      // muscular-men
-  { type_id: 542, type_name: '假阳具' },      // strap-on
-  { type_id: 562, type_name: '纹身女' },      // tattooed-women
-  { type_id: 722, type_name: '无码' },        // uncensored
-  { type_id: 732, type_name: '字幕' },        // closed-captions
-  { type_id: 111, type_name: '日本' },        // japanese (NEVER consolidate - special)
-  { type_id: 115, type_name: '认证业余' },    // verified-amateurs (includes 138, 139)
-  { type_id: 9998, type_name: '中文' }        // chinese (NEVER consolidate - special, was previously 9998)
-]
-
-// Map all database type_ids to their canonical category names
-// This allows old type_ids to consolidate with their variants
-const TYPE_ID_TO_CATEGORY: Record<number, string> = {
-  // Main categories (map to themselves)
-  1: 'asian', 2: 'threesome', 3: 'amateur', 6: 'bbw', 8: 'big-tits', 9: 'blonde',
-  10: 'fetish', 13: 'hardcore', 14: 'cumshot', 17: 'interracial', 22: 'masturbation',
-  23: 'toys', 26: 'latina', 27: 'lesbian', 28: 'mature', 32: 'hentai', 38: 'hd-porn',
-  67: 'rough-sex', 72: 'double-penetration', 73: 'popular-with-women', 76: 'bisexual-male',
-  89: 'babysitter', 92: 'solo-male', 94: 'euro', 105: '60fps', 131: 'pussy-licking',
-  141: 'behind-the-scenes', 181: 'old-young', 231: 'described-video', 444: 'step-fantasy',
-  482: 'verified-couples', 492: 'solo-female', 502: 'female-orgasm', 512: 'muscular-men',
-  542: 'strap-on', 562: 'tattooed-women', 722: 'uncensored', 732: 'closed-captions',
-  111: 'japanese', 9998: 'chinese',
-
-  // Gay variants (all map to 'gay')
-  40: 'gay', 45: 'gay', 48: 'gay', 70: 'gay', 77: 'gay', 82: 'gay', 84: 'gay', 85: 'gay',
-  107: 'gay', 252: 'gay', 262: 'gay', 272: 'gay', 312: 'gay', 322: 'gay', 332: 'gay',
-  342: 'gay', 352: 'gay', 362: 'gay', 372: 'gay', 382: 'gay', 392: 'gay', 402: 'gay',
-  412: 'gay', 422: 'gay', 552: 'gay', 702: 'gay', 731: 'gay', 742: 'gay', 901: 'gay',
-
-  // College/Student variants (all map to 'college-18')
-  37: 'college-18', 68: 'college-18', 79: 'college-18', 88: 'college-18',
-
-  // Cosplay variants (all map to 'cosplay')
-  81: 'cosplay', 241: 'cosplay',
-
-  // Transgender variants (all map to 'transgender')
-  83: 'transgender', 572: 'transgender', 582: 'transgender', 602: 'transgender',
-
-  // VR variants (all map to 'vr')
-  104: 'vr', 106: 'vr', 612: 'vr', 622: 'vr',
-
-  // Verified variants (all map to 'verified-amateurs')
-  115: 'verified-amateurs', 138: 'verified-amateurs', 139: 'verified-amateurs'
+// Build consolidated MACCMS categories from the mapping
+function buildMaccmsCategories(): MaccmsClass[] {
+  return CONSOLIDATED_CATEGORIES.map(cat => ({
+    type_id: CONSOLIDATED_TYPE_IDS[cat],
+    type_name: CONSOLIDATED_TO_CHINESE[cat],
+  }))
 }
 
-// Map canonical category names to their MAIN type_id (for new videos consolidation)
-const CANONICAL_TO_TYPE_ID: Record<string, number> = {
-  'asian': 1, 'threesome': 2, 'amateur': 3, 'bbw': 6, 'big-tits': 8, 'blonde': 9,
-  'fetish': 10, 'hardcore': 13, 'cumshot': 14, 'interracial': 17, 'masturbation': 22,
-  'toys': 23, 'latina': 26, 'lesbian': 27, 'mature': 28, 'hentai': 32, 'hd-porn': 38,
-  'rough-sex': 67, 'college-18': 68, 'double-penetration': 72, 'popular-with-women': 73,
-  'bisexual-male': 76, 'cosplay': 81, 'transgender': 83, 'babysitter': 89, 'solo-male': 92,
-  'euro': 94, 'vr': 104, '60fps': 105, 'pussy-licking': 131, 'behind-the-scenes': 141,
-  'old-young': 181, 'described-video': 231, 'step-fantasy': 444, 'verified-couples': 482,
-  'solo-female': 492, 'female-orgasm': 502, 'muscular-men': 512, 'strap-on': 542,
-  'tattooed-women': 562, 'uncensored': 722, 'closed-captions': 732, 'gay': 40,
-  'japanese': 111, 'verified-amateurs': 115, 'chinese': 9998
-}
+const MACCMS_CATEGORIES = buildMaccmsCategories()
 
-// Helper function to get hardcoded categories
-function getCategories(): Promise<MaccmsClass[]> {
-  return Promise.resolve(MACCMS_CATEGORIES)
-}
+/**
+ * Get the MACCMS type_id for a database category name
+ * Maps from database category (e.g., "Amateur Gay") to consolidated category (e.g., "gay") to type_id (e.g., 1)
+ */
+function getTypeIdForDatabaseCategory(dbCategoryName: string): number {
+  const normalized = dbCategoryName.toLowerCase().trim()
+  const consolidated = DATABASE_TO_CONSOLIDATED[normalized]
 
-// Helper function to get canonical typeId for a typeName
-function getCanonicalTypeId(typeName: string): Promise<number> {
-  const canonical = getCanonicalCategory(typeName)
-  const typeId = CANONICAL_TO_TYPE_ID[canonical] || 0
-  return Promise.resolve(typeId)
+  if (consolidated) {
+    return CONSOLIDATED_TYPE_IDS[consolidated] || 12 // Default to 'niche'
+  }
+
+  return 12 // Default to 'niche' if not found
 }
 
 // Helper function to convert JSON response to XML
@@ -333,9 +251,9 @@ export async function GET(request: NextRequest) {
         },
       })
 
-      // Map videos with canonical typeIds
-      videos = await Promise.all(dbVideos.map(async v => {
-        const typeId = await getCanonicalTypeId(v.typeName)
+      // Map videos with consolidated typeIds
+      videos = dbVideos.map(v => {
+        const typeId = getTypeIdForDatabaseCategory(v.typeName)
         return {
           vod_id: v.vodId,
           type_id: typeId,
@@ -348,7 +266,7 @@ export async function GET(request: NextRequest) {
           vod_letter: (v.vodName.charAt(0) || '').toUpperCase(),
           vod_color: '',
           vod_tag: '',
-          vod_class: (v.vodClass || getCategoryChineseName(v.typeName)).split(',')[0]?.trim() || '',
+          vod_class: (v.vodClass || CONSOLIDATED_TO_CHINESE[DATABASE_TO_CONSOLIDATED[v.typeName.toLowerCase().trim()] || 'niche'] || '').split(',')[0]?.trim() || '',
           vod_pic: v.vodPic || '',
           vod_pic_thumb: '',
           vod_pic_slide: '',
@@ -419,9 +337,9 @@ export async function GET(request: NextRequest) {
           vod_plot: 0,
           vod_plot_name: '',
           vod_plot_detail: '',
-          type_name: getCategoryChineseName(v.typeName),
+          type_name: CONSOLIDATED_TO_CHINESE[DATABASE_TO_CONSOLIDATED[v.typeName.toLowerCase().trim()] || 'niche'] || '',
         }
-      }))
+      })
 
       totalCount = videos.length
 
@@ -434,19 +352,21 @@ export async function GET(request: NextRequest) {
       if (params.t) {
         const typeId = parseInt(params.t)
         if (!isNaN(typeId)) {
-          // Map type_id to canonical category name
-          const canonical = TYPE_ID_TO_CATEGORY[typeId]
+          // Find which consolidated category this type_id corresponds to
+          const consolidatedCategory = Object.entries(CONSOLIDATED_TYPE_IDS).find(
+            ([, id]) => id === typeId
+          )?.[0]
 
-          if (canonical) {
-            // Get all variations of this category
-            const allVariants = getConsolidatedCategories(canonical)
+          if (consolidatedCategory) {
+            // Get all database category names that map to this consolidated category
+            const allVariants = getVariantsForConsolidated(consolidatedCategory)
 
             // Query for all consolidated category variants
             where.typeName = {
               in: allVariants
             }
           } else {
-            // Fallback: try to find by exact typeId
+            // Fallback: try to find by exact typeId (for custom entries)
             where.typeId = typeId
           }
         } else {
@@ -487,9 +407,9 @@ export async function GET(request: NextRequest) {
         prisma.video.count({ where }),
       ])
 
-      // Map videos with canonical typeIds
-      videos = await Promise.all(dbVideos.map(async v => {
-        const typeId = await getCanonicalTypeId(v.typeName)
+      // Map videos with consolidated typeIds
+      videos = dbVideos.map(v => {
+        const typeId = getTypeIdForDatabaseCategory(v.typeName)
         return {
           vod_id: v.vodId,
           type_id: typeId,
@@ -502,7 +422,7 @@ export async function GET(request: NextRequest) {
           vod_letter: (v.vodName.charAt(0) || '').toUpperCase(),
           vod_color: '',
           vod_tag: '',
-          vod_class: (v.vodClass || getCategoryChineseName(v.typeName)).split(',')[0]?.trim() || '',
+          vod_class: (v.vodClass || CONSOLIDATED_TO_CHINESE[DATABASE_TO_CONSOLIDATED[v.typeName.toLowerCase().trim()] || 'niche'] || '').split(',')[0]?.trim() || '',
           vod_pic: v.vodPic || '',
           vod_pic_thumb: '',
           vod_pic_slide: '',
@@ -573,9 +493,9 @@ export async function GET(request: NextRequest) {
           vod_plot: 0,
           vod_plot_name: '',
           vod_plot_detail: '',
-          type_name: getCategoryChineseName(v.typeName),
+          type_name: CONSOLIDATED_TO_CHINESE[DATABASE_TO_CONSOLIDATED[v.typeName.toLowerCase().trim()] || 'niche'] || '',
         }
-      }))
+      })
 
       totalCount = total
     }
@@ -583,8 +503,8 @@ export async function GET(request: NextRequest) {
     // Calculate pagination
     const pageCount = Math.ceil(totalCount / pageSize)
 
-    // Fetch categories from database
-    const categories = await getCategories()
+    // Get consolidated categories
+    const categories = MACCMS_CATEGORIES
 
     // Prepare response
     const response: MaccmsJsonResponse = {
