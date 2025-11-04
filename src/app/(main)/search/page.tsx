@@ -1,7 +1,14 @@
+import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
 import HorizontalAds from '@/components/HorizontalAds'
 import SearchClient from './search-client'
 import { CONSOLIDATED_CATEGORIES, CONSOLIDATED_TO_CHINESE } from '@/lib/maccms-mappings'
+
+export const metadata: Metadata = {
+  title: '搜索视频 - MD8AV',
+  description: '搜索和浏览MD8AV平台上的视频内容。使用关键词或分类筛选，快速找到您感兴趣的视频。',
+  keywords: ['视频搜索', '搜索', '视频查找', 'MD8AV搜索', '视频筛选'],
+}
 
 function getConsolidatedCategories() {
   return CONSOLIDATED_CATEGORIES.map((cat, index) => ({

@@ -1,6 +1,13 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ChevronRight, AlertCircle, CheckCircle } from 'lucide-react'
 import { CopyButton } from './maccms-client'
+
+export const metadata: Metadata = {
+  title: 'MacCMS集成指南 - MD8AV文档',
+  description: '详细的MacCMS(苹果CMS)集成教程。学习如何将MD8AV视频资源API接入到您的MacCMS系统，支持M3U8在线播放和资源采集。',
+  keywords: ['MacCMS集成', '苹果CMS', 'MacCMS教程', 'API集成', 'M3U8播放', 'MD8AV API'],
+}
 
 export default function MacCMSGuide() {
   const apiUrl = 'https://your-domain.com/api/maccms/api.php/provide/vod/at/xml'

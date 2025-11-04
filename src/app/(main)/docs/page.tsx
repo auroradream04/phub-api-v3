@@ -1,5 +1,12 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Code, Zap } from 'lucide-react'
+
+export const metadata: Metadata = {
+  title: '文档中心 - MD8AV',
+  description: 'MD8AV API文档和集成指南。学习如何将我们的视频资源API集成到您的CMS系统中，支持MacCMS等多种平台。',
+  keywords: ['API文档', 'CMS集成', 'MacCMS', 'API指南', 'MD8AV文档', '视频API'],
+}
 
 export default function DocsHome() {
   const cmsGuides = [

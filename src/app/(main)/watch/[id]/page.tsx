@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Eye, Clock, User } from 'lucide-react'
 import { notFound } from 'next/navigation'
@@ -6,6 +7,42 @@ import { getCategoryChineseName } from '@/lib/category-mapping'
 import HorizontalAdsSlider from '@/components/HorizontalAdsSlider'
 import VideoPreview from '@/components/VideoPreview'
 import WatchClient from './watch-client'
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params
+
+  try {
+    const video = await prisma.video.findUnique({
+      where: { vodId: id },
+      select: { vodName: true, vodContent: true, vodBlurb: true }
+    })
+
+    if (!video) {
+      return {
+        title: '视频未找到 - MD8AV',
+        description: '抱歉，您请求的视频不存在或已被删除。',
+      }
+    }
+
+    const description = video.vodBlurb || video.vodContent?.substring(0, 160) || `观看 ${video.vodName} - MD8AV提供高质量的视频播放体验`
+
+    return {
+      title: `${video.vodName} - MD8AV`,
+      description,
+      keywords: ['视频播放', '在线观看', video.vodName, 'MD8AV', '高清视频'],
+      openGraph: {
+        title: video.vodName,
+        description,
+        type: 'video.other',
+      },
+    }
+  } catch (error) {
+    return {
+      title: '视频加载中 - MD8AV',
+      description: 'MD8AV - 高品质视频内容聚合平台',
+    }
+  }
+}
 
 interface MediaDefinition {
   quality: number

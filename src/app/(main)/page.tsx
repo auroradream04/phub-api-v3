@@ -1,6 +1,13 @@
+import type { Metadata } from 'next'
 import HorizontalAds from '@/components/HorizontalAds'
 import HomeClient from './home-client'
 import { CONSOLIDATED_CATEGORIES } from '@/lib/maccms-mappings'
+
+export const metadata: Metadata = {
+  title: 'MD8AV - 高品质视频内容聚合平台',
+  description: '探索最新最热门的视频内容，涵盖多个分类的精选视频集合。MD8AV为您提供高质量的视频浏览体验，每日更新优质内容。',
+  keywords: ['视频平台', '在线视频', '视频聚合', 'MD8AV', '高清视频', '视频内容'],
+}
 
 interface Category {
   name: string
