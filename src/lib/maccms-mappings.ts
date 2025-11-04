@@ -11,9 +11,10 @@
 /**
  * Map from ANY database category name to its consolidated category
  * All 133 database categories are mapped to ensure no videos are left behind
+ * 25 main consolidated categories + special handling for Japanese/Chinese
  */
 export const DATABASE_TO_CONSOLIDATED: Record<string, string> = {
-  // === GAY (consolidated from 30+ gay variants) ===
+  // === GAY (consolidated from 30+ gay variants + trans) ===
   'bareback gay': 'gay',
   'massage gay': 'gay',
   'asian gay': 'gay',
@@ -42,10 +43,12 @@ export const DATABASE_TO_CONSOLIDATED: Record<string, string> = {
   'closed captions gay': 'gay',
   'verified amateurs gay': 'gay',
   'hd porn gay': 'gay',
+  // Trans consolidated into Gay
   'transgender': 'gay',
   'trans with girl': 'gay',
   'trans with guy': 'gay',
   'trans male': 'gay',
+  // Muscular Men belongs with Gay
   'muscular men': 'gay',
 
   // === STRAIGHT (consolidated from heterosexual content) ===
@@ -54,22 +57,25 @@ export const DATABASE_TO_CONSOLIDATED: Record<string, string> = {
   'blonde': 'straight',
   'ebony': 'straight',
   'latina': 'straight',
-  'interracial': 'straight',
   'mature': 'straight',
   'milf': 'straight',
   'big tits': 'straight',
   'bbw': 'straight',
-  'verified amateurs': 'straight',
   'verified models': 'straight',
-  'babysitter 18': 'straight',
-  'school 18': 'straight',
-  'old young 18': 'straight',
-  'college 18': 'straight',
-  'college 18 1': 'straight',
   'pornstar': 'straight',
   'casting': 'straight',
   'reality': 'straight',
-  '18 25': 'straight',
+
+  // === INTERRACIAL ===
+  'interracial': 'interracial',
+
+  // === YOUNG/TEEN (18+ content with young adults) ===
+  'babysitter 18': 'young-teen',
+  'school 18': 'young-teen',
+  'old young 18': 'young-teen',
+  'college 18': 'young-teen',
+  'college 18 1': 'young-teen',
+  '18 25': 'young-teen',
 
   // === LESBIAN ===
   'lesbian': 'lesbian',
@@ -89,7 +95,7 @@ export const DATABASE_TO_CONSOLIDATED: Record<string, string> = {
   'fmm': 'group',
   'fingering': 'group',
 
-  // === FETISH (kink, BDSM, specialty) ===
+  // === FETISH (BDSM, toys, niche acts) ===
   'bondage': 'fetish',
   'pissing': 'fetish',
   'smoking': 'fetish',
@@ -105,32 +111,33 @@ export const DATABASE_TO_CONSOLIDATED: Record<string, string> = {
   'bukkake': 'fetish',
   'pov': 'fetish',
   'pov 1': 'fetish',
-  'role play': 'fetish',
-  'cosplay': 'fetish',
-  'parody': 'fetish',
-  'step fantasy': 'fetish',
-  'cuckold': 'fetish',
   'pussy licking': 'fetish',
   'female orgasm': 'fetish',
   'toys': 'fetish',
   'tattooed women': 'fetish',
   'fetish': 'fetish',
+  'role play': 'fetish',
+  'parody': 'fetish',
+  'step fantasy': 'fetish',
+  'cuckold': 'fetish',
 
-  // === KINK (more extreme/rough content) ===
-  'rough sex': 'kink',
+  // === KINK (extreme/violent content) ===
   'hardcore': 'kink',
 
-  // === INTERNATIONAL (regional content) ===
-  'russian': 'international',
-  'indian': 'international',
-  'german': 'international',
-  'french': 'international',
-  'italian': 'international',
-  'british': 'international',
-  'arab': 'international',
-  'brazilian': 'international',
-  'korean': 'international',
-  'czech': 'international',
+  // === ROUGH SEX ===
+  'rough sex': 'rough-sex',
+
+  // === COUNTRY CATEGORIES (individual countries) ===
+  'russian': 'russian',
+  'indian': 'indian',
+  'german': 'german',
+  'french': 'french',
+  'italian': 'italian',
+  'brazilian': 'brazilian',
+  'korean': 'korean',
+  'arab': 'arab',
+  'czech': 'czech',
+  'british': 'british',
 
   // === ANIME (cartoon, hentai, 3d) ===
   'hentai': 'anime',
@@ -140,26 +147,37 @@ export const DATABASE_TO_CONSOLIDATED: Record<string, string> = {
   'sfw': 'anime',
   'podcast': 'anime',
 
-  // === SPECIAL (HD, VR, captions, etc) ===
-  'vr': 'special',
-  'virtual reality 1': 'special',
-  '60fps 1': 'special',
-  '360 1': 'special',
-  '180 1': 'special',
+  // === VR (Virtual Reality) ===
+  'vr': 'vr',
+  'virtual reality 1': 'vr',
+  '60fps 1': 'vr',
+  '360 1': 'vr',
+  '180 1': 'vr',
+
+  // === COSPLAY ===
+  'cosplay': 'cosplay',
+
+  // === VERIFIED AMATEURS ===
+  'verified amateurs': 'verified-amateurs',
+
+  // === BEHIND THE SCENES ===
+  'behind the scenes': 'behind-the-scenes',
+
+  // === SPECIAL FORMATS (other HD/caption formats) ===
   'hd porn': 'special',
   'uncensored': 'special',
   'uncensored 1': 'special',
   'closed captions': 'special',
-  'closed captions gay': 'special',
   'described video': 'special',
   'interactive': 'special',
   'exclusive': 'special',
   'verified couples': 'special',
-  'behind the scenes': 'special',
 
-  // === ASIAN (regional) ===
-  'japanese': 'asian',
-  'chinese': 'asian',
+  // === JAPANESE (SEPARATE - no consolidation) ===
+  'japanese': 'japanese',
+
+  // === CHINESE (SEPARATE - no consolidation) ===
+  'chinese': 'chinese',
 
   // === NICHE (everything else) ===
   'celebrity': 'niche',
@@ -175,7 +193,7 @@ export const DATABASE_TO_CONSOLIDATED: Record<string, string> = {
 
 /**
  * Consolidated categories shown in MACCMS API
- * These are the main categories users see and select from
+ * These are the main categories users see and select from (27 categories)
  */
 export const CONSOLIDATED_CATEGORIES = [
   'gay',
@@ -185,11 +203,26 @@ export const CONSOLIDATED_CATEGORIES = [
   'group',
   'fetish',
   'kink',
-  'international',
+  'rough-sex',
+  'russian',
+  'indian',
+  'german',
+  'italian',
+  'french',
+  'brazilian',
+  'korean',
+  'arab',
+  'czech',
+  'british',
+  'interracial',
+  'young-teen',
   'anime',
-  'asian',
-  'special',
-  'niche',
+  'vr',
+  'cosplay',
+  'verified-amateurs',
+  'behind-the-scenes',
+  'japanese',
+  'chinese',
 ] as const;
 
 /**
@@ -203,16 +236,31 @@ export const CONSOLIDATED_TO_CHINESE: Record<string, string> = {
   'group': '群交',
   'fetish': '恋物癖',
   'kink': '变态性爱',
-  'international': '国际',
+  'rough-sex': '粗暴性爱',
+  'russian': '俄罗斯',
+  'indian': '印度',
+  'german': '德国',
+  'italian': '意大利',
+  'french': '法国',
+  'brazilian': '巴西',
+  'korean': '韩国',
+  'arab': '阿拉伯',
+  'czech': '捷克',
+  'british': '英国',
+  'interracial': '混血',
+  'young-teen': '年轻/青少年',
   'anime': '动漫',
-  'asian': '亚洲',
-  'special': '特殊格式',
-  'niche': '小众',
+  'vr': '虚拟现实',
+  'cosplay': '角色扮演',
+  'verified-amateurs': '认证业余',
+  'behind-the-scenes': '幕后花絮',
+  'japanese': '日本',
+  'chinese': '中文',
 };
 
 /**
  * Map consolidated category to a type_id for MACCMS
- * We assign consistent IDs for API compatibility
+ * We assign consistent IDs for API compatibility (1-25)
  */
 export const CONSOLIDATED_TYPE_IDS: Record<string, number> = {
   'gay': 1,
@@ -222,11 +270,26 @@ export const CONSOLIDATED_TYPE_IDS: Record<string, number> = {
   'group': 5,
   'fetish': 6,
   'kink': 7,
-  'international': 8,
-  'anime': 9,
-  'asian': 10,
-  'special': 11,
-  'niche': 12,
+  'rough-sex': 8,
+  'russian': 9,
+  'indian': 10,
+  'german': 11,
+  'italian': 12,
+  'french': 13,
+  'brazilian': 14,
+  'korean': 15,
+  'arab': 16,
+  'czech': 17,
+  'british': 18,
+  'interracial': 19,
+  'young-teen': 20,
+  'anime': 21,
+  'vr': 22,
+  'cosplay': 23,
+  'verified-amateurs': 24,
+  'behind-the-scenes': 25,
+  'japanese': 26,
+  'chinese': 27,
 };
 
 /**
