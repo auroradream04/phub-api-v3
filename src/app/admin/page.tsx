@@ -70,6 +70,7 @@ export default function AdminDashboard() {
   const [globalSearchResults, setGlobalSearchResults] = useState<MaccmsVideo[]>([])
   const [loadingGlobalSearch, setLoadingGlobalSearch] = useState(false)
   const [globalSearchPage, setGlobalSearchPage] = useState(1)
+  const [globalSearchTotalCount, setGlobalSearchTotalCount] = useState(0)
 
   // Check for saved progress on load
   useEffect(() => {
@@ -780,23 +781,44 @@ export default function AdminDashboard() {
                   onClick={async () => {
                     if (!globalVideoSearchQuery.trim()) {
                       setGlobalSearchResults([])
+                      setGlobalSearchTotalCount(0)
                       return
                     }
                     setLoadingGlobalSearch(true)
                     try {
-                      const res = await fetch(`/api/provide/vod?ac=list&wd=${encodeURIComponent(globalVideoSearchQuery)}&pagesize=100`)
-                      const data = await res.json()
-                      setGlobalSearchResults(data.list || [])
+                      let allVideos: MaccmsVideo[] = []
+                      let page = 1
+                      let hasMore = true
+
+                      // Fetch all pages (max 500 results to avoid excessive loading)
+                      while (hasMore && allVideos.length < 500) {
+                        const res = await fetch(`/api/provide/vod?ac=list&wd=${encodeURIComponent(globalVideoSearchQuery)}&pg=${page}&pagesize=100`)
+                        const data = await res.json()
+
+                        if (data.list && data.list.length > 0) {
+                          allVideos = allVideos.concat(data.list)
+                          page++
+                          hasMore = page <= data.pagecount
+                        } else {
+                          hasMore = false
+                        }
+                      }
+
+                      setGlobalSearchResults(allVideos)
+                      setGlobalSearchTotalCount(allVideos.length)
+                      setGlobalSearchPage(1)
                     } catch (error) {
                       console.error('Global search failed:', error)
                       setGlobalSearchResults([])
+                      setGlobalSearchTotalCount(0)
                     } finally {
                       setLoadingGlobalSearch(false)
                     }
                   }}
-                  className="px-6 py-2 bg-primary text-primary-foreground rounded hover:opacity-80 transition-opacity font-medium"
+                  className="px-6 py-2 bg-primary text-primary-foreground rounded hover:opacity-80 transition-opacity font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={loadingGlobalSearch}
                 >
-                  Search
+                  {loadingGlobalSearch ? 'Searching...' : 'Search'}
                 </button>
               </div>
             </div>
@@ -805,7 +827,7 @@ export default function AdminDashboard() {
             {globalSearchResults.length > 0 && (
               <div className="mb-6 p-4 bg-muted/50 rounded-lg border border-border">
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-sm font-semibold text-foreground">{globalFilteredVideos.length} results found</p>
+                  <p className="text-sm font-semibold text-foreground">{globalSearchTotalCount} videos found</p>
                 </div>
                 <div className="max-h-96 overflow-y-auto space-y-2">
                   {globalPaginatedVideos.map((video) => (
