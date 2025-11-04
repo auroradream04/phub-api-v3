@@ -62,6 +62,7 @@ export default function AdminDashboard() {
   const [categoryVideos, setCategoryVideos] = useState<MaccmsVideo[]>([])
   const [loadingCategoryVideos, setLoadingCategoryVideos] = useState(false)
   const [rightPanelTab, setRightPanelTab] = useState<'videos' | 'variants'>('videos')
+  const [expandedVariantDropdown, setExpandedVariantDropdown] = useState(false)
 
   // Check for saved progress on load
   useEffect(() => {
@@ -701,7 +702,7 @@ export default function AdminDashboard() {
 
         {/* Category Browser */}
         {stats && stats.categories.length > 0 && (
-          <div className="bg-card border border-border rounded-xl p-6 shadow-lg">
+          <div className="bg-card border border-border rounded-xl p-6 shadow-lg mt-6">
             <h3 className="text-xl font-bold text-foreground mb-4">Category Browser</h3>
 
             {/* Tabs */}
@@ -793,7 +794,7 @@ export default function AdminDashboard() {
 
               {/* Videos/Variants Preview */}
               <div className="lg:col-span-2 border border-border rounded-lg overflow-hidden bg-muted/30">
-                <div className="bg-muted/50 px-4 py-3 border-b border-border">
+                <div className="bg-muted/50 px-4 py-4 border-b border-border">
                   <div className="flex justify-between items-center gap-4">
                     <h4 className="font-semibold text-foreground">
                       {selectedCategory ? selectedCategory : 'Select a category'}
@@ -801,7 +802,7 @@ export default function AdminDashboard() {
                     {selectedConsolidated && categoryTab === 'consolidated' && (
                       <div className="flex gap-2 text-sm">
                         <button
-                          onClick={() => setRightPanelTab('videos')}
+                          onClick={() => {setRightPanelTab('videos'); setExpandedVariantDropdown(false)}}
                           className={`px-3 py-1 rounded transition-colors ${
                             rightPanelTab === 'videos'
                               ? 'bg-primary text-primary-foreground'
@@ -810,16 +811,46 @@ export default function AdminDashboard() {
                         >
                           Videos
                         </button>
-                        <button
-                          onClick={() => setRightPanelTab('variants')}
-                          className={`px-3 py-1 rounded transition-colors ${
-                            rightPanelTab === 'variants'
-                              ? 'bg-primary text-primary-foreground'
-                              : 'hover:bg-muted text-muted-foreground'
-                          }`}
-                        >
-                          Variants ({selectedConsolidated.variants.length})
-                        </button>
+                        <div className="relative">
+                          <button
+                            onClick={() => setExpandedVariantDropdown(!expandedVariantDropdown)}
+                            className={`px-3 py-1 rounded transition-colors flex items-center gap-1 ${
+                              rightPanelTab === 'variants'
+                                ? 'bg-primary text-primary-foreground'
+                                : 'hover:bg-muted text-muted-foreground'
+                            }`}
+                          >
+                            Variants ({selectedConsolidated.variants.length})
+                            <ChevronDown className={`w-3 h-3 transition-transform ${expandedVariantDropdown ? 'rotate-180' : ''}`} />
+                          </button>
+                          {expandedVariantDropdown && (
+                            <div className="absolute right-0 mt-1 w-56 bg-card border border-border rounded-lg shadow-lg z-10 max-h-64 overflow-y-auto">
+                              {selectedConsolidated.variants
+                                .sort((a, b) => {
+                                  const countA = stats?.categories.find(c => c.typeName.toLowerCase() === a)?._count || 0
+                                  const countB = stats?.categories.find(c => c.typeName.toLowerCase() === b)?._count || 0
+                                  return countB - countA
+                                })
+                                .map((variant, idx) => {
+                                  const variantCount = stats?.categories.find(c => c.typeName.toLowerCase() === variant)?._count || 0
+                                  const capitalizedVariant = variant.charAt(0).toUpperCase() + variant.slice(1)
+                                  return (
+                                    <button
+                                      key={idx}
+                                      onClick={() => {
+                                        setRightPanelTab('variants')
+                                        setExpandedVariantDropdown(false)
+                                      }}
+                                      className="w-full text-left px-4 py-2 hover:bg-muted transition-colors flex justify-between items-center border-b border-border last:border-b-0"
+                                    >
+                                      <span className="text-sm text-foreground">{capitalizedVariant}</span>
+                                      <span className="text-xs font-bold text-primary">{variantCount.toLocaleString()}</span>
+                                    </button>
+                                  )
+                                })}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -873,9 +904,10 @@ export default function AdminDashboard() {
                         })
                         .map((variant, vidx) => {
                           const variantCount = stats?.categories.find(c => c.typeName.toLowerCase() === variant)?._count || 0
+                          const capitalizedVariant = variant.charAt(0).toUpperCase() + variant.slice(1)
                           return (
                             <div key={vidx} className="px-4 py-3 hover:bg-muted/50 transition-colors flex justify-between items-center">
-                              <span className="text-sm font-medium text-foreground truncate">{variant}</span>
+                              <span className="text-sm font-medium text-foreground truncate">{capitalizedVariant}</span>
                               <span className="text-sm font-bold text-primary ml-2 whitespace-nowrap">{variantCount.toLocaleString()}</span>
                             </div>
                           )
