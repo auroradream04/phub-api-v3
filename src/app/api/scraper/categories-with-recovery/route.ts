@@ -71,7 +71,6 @@ async function scrapeInBackground(checkpointId: string, pagesPerCategory: number
         const checkpoint = await getScraperCheckpoint(checkpointId)
         if (checkpoint) {
           checkpoint.status = 'failed'
-          checkpoint.errors.push('Failed to fetch categories from PornHub')
           await updateScraperCheckpoint(checkpointId, checkpoint)
         }
         return
@@ -307,7 +306,7 @@ export async function POST(request: NextRequest) {
       const checkpoint = await getScraperCheckpoint(checkpointId)
       if (checkpoint) {
         checkpoint.status = 'failed'
-        checkpoint.errors.push(error instanceof Error ? error.message : String(error))
+        console.error(`[Background Scraper] Error:`, error instanceof Error ? error.message : String(error))
         await updateScraperCheckpoint(checkpointId, checkpoint)
       }
     }
@@ -352,7 +351,7 @@ export async function GET(request: NextRequest) {
   const hasBeenStuck = timeSinceLastUpdate > 30000 // 30 seconds
 
   if (
-    checkpoint.status === 'in progress' &&
+    checkpoint.status === 'running' &&
     !isJobActive &&
     hasBeenStuck
   ) {

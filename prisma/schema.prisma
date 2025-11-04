@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
   output   = "../src/generated/prisma"
@@ -15,18 +9,17 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
+  id        String       @id @default(cuid())
+  email     String       @unique
   password  String
   name      String?
-  role      String   @default("member")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  ads      Ad[]
-  sessions Session[]
-  accounts Account[]
-  embeds   VideoEmbed[]
+  role      String       @default("member")
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  accounts  Account[]
+  ads       Ad[]
+  sessions  Session[]
+  embeds    VideoEmbed[]
 }
 
 model Account {
@@ -42,10 +35,10 @@ model Account {
   scope             String?
   id_token          String? @db.Text
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  @@index([userId], map: "Account_userId_fkey")
 }
 
 model Session {
@@ -54,6 +47,8 @@ model Session {
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "Session_userId_fkey")
 }
 
 model VerificationToken {
@@ -65,20 +60,21 @@ model VerificationToken {
 }
 
 model Ad {
-  id           String   @id @default(cuid())
+  id           String         @id @default(cuid())
   title        String
-  description  String?  @db.Text
+  description  String?        @db.Text
   duration     Int
-  status       String   @default("active")
-  weight       Int      @default(1) // Higher weight = higher probability
-  forceDisplay Boolean  @default(false) // If true, this ad always shows
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  status       String         @default("active")
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
   userId       String
+  forceDisplay Boolean        @default(false)
+  weight       Int            @default(1)
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  impressions  AdImpression[]
+  segments     AdSegment[]
 
-  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  segments    AdSegment[]
-  impressions AdImpression[]
+  @@index([userId], map: "Ad_userId_fkey")
 }
 
 model AdSegment {
@@ -88,8 +84,7 @@ model AdSegment {
   filepath  String
   filesize  Int
   createdAt DateTime @default(now())
-
-  ad Ad @relation(fields: [adId], references: [id], onDelete: Cascade)
+  ad        Ad       @relation(fields: [adId], references: [id], onDelete: Cascade)
 
   @@unique([adId, quality])
 }
@@ -98,13 +93,14 @@ model AdImpression {
   id        String   @id @default(cuid())
   adId      String
   videoId   String
-  referrer  String?  @db.Text // The page/site where the ad was shown
-  userAgent String?  @db.Text // Browser/device info
-  ipAddress String?  @db.VarChar(45) // IPv4 or IPv6 address
-  country   String?  @db.VarChar(2) // ISO 3166-1 alpha-2 country code
   timestamp DateTime @default(now())
+  referrer  String?  @db.Text
+  userAgent String?  @db.Text
+  country   String?  @db.VarChar(2)
+  ipAddress String?  @db.VarChar(45)
+  ad        Ad       @relation(fields: [adId], references: [id], onDelete: Cascade)
 
-  ad Ad @relation(fields: [adId], references: [id], onDelete: Cascade)
+  @@index([adId], map: "AdImpression_adId_fkey")
 }
 
 model SiteSetting {
@@ -116,9 +112,9 @@ model SiteSetting {
 }
 
 model Category {
-  id        Int      @id // PornHub category ID (or custom 9998, 9999)
+  id        Int      @id
   name      String   @db.VarChar(100)
-  isCustom  Boolean  @default(false) // Custom categories like Japanese, Chinese
+  isCustom  Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -126,99 +122,91 @@ model Category {
 }
 
 model Video {
-  id            String   @id @default(cuid())
-  vodId         String   @unique // External video ID (e.g., ph123456)
-  vodName       String   @db.VarChar(255) // Translated title (if translation enabled) or original
-  originalTitle String?  @db.VarChar(255) // Original title before translation (for comparison)
-  typeId        Int // Category type_id (primary category)
-  typeName      String   @db.VarChar(100)
-  vodClass      String?  @db.VarChar(500) // Comma-separated category names (e.g., "Asian,Babe,Teen")
-  vodEn         String?  @db.VarChar(255) // URL-friendly slug
-  vodTime       DateTime @default(now())
-  vodRemarks    String?  @db.VarChar(100) // HD, duration, etc.
-  vodPlayFrom   String   @default("YourAPI") @db.VarChar(100)
-  vodPic        String?  @db.Text // Thumbnail URL
-  vodArea       String?  @db.VarChar(100)
-  vodLang       String?  @db.VarChar(50)
-  vodYear       String?  @db.VarChar(10)
-  vodActor      String?  @db.Text // Comma-separated
-  vodDirector   String?  @db.Text
-  vodContent    String?  @db.Text // Description
-  vodPlayUrl    String   @db.Text // Episode$URL format
-  vodProvider   String?  @db.VarChar(100) // Video provider/platform name for recommendations
-  views         Int      @default(0)
-  duration      Int? // Duration in seconds
-
-  // Translation tracking fields
-  needsTranslation     Boolean   @default(false) // Flag for videos that need translation retry
-  translationFailedAt  DateTime? // Timestamp of last translation failure
-  translationRetryCount Int      @default(0) // Number of translation retry attempts
-
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                    String    @id @default(cuid())
+  vodId                 String    @unique
+  vodName               String    @db.VarChar(255)
+  typeId                Int
+  typeName              String    @db.VarChar(100)
+  vodEn                 String?   @db.VarChar(255)
+  vodTime               DateTime  @default(now())
+  vodRemarks            String?   @db.VarChar(100)
+  vodPlayFrom           String    @default("YourAPI") @db.VarChar(100)
+  vodPic                String?   @db.Text
+  vodArea               String?   @db.VarChar(100)
+  vodLang               String?   @db.VarChar(50)
+  vodYear               String?   @db.VarChar(10)
+  vodActor              String?   @db.Text
+  vodDirector           String?   @db.Text
+  vodContent            String?   @db.Text
+  vodPlayUrl            String    @db.Text
+  views                 Int       @default(0)
+  duration              Int?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  vodClass              String?   @db.VarChar(500)
+  originalTitle         String?   @db.VarChar(255)
+  vodProvider           String?   @db.VarChar(100)
+  needsTranslation      Boolean   @default(false)
+  translationFailedAt   DateTime?
+  translationRetryCount Int       @default(0)
 
   @@index([typeId])
   @@index([vodTime])
   @@index([views])
-  @@index([vodProvider]) // Index for provider-based queries
-  @@index([needsTranslation]) // Index for bulk retry operations
+  @@index([vodProvider])
+  @@index([needsTranslation])
 }
 
-// Domain access control - whitelist/blacklist management
 model DomainAccess {
-  id          String   @id @default(cuid())
-  domain      String   @unique @db.VarChar(255) // e.g., "example.com"
-  status      String   @default("allowed") // allowed, blocked
-  type        String   @default("whitelist") // whitelist, blacklist
-  reason      String?  @db.Text // Why blocked/allowed
-  addedBy     String?  // Admin user ID who added this rule
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
+  id          String          @id @default(cuid())
+  domain      String          @unique @db.VarChar(255)
+  status      String          @default("allowed")
+  type        String          @default("whitelist")
+  reason      String?         @db.Text
+  addedBy     String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
   requestLogs ApiRequestLog[]
 
   @@index([status])
   @@index([domain])
 }
 
-// API request logging for analytics and monitoring
 model ApiRequestLog {
-  id                String   @id @default(cuid())
-  domain            String?  @db.VarChar(255) // Extracted from referer/origin/host
-  domainAccessId    String? // Reference to DomainAccess if exists
-  endpoint          String   @db.VarChar(500) // /api/home, /api/video/123, etc.
-  method            String   @db.VarChar(10) // GET, POST, etc.
-  statusCode        Int // 200, 403, etc.
-  responseTime      Int? // Response time in ms
-  ipAddress         String?  @db.VarChar(45) // IPv4 or IPv6
-  userAgent         String?  @db.Text
-  referer           String?  @db.Text
-  hasReferrer       Boolean  @default(false) // Whether referer header was present
-  ipSessionHash     String?  @db.VarChar(16) // SHA256 hash of IP:UserAgent for tracking direct requests
-  clientFingerprint String?  @db.VarChar(16) // Hash of User-Agent + Accept headers for correlation
-  country           String?  @db.VarChar(2) // ISO country code
-  blocked           Boolean  @default(false) // Was request blocked?
-  timestamp         DateTime @default(now())
-
-  domainAccess DomainAccess? @relation(fields: [domainAccessId], references: [id], onDelete: SetNull)
+  id                String        @id @default(cuid())
+  domain            String?       @db.VarChar(255)
+  domainAccessId    String?
+  endpoint          String        @db.VarChar(500)
+  method            String        @db.VarChar(10)
+  statusCode        Int
+  responseTime      Int?
+  ipAddress         String?       @db.VarChar(45)
+  userAgent         String?       @db.Text
+  referer           String?       @db.Text
+  country           String?       @db.VarChar(2)
+  blocked           Boolean       @default(false)
+  timestamp         DateTime      @default(now())
+  clientFingerprint String?       @db.VarChar(16)
+  hasReferrer       Boolean       @default(false)
+  ipSessionHash     String?       @db.VarChar(16)
+  domainAccess      DomainAccess? @relation(fields: [domainAccessId], references: [id])
 
   @@index([domain])
   @@index([endpoint])
   @@index([timestamp])
   @@index([blocked])
   @@index([domainAccessId])
-  @@index([ipSessionHash]) // For grouping direct/unknown requests
-  @@index([clientFingerprint]) // For tracking by fingerprint
+  @@index([ipSessionHash])
+  @@index([clientFingerprint])
 }
 
-// Cache operations logging for monitoring cache effectiveness
 model CacheLog {
   id        String   @id @default(cuid())
-  action    String   @db.VarChar(50) // "set", "get", "clear", "revalidate"
-  target    String?  @db.VarChar(255) // "all", "video-{id}", "home", etc.
-  videoId   String?  @db.VarChar(255) // Video ID if action is for specific video
+  action    String   @db.VarChar(50)
+  target    String?  @db.VarChar(255)
+  videoId   String?  @db.VarChar(255)
   success   Boolean  @default(true)
-  reason    String?  @db.Text // Reason for failure if applicable
+  reason    String?  @db.Text
   timestamp DateTime @default(now())
 
   @@index([action])
@@ -227,45 +215,38 @@ model CacheLog {
   @@index([videoId])
 }
 
-// Video embed system for ad-network-style embeds
 model VideoEmbed {
-  id                    String   @id @default(cuid())
-  videoId               String   // PornHub video ID
-  title                 String   @db.VarChar(255) // Original title from API (for searching/fallback)
-  displayName           String?  @db.VarChar(255) // Custom display name for the embed (user-facing, optional)
-  redirectUrl           String   @db.Text // Custom destination URL
-  enabled               Boolean  @default(true)
-
-  // Local preview hosting
-  previewM3u8Path       String?  @db.VarChar(500) // Path to local m3u8 file (relative to data dir)
-  previewSegmentDir     String?  @db.VarChar(500) // Directory containing .ts segments
-  previewDownloadedAt   DateTime? // When preview was downloaded
-  previewExpiry         DateTime? // When preview download expires (optional for re-download)
-  previewSourceUrl      String?  @db.Text // Original source: video ID, m3u8 URL, or video link
-
-  createdBy    String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  user       User                @relation(fields: [createdBy], references: [id], onDelete: Cascade)
-  analytics  EmbedAnalytics[]
+  id                  String           @id @default(cuid())
+  videoId             String
+  title               String           @db.VarChar(255)
+  redirectUrl         String           @db.Text
+  enabled             Boolean          @default(true)
+  createdBy           String
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  displayName         String?          @db.VarChar(255)
+  previewDownloadedAt DateTime?
+  previewExpiry       DateTime?
+  previewM3u8Path     String?          @db.VarChar(500)
+  previewSegmentDir   String?          @db.VarChar(500)
+  previewSourceUrl    String?          @db.Text
+  analytics           EmbedAnalytics[]
+  user                User             @relation(fields: [createdBy], references: [id], onDelete: Cascade)
 
   @@index([videoId])
   @@index([createdBy])
   @@index([createdAt])
 }
 
-// Analytics for embed impressions and clicks
 model EmbedAnalytics {
-  id             String   @id @default(cuid())
+  id             String     @id @default(cuid())
   embedId        String
-  eventType      String   @db.VarChar(20) // "impression" or "click"
-  referrerDomain String?  @db.VarChar(255) // Domain where embed was used
-  userAgent      String?  @db.Text
-  ipHash        String?  @db.VarChar(64) // SHA256 hash of IP for privacy
-  timestamp      DateTime @default(now())
-
-  embed VideoEmbed @relation(fields: [embedId], references: [id], onDelete: Cascade)
+  eventType      String     @db.VarChar(20)
+  referrerDomain String?    @db.VarChar(255)
+  userAgent      String?    @db.Text
+  ipHash         String?    @db.VarChar(64)
+  timestamp      DateTime   @default(now())
+  embed          VideoEmbed @relation(fields: [embedId], references: [id], onDelete: Cascade)
 
   @@index([embedId])
   @@index([eventType])
