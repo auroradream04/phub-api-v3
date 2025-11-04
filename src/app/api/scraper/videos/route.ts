@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { isTranslationEnabled, translateBatch } from '@/lib/translate'
 import { parseViews, parseDuration, mergeCategories } from '@/lib/scraper-utils'
-import { getCategoryChineseName } from '@/lib/category-mapping'
+import { getCategoryChineseName, getCanonicalCategory } from '@/lib/category-mapping'
 
 export const revalidate = 7200 // 2 hours
 
@@ -199,7 +199,7 @@ export async function POST(request: NextRequest) {
         if (currentCategory) {
           // Use the category we're scraping from
           typeId = currentCategory.id
-          typeName = currentCategory.name
+          typeName = getCanonicalCategory(currentCategory.name) // Consolidate!
 
           // Check if this category has a mapping
           const mapped = getCategoryChineseName(typeName)
@@ -211,8 +211,9 @@ export async function POST(request: NextRequest) {
         } else if (item.video.categories && item.video.categories.length > 0) {
           // Use the first category from video metadata (if available from API)
           const firstCat = item.video.categories[0]
+          const rawCategoryName = typeof firstCat === 'object' ? firstCat.name : firstCat
           typeId = typeof firstCat === 'object' ? firstCat.id : 1
-          typeName = typeof firstCat === 'object' ? firstCat.name : firstCat
+          typeName = getCanonicalCategory(rawCategoryName) // Consolidate!
 
           // Check if this category has a mapping
           const mapped = getCategoryChineseName(typeName)
