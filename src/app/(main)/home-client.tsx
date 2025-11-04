@@ -288,14 +288,28 @@ export default function HomeClient({ initialVideos, initialStats, allCategories 
         ) : (
           <>
             {/* Pagination Bar - Top */}
-            <div className="hidden md:block px-4 py-3 border border-b border-border bg-muted/30 flex items-center justify-between w-full rounded-tl-lg rounded-tr-lg">
+            <div className="hidden md:block px-4 py-3 border-t border-b border-l border-r border-border bg-muted/30 flex items-center justify-between w-full">
               <span className="text-xs text-muted-foreground">
                 <span className="text-primary font-bold">{totalCount.toLocaleString()}</span> 个视频
               </span>
               <div className="flex gap-2 items-center text-xs">
+                <button
+                  onClick={goToPrevPage}
+                  disabled={currentPage === 1}
+                  className="px-2 py-1 text-xs rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  ← Prev
+                </button>
                 <span className="text-xs text-muted-foreground">
                   {currentPage} / {totalPages || 1}
                 </span>
+                <button
+                  onClick={goToNextPage}
+                  disabled={!hasMore}
+                  className="px-2 py-1 text-xs rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Next →
+                </button>
               </div>
             </div>
 
