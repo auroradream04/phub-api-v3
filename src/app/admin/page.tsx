@@ -128,11 +128,13 @@ export default function AdminDashboard() {
   // Category browser handlers
   const handleSelectDatabaseCategory = async (categoryName: string) => {
     setSelectedCategory(categoryName)
+    setVideoPage(1)
+    setVideoSearchQuery('')
     setLoadingCategoryVideos(true)
     setRightPanelTab('videos')
     try {
       const res = await fetch(
-        `/api/admin/videos/by-category?category=${encodeURIComponent(categoryName)}`
+        `/api/admin/videos/by-category?category=${encodeURIComponent(categoryName)}&page=1`
       )
       const data = await res.json()
       setCategoryVideos(data.list || [])
@@ -147,11 +149,13 @@ export default function AdminDashboard() {
   const handleSelectVariant = async (variantName: string) => {
     const capitalizedVariant = variantName.charAt(0).toUpperCase() + variantName.slice(1)
     setSelectedCategory(capitalizedVariant)
+    setVideoPage(1)
+    setVideoSearchQuery('')
     setLoadingCategoryVideos(true)
     setRightPanelTab('videos')
     try {
       const res = await fetch(
-        `/api/admin/videos/by-category?category=${encodeURIComponent(variantName)}`
+        `/api/admin/videos/by-category?category=${encodeURIComponent(variantName)}&page=1`
       )
       const data = await res.json()
       setCategoryVideos(data.list || [])
@@ -177,6 +181,11 @@ export default function AdminDashboard() {
     ? stats?.categories.find(c => c.typeName === selectedCategory)?._count || 0
     : 0
   const categoryTotalPages = Math.ceil(selectedCategoryCount / videosPerPage)
+
+  // Debug logging
+  if (selectedCategory && categoryVideos.length > 0) {
+    console.log('Selected:', selectedCategory, 'Count:', selectedCategoryCount, 'Pages:', categoryTotalPages, 'videosPerPage:', videosPerPage)
+  }
 
   // Filter categories based on search query
   const getFilteredCategories = () => {
