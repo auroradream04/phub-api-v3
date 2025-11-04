@@ -124,13 +124,15 @@ function formatDate(date: Date): string {
   return date.toISOString().replace('T', ' ').split('.')[0]
 }
 
-// Hardcoded 26 consolidated categories for MACCMS
-// These correspond to the CATEGORY_CONSOLIDATION rules
+// All categories that exist in the database, grouped by their general category
+// This ensures every video in the database is accessible through the MACCMS API
 const MACCMS_CATEGORIES: MaccmsClass[] = [
+  // === MAIN CATEGORIES ===
   { type_id: 1, type_name: '亚洲' },          // asian
   { type_id: 2, type_name: '三人行' },        // threesome
   { type_id: 3, type_name: '业余' },          // amateur
   { type_id: 6, type_name: '大码美女' },      // bbw
+  { type_id: 8, type_name: '大奶' },          // big-tits
   { type_id: 9, type_name: '金发女' },        // blonde
   { type_id: 10, type_name: '恋物癖' },       // fetish
   { type_id: 13, type_name: '劲爆重口味' },   // hardcore
@@ -142,25 +144,88 @@ const MACCMS_CATEGORIES: MaccmsClass[] = [
   { type_id: 27, type_name: '女同性恋' },     // lesbian
   { type_id: 28, type_name: '成熟' },         // mature
   { type_id: 32, type_name: '动漫' },         // hentai
-  { type_id: 37, type_name: '大学生' },       // college-18
   { type_id: 38, type_name: '高清' },         // hd-porn
-  { type_id: 40, type_name: '同性恋' },       // gay
-  { type_id: 68, type_name: '第一视角' },     // pov
-  { type_id: 94, type_name: '欧洲' },         // euro
+  { type_id: 67, type_name: '粗暴性爱' },     // rough-sex
+  { type_id: 68, type_name: '大学生' },       // college-18
+  { type_id: 72, type_name: '双插' },         // double-penetration
+  { type_id: 73, type_name: '女性喜爱' },     // popular-with-women
+  { type_id: 76, type_name: '双性恋男' },     // bisexual-male
   { type_id: 81, type_name: '角色扮演' },     // cosplay
   { type_id: 83, type_name: '跨性别' },       // transgender
+  { type_id: 89, type_name: '保姆' },         // babysitter
+  { type_id: 92, type_name: '男性自慰' },     // solo-male
+  { type_id: 94, type_name: '欧洲' },         // euro
   { type_id: 104, type_name: '虚拟现实' },    // vr
+  { type_id: 105, type_name: '60帧' },        // 60fps
+  { type_id: 131, type_name: '舔阴' },        // pussy-licking
+  { type_id: 141, type_name: '幕后花絮' },    // behind-the-scenes
+  { type_id: 181, type_name: '老少配' },      // old-young
+  { type_id: 231, type_name: '描述视频' },    // described-video
+  { type_id: 241, type_name: '角色扮演' },    // role-play (same as cosplay)
+  { type_id: 444, type_name: '继家庭幻想' },  // step-fantasy
+  { type_id: 482, type_name: '认证情侣' },    // verified-couples
+  { type_id: 492, type_name: '女性自慰' },    // solo-female
+  { type_id: 502, type_name: '女性高潮' },    // female-orgasm
+  { type_id: 512, type_name: '肌肉男' },      // muscular-men
+  { type_id: 542, type_name: '假阳具' },      // strap-on
+  { type_id: 562, type_name: '纹身女' },      // tattooed-women
+  { type_id: 572, type_name: '跨性别与女' },  // trans-with-girl
+  { type_id: 582, type_name: '跨性别与男' },  // trans-with-guy
+  { type_id: 602, type_name: '跨性别男' },    // trans-male
+  { type_id: 612, type_name: '360度' },       // 360-vr
+  { type_id: 622, type_name: '180度' },       // 180-vr
+  { type_id: 632, type_name: '高清' },        // hd-porn (duplicate)
+  { type_id: 722, type_name: '无码' },        // uncensored
+  { type_id: 732, type_name: '字幕' },        // closed-captions
   { type_id: 111, type_name: '日本' },        // japanese (NEVER consolidate)
   { type_id: 115, type_name: '认证业余' },    // verified-amateurs
-  { type_id: 138, type_name: '中文' }          // chinese (NEVER consolidate)
+  { type_id: 138, type_name: '认证业余' },    // verified-amateurs (duplicate)
+  { type_id: 139, type_name: '认证模特' },    // verified-models
+
+  // === GAY CATEGORIES (all map to general gay) ===
+  { type_id: 40, type_name: '同性恋' },       // gay (base)
+  { type_id: 45, type_name: '同性恋' },       // gay variant
+  { type_id: 48, type_name: '同性恋' },       // gay variant
+  { type_id: 70, type_name: '同性恋' },       // gay variant
+  { type_id: 77, type_name: '同性恋' },       // gay variant
+  { type_id: 82, type_name: '同性恋' },       // gay variant
+  { type_id: 84, type_name: '同性恋' },       // gay variant
+  { type_id: 85, type_name: '同性恋' },       // gay variant
+  { type_id: 107, type_name: '同性恋' },      // gay variant
+  { type_id: 252, type_name: '同性恋' },      // gay variant
+  { type_id: 262, type_name: '同性恋' },      // gay variant
+  { type_id: 272, type_name: '同性恋' },      // gay variant
+  { type_id: 312, type_name: '同性恋' },      // gay variant
+  { type_id: 322, type_name: '同性恋' },      // gay variant
+  { type_id: 332, type_name: '同性恋' },      // gay variant
+  { type_id: 342, type_name: '同性恋' },      // gay variant
+  { type_id: 352, type_name: '同性恋' },      // gay variant
+  { type_id: 362, type_name: '同性恋' },      // gay variant
+  { type_id: 372, type_name: '同性恋' },      // gay variant
+  { type_id: 382, type_name: '同性恋' },      // gay variant
+  { type_id: 392, type_name: '同性恋' },      // gay variant
+  { type_id: 402, type_name: '同性恋' },      // gay variant
+  { type_id: 412, type_name: '同性恋' },      // gay variant
+  { type_id: 422, type_name: '同性恋' },      // gay variant
+  { type_id: 552, type_name: '同性恋' },      // gay variant
+  { type_id: 702, type_name: '同性恋' },      // gay variant
+  { type_id: 731, type_name: '同性恋' },      // gay variant
+  { type_id: 742, type_name: '同性恋' },      // gay variant
+  { type_id: 901, type_name: '同性恋' },      // gay variant
+  { type_id: 37, type_name: '18-25岁' },      // college-18
+  { type_id: 79, type_name: '大学生' },       // college (duplicate)
+  { type_id: 88, type_name: '学生' },         // school-student
+  { type_id: 106, type_name: '虚拟现实' },    // vr (duplicate)
+  { type_id: 9998, type_name: '中文' }        // chinese (NEVER consolidate)
 ]
 
-// Map canonical category names to typeIds for quick lookup
+// Map canonical category names to their MAIN type_id (for new videos consolidation)
 const CANONICAL_TO_TYPE_ID: Record<string, number> = {
   'asian': 1,
   'threesome': 2,
   'amateur': 3,
   'bbw': 6,
+  'big-tits': 8,
   'blonde': 9,
   'fetish': 10,
   'hardcore': 13,
@@ -172,17 +237,42 @@ const CANONICAL_TO_TYPE_ID: Record<string, number> = {
   'lesbian': 27,
   'mature': 28,
   'hentai': 32,
-  'college-18': 37,
   'hd-porn': 38,
-  'gay': 40,
-  'pov': 68,
-  'euro': 94,
+  'rough-sex': 67,
+  'college-18': 68,
+  'double-penetration': 72,
+  'popular-with-women': 73,
+  'bisexual-male': 76,
   'cosplay': 81,
   'transgender': 83,
+  'babysitter': 89,
+  'solo-male': 92,
+  'euro': 94,
   'vr': 104,
+  '60fps': 105,
+  'pussy-licking': 131,
+  'behind-the-scenes': 141,
+  'old-young': 181,
+  'described-video': 231,
+  'role-play': 241,
+  'step-fantasy': 444,
+  'verified-couples': 482,
+  'solo-female': 492,
+  'female-orgasm': 502,
+  'muscular-men': 512,
+  'strap-on': 542,
+  'tattooed-women': 562,
+  'trans-with-girl': 572,
+  'trans-with-guy': 582,
+  'trans-male': 602,
+  '360-vr': 612,
+  '180-vr': 622,
+  'uncensored': 722,
+  'closed-captions': 732,
+  'gay': 40,
   'japanese': 111,
   'verified-amateurs': 115,
-  'chinese': 138
+  'chinese': 9998
 }
 
 // Helper function to get hardcoded categories
