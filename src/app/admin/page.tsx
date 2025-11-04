@@ -1010,7 +1010,7 @@ export default function AdminDashboard() {
               </div>
 
               {/* Videos/Variants Preview */}
-              <div className="lg:col-span-2 border border-border rounded-lg overflow-hidden bg-muted/30">
+              <div className="lg:col-span-2 border border-border rounded-lg bg-muted/30 flex flex-col h-full">
                 <div className="bg-muted/50 px-4 py-4 border-b border-border">
                   <div className="flex justify-between items-center gap-4">
                     <h4 className="font-semibold text-foreground">
