@@ -123,7 +123,7 @@ export default function AdminDashboard() {
     setRightPanelTab('videos')
     try {
       const res = await fetch(
-        `/api/provide/vod?ac=list&wd=${encodeURIComponent(categoryName)}&pagesize=20`
+        `/api/admin/videos/by-category?category=${encodeURIComponent(categoryName)}`
       )
       const data = await res.json()
       setCategoryVideos(data.list || [])
@@ -141,36 +141,11 @@ export default function AdminDashboard() {
     setLoadingCategoryVideos(true)
     setRightPanelTab('videos')
     try {
-      // The variantName comes directly from getVariantsForConsolidated, which returns
-      // the exact database category keys. We need to find the matching stats entry.
-      // The stats come from database category names which may differ in casing/spacing.
-
-      console.log('Looking for variant:', variantName)
-      console.log('All available categories:', stats?.categories.map(c => ({ name: c.typeName, lower: c.typeName.toLowerCase() })))
-
-      // Try exact match first, then fallback to case-insensitive
-      let dbCategory = stats?.categories.find(c => c.typeName === variantName)
-
-      if (!dbCategory) {
-        // Case-insensitive fallback
-        dbCategory = stats?.categories.find(c => c.typeName.toLowerCase().trim() === variantName.toLowerCase().trim())
-      }
-
-      console.log('Found dbCategory:', dbCategory)
-
-      if (dbCategory) {
-        console.log('Fetching videos for:', dbCategory.typeName)
-        const res = await fetch(
-          `/api/provide/vod?ac=list&wd=${encodeURIComponent(dbCategory.typeName)}&pagesize=20`
-        )
-        const data = await res.json()
-        console.log('API Response:', data)
-        setCategoryVideos(data.list || [])
-      } else {
-        console.warn('No matching database category found for variant:', variantName)
-        console.log('Available categories:', stats?.categories.map(c => c.typeName))
-        setCategoryVideos([])
-      }
+      const res = await fetch(
+        `/api/admin/videos/by-category?category=${encodeURIComponent(variantName)}`
+      )
+      const data = await res.json()
+      setCategoryVideos(data.list || [])
     } catch (error) {
       console.error('Failed to fetch videos:', error)
       setCategoryVideos([])
@@ -186,8 +161,10 @@ export default function AdminDashboard() {
     setRightPanelTab('videos')
     setLoadingCategoryVideos(true)
     try {
+      // Fetch videos from all variants of this consolidated category
+      const variantParams = variants.map(v => `variants=${encodeURIComponent(v)}`).join('&')
       const res = await fetch(
-        `/api/provide/vod?ac=list&t=${typeId}&pagesize=20`
+        `/api/admin/videos/by-category?${variantParams}`
       )
       const data = await res.json()
       setCategoryVideos(data.list || [])
