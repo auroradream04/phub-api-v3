@@ -167,10 +167,16 @@ export default function AdminDashboard() {
   const filteredVideos = categoryVideos.filter(video =>
     video.vod_name.toLowerCase().includes(videoSearchQuery.toLowerCase())
   )
-  const videosPerPage = 10
+  const videosPerPage = 20
   const totalPages = Math.ceil(filteredVideos.length / videosPerPage)
   const startIndex = (videoPage - 1) * videosPerPage
   const paginatedVideos = filteredVideos.slice(startIndex, startIndex + videosPerPage)
+
+  // Calculate total pages for selected category
+  const selectedCategoryCount = selectedCategory
+    ? stats?.categories.find(c => c.typeName === selectedCategory)?._count || 0
+    : 0
+  const categoryTotalPages = Math.ceil(selectedCategoryCount / videosPerPage)
 
   // Filter categories based on search query
   const getFilteredCategories = () => {
@@ -1167,30 +1173,56 @@ export default function AdminDashboard() {
                     </div>
                   )}
                   </div>
-                  {rightPanelTab === 'videos' && filteredVideos.length > 0 && (
+                  {rightPanelTab === 'videos' && (selectedCategoryCount > 0 || filteredVideos.length > 0) && (
                     <div className="px-4 py-3 border-t border-border bg-muted/30 flex items-center justify-between">
                       <span className="text-xs text-muted-foreground">
-                        {filteredVideos.length} video{filteredVideos.length !== 1 ? 's' : ''} found
+                        {videoSearchQuery ? `${filteredVideos.length} found` : `${selectedCategoryCount.toLocaleString()} total`}
                       </span>
-                      <div className="flex gap-2 items-center">
-                        <button
-                          onClick={() => setVideoPage(prev => Math.max(1, prev - 1))}
-                          disabled={videoPage === 1}
-                          className="px-2 py-1 text-xs rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                          ← Prev
-                        </button>
-                        <span className="text-xs text-muted-foreground">
-                          {videoPage} / {totalPages}
-                        </span>
-                        <button
-                          onClick={() => setVideoPage(prev => Math.min(totalPages, prev + 1))}
-                          disabled={videoPage === totalPages}
-                          className="px-2 py-1 text-xs rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                          Next →
-                        </button>
-                      </div>
+                      {categoryTotalPages > 1 && (
+                        <div className="flex gap-2 items-center">
+                          <button
+                            onClick={async () => {
+                              const newPage = Math.max(1, videoPage - 1)
+                              try {
+                                const res = await fetch(
+                                  `/api/admin/videos/by-category?category=${encodeURIComponent(selectedCategory || '')}&page=${newPage}`
+                                )
+                                const data = await res.json()
+                                setCategoryVideos(prev => [...prev.slice(0, (newPage - 1) * videosPerPage), ...(data.list || [])])
+                                setVideoPage(newPage)
+                              } catch (error) {
+                                console.error('Failed to fetch page:', error)
+                              }
+                            }}
+                            disabled={videoPage === 1}
+                            className="px-2 py-1 text-xs rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          >
+                            ← Prev
+                          </button>
+                          <span className="text-xs text-muted-foreground">
+                            {videoPage} / {categoryTotalPages}
+                          </span>
+                          <button
+                            onClick={async () => {
+                              const newPage = Math.min(categoryTotalPages, videoPage + 1)
+                              try {
+                                const res = await fetch(
+                                  `/api/admin/videos/by-category?category=${encodeURIComponent(selectedCategory || '')}&page=${newPage}`
+                                )
+                                const data = await res.json()
+                                setCategoryVideos(prev => [...prev.slice(0, (newPage - 1) * videosPerPage), ...(data.list || [])])
+                                setVideoPage(newPage)
+                              } catch (error) {
+                                console.error('Failed to fetch page:', error)
+                              }
+                            }}
+                            disabled={videoPage === categoryTotalPages}
+                            className="px-2 py-1 text-xs rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          >
+                            Next →
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
