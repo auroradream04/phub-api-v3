@@ -44,6 +44,13 @@ export default async function Home() {
         initialStats={stats}
         allCategories={[...CONSOLIDATED_CATEGORIES]}
       />
+
+      {/* Horizontal Ads - Bottom */}
+      <section className="py-6">
+        <div>
+          <HorizontalAds />
+        </div>
+      </section>
     </div>
   )
 }
