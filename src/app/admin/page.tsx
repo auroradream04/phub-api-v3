@@ -1092,24 +1092,23 @@ export default function AdminDashboard() {
                             ) : (
                               <div className="divide-y divide-border">
                                 {paginatedVideos.map((video) => (
-                            <div key={video.vod_id} className="px-4 py-3 hover:bg-muted/50 transition-colors">
-                              <div className="flex gap-3 items-start justify-between">
-                                <div className="flex gap-3 flex-1 min-w-0">
+                            <div key={video.vod_id} className="px-3 py-2 hover:bg-muted/50 transition-colors">
+                              <div className="flex gap-2 items-start justify-between">
+                                <div className="flex gap-2 flex-1 min-w-0">
                                   {video.vod_pic && (
                                     <img
                                       src={video.vod_pic}
                                       alt={video.vod_name}
-                                      className="w-12 h-16 rounded object-cover flex-shrink-0"
+                                      className="w-20 aspect-video rounded object-cover flex-shrink-0"
                                     />
                                   )}
-                                  <div className="min-w-0 flex-1">
-                                    <p className="text-sm font-medium text-foreground line-clamp-2">{video.vod_name}</p>
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                      {video.vod_hits?.toLocaleString() || 0} views
-                                    </p>
-                                    {video.type_name && (
-                                      <p className="text-xs text-muted-foreground">{video.type_name}</p>
-                                    )}
+                                  <div className="min-w-0 flex-1 flex flex-col justify-center">
+                                    <p className="text-sm font-medium text-foreground line-clamp-1">{video.vod_name}</p>
+                                    <div className="flex gap-2 text-xs text-muted-foreground">
+                                      <span>{video.vod_hits?.toLocaleString() || 0} views</span>
+                                      {video.type_name && <span>•</span>}
+                                      {video.type_name && <span>{video.type_name}</span>}
+                                    </div>
                                   </div>
                                 </div>
                                 <div className="flex gap-1 flex-shrink-0">
@@ -1178,8 +1177,8 @@ export default function AdminDashboard() {
                       <span className="text-xs text-muted-foreground">
                         {videoSearchQuery ? `${filteredVideos.length} found` : `${selectedCategoryCount.toLocaleString()} total`}
                       </span>
-                      {categoryTotalPages > 1 && (
-                        <div className="flex gap-2 items-center">
+                      {!videoSearchQuery && categoryTotalPages > 1 && (
+                        <div className="flex gap-2 items-center text-xs">
                           <button
                             onClick={async () => {
                               const newPage = Math.max(1, videoPage - 1)
