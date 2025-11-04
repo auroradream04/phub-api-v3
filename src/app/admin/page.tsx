@@ -978,6 +978,10 @@ export default function AdminDashboard() {
                     // Consolidated categories
                     <div className="divide-y divide-border">
                       {CONSOLIDATED_CATEGORIES
+                        .filter(cat =>
+                          cat.toLowerCase().includes(categorySearchQuery.toLowerCase()) ||
+                          CONSOLIDATED_TO_CHINESE[cat].toLowerCase().includes(categorySearchQuery.toLowerCase())
+                        )
                         .map(cat => {
                           const variants = getVariantsForConsolidated(cat)
                           const count = stats.categories
