@@ -39,9 +39,9 @@ export default function HomeClient({ initialVideos, initialStats, allCategories 
   const [featuredVideos, setFeaturedVideos] = useState<Video[]>(initialVideos)
   const [loading, setLoading] = useState(false)
   const [hasMore, setHasMore] = useState(true)
-  const [totalCount, setTotalCount] = useState(0)
-  const [totalPages, setTotalPages] = useState(0)
   const videosPerPage = 20
+  const [totalCount, setTotalCount] = useState(initialStats.totalVideos)
+  const [totalPages, setTotalPages] = useState(Math.ceil((initialStats.totalVideos || 0) / 20))
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || ''
   const telegramLink = process.env.NEXT_PUBLIC_TELEGRAM_LINK || 'https://t.me/your_group'
