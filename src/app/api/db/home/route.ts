@@ -19,15 +19,45 @@ export async function GET(request: NextRequest) {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
-    // Fetch ALL videos first (we need to filter client-side since category mapping is complex)
-    const allVideos = await prisma.video.findMany({
-      orderBy: {
-        createdAt: 'desc' // Newest first
+    // Get variants for the consolidated category if provided
+    let dbCategoryFilter: any = undefined
+    if (categoryParam) {
+      const variants = getVariantsForConsolidated(categoryParam)
+      if (variants.length > 0) {
+        dbCategoryFilter = {
+          typeName: {
+            in: variants.map(v => v.toLowerCase())
+          }
+        }
       }
-    })
+    }
 
-    // Format and filter by category if provided
-    let formattedVideos = allVideos.map((video) => {
+    // Fetch paginated videos with optional category filter
+    const [allVideos, totalCount] = await Promise.all([
+      prisma.video.findMany({
+        where: dbCategoryFilter,
+        orderBy: {
+          createdAt: 'desc' // Newest first
+        },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        select: {
+          vodId: true,
+          vodName: true,
+          vodPic: true,
+          vodRemarks: true,
+          views: true,
+          typeName: true,
+          createdAt: true
+        }
+      }),
+      prisma.video.count({
+        where: dbCategoryFilter
+      })
+    ])
+
+    // Format videos
+    const formattedVideos = allVideos.map((video) => {
       // Map database category to consolidated category
       const consolidatedCat = getConsolidatedFromDatabase(video.typeName)
       // Get Chinese name for consolidated category
@@ -46,25 +76,16 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    // Filter by consolidated category if provided
-    if (categoryParam) {
-      formattedVideos = formattedVideos.filter(video =>
-        video.consolidatedCategory === categoryParam
-      )
-    }
-
-    // Apply pagination after filtering
-    const totalCount = formattedVideos.length
-    const data = formattedVideos.slice((page - 1) * pageSize, page * pageSize)
-
     // Count today's updates
-    const todayUpdates = allVideos.filter(v => {
-      const consolidatedCat = getConsolidatedFromDatabase(v.typeName)
-      return v.createdAt >= today && (!categoryParam || consolidatedCat === categoryParam)
-    }).length
+    const todayUpdates = await prisma.video.count({
+      where: {
+        createdAt: { gte: today },
+        ...dbCategoryFilter
+      }
+    })
 
     const response = {
-      data,
+      data: formattedVideos,
       paging: {
         isEnd: (page * pageSize) >= totalCount
       },
