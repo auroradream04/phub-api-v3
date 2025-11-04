@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
     const variants = searchParams.getAll('variants')
 
     // Handle both single category and multiple variants
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const whereClause: any = {}
 
     if (variants && variants.length > 0) {

@@ -154,7 +154,7 @@ export default function AdminDashboard() {
     }
   }
 
-  const handleSelectConsolidatedCategory = async (consolidated: string, typeId: number) => {
+  const handleSelectConsolidatedCategory = async (consolidated: string, _typeId: number) => {
     setSelectedCategory(`${consolidated} (${CONSOLIDATED_TO_CHINESE[consolidated]})`)
     const variants = getVariantsForConsolidated(consolidated)
     setSelectedConsolidated({ name: consolidated, variants })
