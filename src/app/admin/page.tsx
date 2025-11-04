@@ -122,14 +122,10 @@ export default function AdminDashboard() {
     setLoadingCategoryVideos(true)
     setRightPanelTab('videos')
     try {
-      // Use typeName search instead of keyword search for category filtering
-      // The API's 'wd' parameter is for keyword search (video names), not categories
-      // We need to use a direct category name search through the API
       const res = await fetch(
-        `/api/provide/vod?ac=list&t=${encodeURIComponent(categoryName)}&pagesize=20`
+        `/api/provide/vod?ac=list&wd=${encodeURIComponent(categoryName)}&pagesize=20`
       )
       const data = await res.json()
-      console.log('Fetched videos for category:', categoryName, 'Found:', data.list?.length || 0)
       setCategoryVideos(data.list || [])
     } catch (error) {
       console.error('Failed to fetch videos:', error)
@@ -145,16 +141,38 @@ export default function AdminDashboard() {
     setLoadingCategoryVideos(true)
     setRightPanelTab('videos')
     try {
-      // Fetch videos using the variant name as a type parameter (category search)
-      // The API's 'wd' parameter is for keyword search, not categories
-      const res = await fetch(
-        `/api/provide/vod?ac=list&t=${encodeURIComponent(variantName)}&pagesize=20`
-      )
-      const data = await res.json()
-      console.log('Fetched videos for variant:', variantName, 'Found:', data.list?.length || 0)
-      setCategoryVideos(data.list || [])
+      // The variantName comes directly from getVariantsForConsolidated, which returns
+      // the exact database category keys. We need to find the matching stats entry.
+      // The stats come from database category names which may differ in casing/spacing.
+
+      console.log('Looking for variant:', variantName)
+      console.log('All available categories:', stats?.categories.map(c => ({ name: c.typeName, lower: c.typeName.toLowerCase() })))
+
+      // Try exact match first, then fallback to case-insensitive
+      let dbCategory = stats?.categories.find(c => c.typeName === variantName)
+
+      if (!dbCategory) {
+        // Case-insensitive fallback
+        dbCategory = stats?.categories.find(c => c.typeName.toLowerCase().trim() === variantName.toLowerCase().trim())
+      }
+
+      console.log('Found dbCategory:', dbCategory)
+
+      if (dbCategory) {
+        console.log('Fetching videos for:', dbCategory.typeName)
+        const res = await fetch(
+          `/api/provide/vod?ac=list&wd=${encodeURIComponent(dbCategory.typeName)}&pagesize=20`
+        )
+        const data = await res.json()
+        console.log('API Response:', data)
+        setCategoryVideos(data.list || [])
+      } else {
+        console.warn('No matching database category found for variant:', variantName)
+        console.log('Available categories:', stats?.categories.map(c => c.typeName))
+        setCategoryVideos([])
+      }
     } catch (error) {
-      console.error('Failed to fetch videos for variant:', variantName, error)
+      console.error('Failed to fetch videos:', error)
       setCategoryVideos([])
     } finally {
       setLoadingCategoryVideos(false)
