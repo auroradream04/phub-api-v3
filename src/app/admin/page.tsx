@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react'
 import { useState, useEffect, useRef } from 'react'
-import { PlayCircle, RefreshCw, Trash2, Database, Languages, ChevronDown, ChevronUp, Grid, List as ListIcon } from 'lucide-react'
+import { PlayCircle, RefreshCw, Trash2, Database, Languages, ChevronDown, ChevronUp, Grid, List as ListIcon, Eye } from 'lucide-react'
 import { CONSOLIDATED_CATEGORIES, CONSOLIDATED_TO_CHINESE, CONSOLIDATED_TYPE_IDS, getVariantsForConsolidated } from '@/lib/maccms-mappings'
 
 interface Stats {
@@ -136,15 +136,29 @@ export default function AdminDashboard() {
   }
 
   const handleSelectVariant = async (variantName: string) => {
-    setSelectedCategory(`${variantName} (${variantName})`)
+    const capitalizedVariant = variantName.charAt(0).toUpperCase() + variantName.slice(1)
+    setSelectedCategory(capitalizedVariant)
     setLoadingCategoryVideos(true)
     setRightPanelTab('videos')
     try {
-      const res = await fetch(
-        `/api/provide/vod?ac=list&wd=${encodeURIComponent(variantName)}&pagesize=20`
-      )
-      const data = await res.json()
-      setCategoryVideos(data.list || [])
+      // Find the database category and get all videos from it
+      console.log('Looking for variant:', variantName)
+      const dbCategory = stats?.categories.find(c => c.typeName.toLowerCase() === variantName.toLowerCase())
+      console.log('Found dbCategory:', dbCategory)
+
+      if (dbCategory) {
+        console.log('Fetching videos for:', dbCategory.typeName)
+        const res = await fetch(
+          `/api/provide/vod?ac=list&wd=${encodeURIComponent(dbCategory.typeName)}&pagesize=20`
+        )
+        const data = await res.json()
+        console.log('API Response:', data)
+        setCategoryVideos(data.list || [])
+      } else {
+        console.warn('No matching database category found for variant:', variantName)
+        console.log('Available categories:', stats?.categories.map(c => c.typeName.toLowerCase()))
+        setCategoryVideos([])
+      }
     } catch (error) {
       console.error('Failed to fetch videos:', error)
       setCategoryVideos([])
@@ -885,22 +899,51 @@ export default function AdminDashboard() {
                         <div className="divide-y divide-border">
                           {categoryVideos.slice(0, 10).map((video) => (
                             <div key={video.vod_id} className="px-4 py-3 hover:bg-muted/50 transition-colors">
-                              <div className="flex gap-3">
-                                {video.vod_pic && (
-                                  <img
-                                    src={video.vod_pic}
-                                    alt={video.vod_name}
-                                    className="w-12 h-16 rounded object-cover flex-shrink-0"
-                                  />
-                                )}
-                                <div className="min-w-0 flex-1">
-                                  <p className="text-sm font-medium text-foreground line-clamp-2">{video.vod_name}</p>
-                                  <p className="text-xs text-muted-foreground mt-1">
-                                    {video.vod_hits?.toLocaleString() || 0} views
-                                  </p>
-                                  {video.type_name && (
-                                    <p className="text-xs text-muted-foreground">{video.type_name}</p>
+                              <div className="flex gap-3 items-start justify-between">
+                                <div className="flex gap-3 flex-1 min-w-0">
+                                  {video.vod_pic && (
+                                    <img
+                                      src={video.vod_pic}
+                                      alt={video.vod_name}
+                                      className="w-12 h-16 rounded object-cover flex-shrink-0"
+                                    />
                                   )}
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-sm font-medium text-foreground line-clamp-2">{video.vod_name}</p>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      {video.vod_hits?.toLocaleString() || 0} views
+                                    </p>
+                                    {video.type_name && (
+                                      <p className="text-xs text-muted-foreground">{video.type_name}</p>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex gap-1 flex-shrink-0">
+                                  <a
+                                    href={`/watch/${video.vod_id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="p-1.5 rounded hover:bg-primary/10 text-primary transition-colors"
+                                    title="View video"
+                                  >
+                                    <Eye className="w-4 h-4" />
+                                  </a>
+                                  <button
+                                    onClick={async () => {
+                                      if (confirm('Delete this video?')) {
+                                        try {
+                                          await fetch(`/api/admin/videos/${video.vod_id}`, { method: 'DELETE' })
+                                          setCategoryVideos(prev => prev.filter(v => v.vod_id !== video.vod_id))
+                                        } catch (error) {
+                                          console.error('Failed to delete video:', error)
+                                        }
+                                      }
+                                    }}
+                                    className="p-1.5 rounded hover:bg-red-500/10 text-red-600 transition-colors"
+                                    title="Delete video"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
                                 </div>
                               </div>
                             </div>
