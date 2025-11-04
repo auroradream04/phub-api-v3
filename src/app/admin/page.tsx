@@ -177,9 +177,17 @@ export default function AdminDashboard() {
   const paginatedVideos = filteredVideos.slice(startIndex, startIndex + videosPerPage)
 
   // Calculate total pages for selected category
-  const selectedCategoryCount = selectedCategory
-    ? stats?.categories.find(c => c.typeName === selectedCategory)?._count || 0
-    : 0
+  let selectedCategoryCount = 0
+  if (selectedConsolidated) {
+    // For consolidated categories, sum up all variant counts
+    selectedCategoryCount = selectedConsolidated.variants.reduce((sum, variant) => {
+      const count = stats?.categories.find(c => c.typeName.toLowerCase() === variant.toLowerCase())?._count || 0
+      return sum + count
+    }, 0)
+  } else if (selectedCategory) {
+    // For database categories, find exact match
+    selectedCategoryCount = stats?.categories.find(c => c.typeName === selectedCategory)?._count || 0
+  }
   const categoryTotalPages = Math.ceil(selectedCategoryCount / videosPerPage)
 
   // Debug logging
@@ -205,13 +213,15 @@ export default function AdminDashboard() {
     setSelectedCategory(`${consolidated} (${CONSOLIDATED_TO_CHINESE[consolidated]})`)
     const variants = getVariantsForConsolidated(consolidated)
     setSelectedConsolidated({ name: consolidated, variants })
+    setVideoPage(1)
+    setVideoSearchQuery('')
     setRightPanelTab('videos')
     setLoadingCategoryVideos(true)
     try {
       // Fetch videos from all variants of this consolidated category
       const variantParams = variants.map(v => `variants=${encodeURIComponent(v)}`).join('&')
       const res = await fetch(
-        `/api/admin/videos/by-category?${variantParams}`
+        `/api/admin/videos/by-category?${variantParams}&page=1`
       )
       const data = await res.json()
       setCategoryVideos(data.list || [])
