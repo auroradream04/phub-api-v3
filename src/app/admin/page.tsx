@@ -141,9 +141,21 @@ export default function AdminDashboard() {
     setLoadingCategoryVideos(true)
     setRightPanelTab('videos')
     try {
-      // Find the database category and get all videos from it
+      // The variantName comes directly from getVariantsForConsolidated, which returns
+      // the exact database category keys. We need to find the matching stats entry.
+      // The stats come from database category names which may differ in casing/spacing.
+
       console.log('Looking for variant:', variantName)
-      const dbCategory = stats?.categories.find(c => c.typeName.toLowerCase() === variantName.toLowerCase())
+      console.log('All available categories:', stats?.categories.map(c => ({ name: c.typeName, lower: c.typeName.toLowerCase() })))
+
+      // Try exact match first, then fallback to case-insensitive
+      let dbCategory = stats?.categories.find(c => c.typeName === variantName)
+
+      if (!dbCategory) {
+        // Case-insensitive fallback
+        dbCategory = stats?.categories.find(c => c.typeName.toLowerCase().trim() === variantName.toLowerCase().trim())
+      }
+
       console.log('Found dbCategory:', dbCategory)
 
       if (dbCategory) {
@@ -156,7 +168,7 @@ export default function AdminDashboard() {
         setCategoryVideos(data.list || [])
       } else {
         console.warn('No matching database category found for variant:', variantName)
-        console.log('Available categories:', stats?.categories.map(c => c.typeName.toLowerCase()))
+        console.log('Available categories:', stats?.categories.map(c => c.typeName))
         setCategoryVideos([])
       }
     } catch (error) {
