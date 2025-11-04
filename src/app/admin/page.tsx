@@ -1088,7 +1088,7 @@ export default function AdminDashboard() {
                       />
                     </div>
                   )}
-                  <div className="overflow-y-auto flex-1">
+                  <div className="overflow-y-auto flex-1 flex flex-col">
                     {rightPanelTab === 'videos' ? (
                       // Videos tab
                       <>
@@ -1182,7 +1182,7 @@ export default function AdminDashboard() {
                   )}
                   </div>
                   {rightPanelTab === 'videos' && categoryVideos.length > 0 && (
-                    <div className="px-4 py-3 border-t border-border bg-muted/30 flex items-center justify-between w-full">
+                    <div className="px-4 py-3 border-t border-border bg-muted/30 flex items-center justify-between w-full flex-shrink-0">
                       <span className="text-xs text-muted-foreground">
                         {videoSearchQuery ? `${filteredVideos.length} found` : `${selectedCategoryCount.toLocaleString()} total`}
                       </span>
