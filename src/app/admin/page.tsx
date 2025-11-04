@@ -120,9 +120,28 @@ export default function AdminDashboard() {
   const handleSelectDatabaseCategory = async (categoryName: string) => {
     setSelectedCategory(categoryName)
     setLoadingCategoryVideos(true)
+    setRightPanelTab('videos')
     try {
       const res = await fetch(
         `/api/provide/vod?ac=list&wd=${encodeURIComponent(categoryName)}&pagesize=20`
+      )
+      const data = await res.json()
+      setCategoryVideos(data.list || [])
+    } catch (error) {
+      console.error('Failed to fetch videos:', error)
+      setCategoryVideos([])
+    } finally {
+      setLoadingCategoryVideos(false)
+    }
+  }
+
+  const handleSelectVariant = async (variantName: string) => {
+    setSelectedCategory(`${variantName} (${variantName})`)
+    setLoadingCategoryVideos(true)
+    setRightPanelTab('videos')
+    try {
+      const res = await fetch(
+        `/api/provide/vod?ac=list&wd=${encodeURIComponent(variantName)}&pagesize=20`
       )
       const data = await res.json()
       setCategoryVideos(data.list || [])
@@ -838,7 +857,7 @@ export default function AdminDashboard() {
                                     <button
                                       key={idx}
                                       onClick={() => {
-                                        setRightPanelTab('variants')
+                                        handleSelectVariant(variant)
                                         setExpandedVariantDropdown(false)
                                       }}
                                       className="w-full text-left px-4 py-2 hover:bg-muted transition-colors flex justify-between items-center border-b border-border last:border-b-0"
