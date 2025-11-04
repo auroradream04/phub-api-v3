@@ -10,8 +10,6 @@ export function Header() {
 
   const navigation = [
     { name: '首页', href: '/' },
-    { name: '热门', href: '/trending' },
-    { name: '分类', href: '/categories' },
     { name: '文档', href: '/docs' },
   ]
 

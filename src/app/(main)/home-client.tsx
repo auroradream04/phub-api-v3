@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { Search } from 'lucide-react'
 import { getCategoryChineseName } from '@/lib/category-mapping'
-import { CONSOLIDATED_CATEGORIES, CONSOLIDATED_TO_CHINESE } from '@/lib/maccms-mappings'
+import { CONSOLIDATED_TO_CHINESE } from '@/lib/maccms-mappings'
 import {
   Table,
   TableBody,
@@ -298,7 +298,7 @@ export default function HomeClient({ initialVideos, initialStats, allCategories 
                   disabled={currentPage === 1}
                   className="px-2 py-1 text-xs rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  ← Prev
+                  ← 上一页
                 </button>
                 <span className="text-xs text-muted-foreground">
                   {currentPage} / {totalPages || 1}
@@ -308,7 +308,7 @@ export default function HomeClient({ initialVideos, initialStats, allCategories 
                   disabled={!hasMore}
                   className="px-2 py-1 text-xs rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  Next →
+                  下一页 →
                 </button>
               </div>
             </div>
@@ -469,7 +469,7 @@ export default function HomeClient({ initialVideos, initialStats, allCategories 
                 disabled={currentPage === 1}
                 className="px-2 py-1 text-xs rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                ← Prev
+                ← 上一页
               </button>
               <span className="text-xs text-muted-foreground">
                 {currentPage} / {totalPages || 1}
@@ -479,7 +479,7 @@ export default function HomeClient({ initialVideos, initialStats, allCategories 
                 disabled={!hasMore}
                 className="px-2 py-1 text-xs rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                Next →
+                下一页 →
               </button>
             </div>
           </div>

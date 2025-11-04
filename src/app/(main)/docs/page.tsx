@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { BookOpen, Code, Zap } from 'lucide-react'
+import { Code, Zap } from 'lucide-react'
 
 export default function DocsHome() {
   const cmsGuides = [
@@ -22,53 +22,7 @@ export default function DocsHome() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-card/80 backdrop-blur-md border-b border-border sticky top-0 z-50">
-        <div className="px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-8">
-              <Link href="/" className="text-2xl font-bold text-primary">
-                视频中心
-              </Link>
-              <nav className="hidden md:flex space-x-6">
-                <Link href="/" className="text-foreground/80 hover:text-primary transition-colors">
-                  首页
-                </Link>
-                <Link href="/trending" className="text-foreground/80 hover:text-primary transition-colors">
-                  热门
-                </Link>
-                <Link href="/categories" className="text-foreground/80 hover:text-primary transition-colors">
-                  分类
-                </Link>
-                <Link href="/docs" className="text-foreground/80 hover:text-primary transition-colors font-medium">
-                  文档
-                </Link>
-              </nav>
-            </div>
-            <Link
-              href="/admin"
-              className="text-sm text-muted-foreground hover:text-primary transition-colors"
-            >
-              管理后台
-            </Link>
-          </div>
-        </div>
-      </header>
-
       <div className="space-y-16 py-12">
-        {/* Hero Section */}
-        <div className="text-center space-y-4 py-12">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20">
-            <BookOpen className="w-8 h-8 text-primary" />
-          </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-foreground">
-            集成指南
-          </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            了解如何将我们的视频API集成到您的内容管理系统。我们支持多种流行的CMS平台，让您轻松扩展功能。
-          </p>
-        </div>
-
         {/* Quick Start */}
         <div className="bg-gradient-to-br from-primary/10 to-accent/10 border border-primary/20 rounded-2xl p-8 md:p-12">
           <div className="grid md:grid-cols-2 gap-8">
@@ -181,12 +135,32 @@ export default function DocsHome() {
               },
               {
                 q: '如果集成失败怎么办？',
-                a: '每个指南都包含常见问题解决方案。如果问题仍未解决，请查看故障排除部分。'
+                a: '每个指南都包含常见问题解决方案。如果问题仍未解决，请加入我们的 Telegram 群组寻求帮助。',
+                link: process.env.NEXT_PUBLIC_TELEGRAM_LINK || 'https://t.me/md8av'
+              },
+              {
+                q: '需要付费吗？',
+                a: '完全免费！我们的API和所有内容都可以自由采集使用，无需任何费用。'
               }
             ].map((faq, i) => (
               <div key={i} className="bg-card border border-border rounded-xl p-6 hover:border-primary/50 transition-all">
                 <h4 className="font-bold text-foreground mb-2">{faq.q}</h4>
-                <p className="text-muted-foreground">{faq.a}</p>
+                <p className="text-muted-foreground">
+                  {faq.a}
+                  {faq.link && (
+                    <>
+                      {' '}
+                      <a
+                        href={faq.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent font-semibold hover:underline"
+                      >
+                        {faq.link}
+                      </a>
+                    </>
+                  )}
+                </p>
               </div>
             ))}
           </div>

@@ -18,6 +18,7 @@ interface Video {
 interface Category {
   id: number
   name: string
+  displayName: string
 }
 
 function formatViews(views: string): string {
@@ -39,6 +40,7 @@ export default function SearchClient({
   categoryId,
   categoryName,
   currentPage,
+  totalCount,
 }: {
   initialVideos: Video[]
   categories: Category[]
@@ -46,6 +48,7 @@ export default function SearchClient({
   categoryId: string
   categoryName: string
   currentPage: number
+  totalCount: number
 }) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -69,15 +72,15 @@ export default function SearchClient({
     }
   }, [isCategoryDropdownOpen])
 
-  const handleCategorySelect = (catId: number | null) => {
+  const handleCategorySelect = (catName: string | null) => {
     setIsCategoryDropdownOpen(false)
 
     const params = new URLSearchParams(searchParams.toString())
 
-    if (catId === null) {
+    if (catName === null) {
       params.delete('category')
     } else {
-      params.set('category', catId.toString())
+      params.set('category', catName)
       params.delete('q')
       params.delete('page')
     }
@@ -93,9 +96,10 @@ export default function SearchClient({
   }
 
   const hasResults = initialVideos.length > 0
+  const totalPages = Math.ceil(totalCount / 24)
 
   return (
-    <section className="py-12 px-4 sm:px-6 lg:px-8">
+    <section className="py-12">
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
           <div>
@@ -116,7 +120,7 @@ export default function SearchClient({
               className="flex items-center gap-2 px-4 py-2 bg-card border border-border rounded-lg hover:bg-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary min-w-[150px]"
             >
               <span className="text-foreground font-medium">
-                {categoryId && categoryName ? categoryName : '选择分类'}
+                {categoryName ? categoryName : '选择分类'}
               </span>
               <ChevronDown
                 className={`w-4 h-4 text-muted-foreground transition-transform ml-auto ${
@@ -127,7 +131,7 @@ export default function SearchClient({
 
             {/* Dropdown Menu */}
             {isCategoryDropdownOpen && (
-              <div className="absolute right-0 sm:right-auto sm:left-0 mt-2 w-64 max-h-96 overflow-y-auto bg-card border border-border rounded-lg shadow-lg shadow-primary/10 z-20">
+              <div className="absolute left-0 mt-2 w-64 max-h-96 overflow-y-auto bg-card border border-border rounded-lg shadow-lg shadow-primary/10 z-20">
                 {/* All Categories Option */}
                 <button
                   onClick={() => handleCategorySelect(null)}
@@ -140,14 +144,14 @@ export default function SearchClient({
                 {categories.map((category) => (
                   <button
                     key={category.id}
-                    onClick={() => handleCategorySelect(category.id)}
+                    onClick={() => handleCategorySelect(category.name)}
                     className={`w-full px-4 py-2 text-left hover:bg-muted transition-colors ${
-                      categoryId === category.id.toString()
+                      categoryId === category.name
                         ? 'bg-primary/10 text-primary'
                         : 'text-foreground'
                     }`}
                   >
-                    <span>{category.name}</span>
+                    <span>{category.displayName}</span>
                   </button>
                 ))}
               </div>
@@ -213,36 +217,29 @@ export default function SearchClient({
 
           {/* Pagination */}
           {initialVideos.length > 0 && (
-            <div className="flex items-center justify-center gap-4 mt-12">
-              <button
-                onClick={() => goToPage(currentPage - 1)}
-                disabled={currentPage === 1}
-                className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                  currentPage === 1
-                    ? 'bg-muted text-muted-foreground cursor-not-allowed opacity-50'
-                    : 'bg-card text-primary border-2 border-primary hover:bg-primary hover:text-primary-foreground'
-                }`}
-              >
-                上一页
-              </button>
-
-              <div className="flex items-center gap-2 px-6 py-3 bg-card rounded-lg border border-border">
-                <span className="text-muted-foreground">第</span>
-                <span className="text-primary font-bold text-lg">{currentPage}</span>
-                <span className="text-muted-foreground">页</span>
+            <div className="px-4 py-2 border-t border-b border-l border-r border-border bg-muted/30 flex items-center justify-between w-full rounded-bl-lg rounded-br-lg mt-6">
+              <span className="text-xs text-muted-foreground">
+                <span className="text-primary font-bold">{totalCount}</span> 个视频
+              </span>
+              <div className="flex gap-2 items-center text-xs">
+                <button
+                  onClick={() => goToPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="px-2 py-1 text-xs rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  ← 上一页
+                </button>
+                <span className="text-xs text-muted-foreground">
+                  {currentPage} / {totalPages}
+                </span>
+                <button
+                  onClick={() => goToPage(currentPage + 1)}
+                  disabled={currentPage >= totalPages}
+                  className="px-2 py-1 text-xs rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  下一页 →
+                </button>
               </div>
-
-              <button
-                onClick={() => goToPage(currentPage + 1)}
-                disabled={initialVideos.length < 12}
-                className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                  initialVideos.length < 12
-                    ? 'bg-muted text-muted-foreground cursor-not-allowed opacity-50'
-                    : 'bg-primary text-primary-foreground hover:bg-primary/90'
-                }`}
-              >
-                下一页
-              </button>
             </div>
           )}
         </>
