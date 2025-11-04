@@ -63,6 +63,8 @@ export default function AdminDashboard() {
   const [loadingCategoryVideos, setLoadingCategoryVideos] = useState(false)
   const [rightPanelTab, setRightPanelTab] = useState<'videos' | 'variants'>('videos')
   const [expandedVariantDropdown, setExpandedVariantDropdown] = useState(false)
+  const [videoSearchQuery, setVideoSearchQuery] = useState('')
+  const [videoPage, setVideoPage] = useState(1)
 
   // Check for saved progress on load
   useEffect(() => {
@@ -153,6 +155,15 @@ export default function AdminDashboard() {
       setLoadingCategoryVideos(false)
     }
   }
+
+  // Filter and paginate videos based on search query
+  const filteredVideos = categoryVideos.filter(video =>
+    video.vod_name.toLowerCase().includes(videoSearchQuery.toLowerCase())
+  )
+  const videosPerPage = 10
+  const totalPages = Math.ceil(filteredVideos.length / videosPerPage)
+  const startIndex = (videoPage - 1) * videosPerPage
+  const paginatedVideos = filteredVideos.slice(startIndex, startIndex + videosPerPage)
 
   const handleSelectConsolidatedCategory = async (consolidated: string, _typeId: number) => {
     setSelectedCategory(`${consolidated} (${CONSOLIDATED_TO_CHINESE[consolidated]})`)
@@ -878,15 +889,34 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
-                <div className="max-h-96 overflow-y-auto">
-                  {rightPanelTab === 'videos' ? (
-                    // Videos tab
-                    <>
-                      {loadingCategoryVideos ? (
-                        <div className="p-8 text-center text-muted-foreground">Loading videos...</div>
-                      ) : categoryVideos.length > 0 ? (
-                        <div className="divide-y divide-border">
-                          {categoryVideos.slice(0, 10).map((video) => (
+                <div className="flex flex-col">
+                  {rightPanelTab === 'videos' && categoryVideos.length > 0 && (
+                    <div className="px-4 py-3 border-b border-border bg-muted/30">
+                      <input
+                        type="text"
+                        placeholder="Search videos..."
+                        value={videoSearchQuery}
+                        onChange={(e) => {
+                          setVideoSearchQuery(e.target.value)
+                          setVideoPage(1)
+                        }}
+                        className="w-full px-3 py-2 bg-muted text-foreground rounded border border-border focus:border-primary focus:outline-none text-sm"
+                      />
+                    </div>
+                  )}
+                  <div className="max-h-96 overflow-y-auto flex-1">
+                    {rightPanelTab === 'videos' ? (
+                      // Videos tab
+                      <>
+                        {loadingCategoryVideos ? (
+                          <div className="p-8 text-center text-muted-foreground">Loading videos...</div>
+                        ) : categoryVideos.length > 0 ? (
+                          <>
+                            {filteredVideos.length === 0 ? (
+                              <div className="p-8 text-center text-muted-foreground">No videos match your search</div>
+                            ) : (
+                              <div className="divide-y divide-border">
+                                {paginatedVideos.map((video) => (
                             <div key={video.vod_id} className="px-4 py-3 hover:bg-muted/50 transition-colors">
                               <div className="flex gap-3 items-start justify-between">
                                 <div className="flex gap-3 flex-1 min-w-0">
@@ -937,15 +967,17 @@ export default function AdminDashboard() {
                               </div>
                             </div>
                           ))}
-                        </div>
-                      ) : (
-                        <div className="p-8 text-center text-muted-foreground">
-                          {selectedCategory ? 'No videos found' : 'Select a category to view videos'}
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    // Variants tab (consolidated only)
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className="p-8 text-center text-muted-foreground">
+                            {selectedCategory ? 'No videos found' : 'Select a category to view videos'}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      // Variants tab (consolidated only)
                     <div className="divide-y divide-border">
                       {selectedConsolidated?.variants
                         .sort((a, b) => {
@@ -963,6 +995,33 @@ export default function AdminDashboard() {
                             </div>
                           )
                         })}
+                    </div>
+                  )}
+                  </div>
+                  {rightPanelTab === 'videos' && filteredVideos.length > 0 && (
+                    <div className="px-4 py-3 border-t border-border bg-muted/30 flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">
+                        {filteredVideos.length} video{filteredVideos.length !== 1 ? 's' : ''} found
+                      </span>
+                      <div className="flex gap-2 items-center">
+                        <button
+                          onClick={() => setVideoPage(prev => Math.max(1, prev - 1))}
+                          disabled={videoPage === 1}
+                          className="px-2 py-1 text-xs rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          ← Prev
+                        </button>
+                        <span className="text-xs text-muted-foreground">
+                          {videoPage} / {totalPages}
+                        </span>
+                        <button
+                          onClick={() => setVideoPage(prev => Math.min(totalPages, prev + 1))}
+                          disabled={videoPage === totalPages}
+                          className="px-2 py-1 text-xs rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          Next →
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
