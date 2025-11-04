@@ -71,6 +71,7 @@ export default function AdminDashboard() {
   const [loadingGlobalSearch, setLoadingGlobalSearch] = useState(false)
   const [globalSearchPage, setGlobalSearchPage] = useState(1)
   const [globalSearchTotalCount, setGlobalSearchTotalCount] = useState(0)
+  const [globalLoadingPage, setGlobalLoadingPage] = useState(false)
 
   // Check for saved progress on load
   useEffect(() => {
@@ -180,13 +181,10 @@ export default function AdminDashboard() {
   }
   const filteredCategories = getFilteredCategories()
 
-  // Global search - filter all videos from all categories
-  const globalFilteredVideos = globalSearchResults.filter(video =>
-    video.vod_name.toLowerCase().includes(globalVideoSearchQuery.toLowerCase())
-  )
-  const globalTotalPages = Math.ceil(globalFilteredVideos.length / videosPerPage)
+  // Global search - paginate results (already filtered from server)
+  const globalTotalPages = Math.ceil(globalSearchTotalCount / videosPerPage)
   const globalStartIndex = (globalSearchPage - 1) * videosPerPage
-  const globalPaginatedVideos = globalFilteredVideos.slice(globalStartIndex, globalStartIndex + videosPerPage)
+  const globalPaginatedVideos = globalSearchResults.slice(globalStartIndex, globalStartIndex + videosPerPage)
 
   const handleSelectConsolidatedCategory = async (consolidated: string, _typeId: number) => {
     setSelectedCategory(`${consolidated} (${CONSOLIDATED_TO_CHINESE[consolidated]})`)
@@ -857,37 +855,43 @@ export default function AdminDashboard() {
                     <button
                       onClick={async () => {
                         const newPage = Math.max(1, globalSearchPage - 1)
+                        setGlobalLoadingPage(true)
                         try {
                           const res = await fetch(`/api/admin/videos/by-category?search=${encodeURIComponent(globalVideoSearchQuery)}&page=${newPage}`)
                           const data = await res.json()
-                          setGlobalSearchResults(data.list || [])
+                          setGlobalSearchResults(prev => [...prev.slice(0, (newPage - 1) * videosPerPage), ...(data.list || [])])
                           setGlobalSearchPage(newPage)
                         } catch (error) {
                           console.error('Failed to fetch page:', error)
+                        } finally {
+                          setGlobalLoadingPage(false)
                         }
                       }}
-                      disabled={globalSearchPage === 1}
+                      disabled={globalSearchPage === 1 || globalLoadingPage}
                       className="px-2 py-1 text-xs rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      ← Prev
+                      {globalLoadingPage ? '⏳' : '←'} Prev
                     </button>
                     <span className="text-xs text-muted-foreground">{globalSearchPage} / {globalTotalPages}</span>
                     <button
                       onClick={async () => {
                         const newPage = Math.min(globalTotalPages, globalSearchPage + 1)
+                        setGlobalLoadingPage(true)
                         try {
                           const res = await fetch(`/api/admin/videos/by-category?search=${encodeURIComponent(globalVideoSearchQuery)}&page=${newPage}`)
                           const data = await res.json()
-                          setGlobalSearchResults(data.list || [])
+                          setGlobalSearchResults(prev => [...prev.slice(0, (newPage - 1) * videosPerPage), ...(data.list || [])])
                           setGlobalSearchPage(newPage)
                         } catch (error) {
                           console.error('Failed to fetch page:', error)
+                        } finally {
+                          setGlobalLoadingPage(false)
                         }
                       }}
-                      disabled={globalSearchPage === globalTotalPages}
+                      disabled={globalSearchPage === globalTotalPages || globalLoadingPage}
                       className="px-2 py-1 text-xs rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Next →
+                      Next {globalLoadingPage ? '⏳' : '→'}
                     </button>
                   </div>
                 )}
@@ -920,7 +924,7 @@ export default function AdminDashboard() {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-screen">
               {/* Categories List */}
               <div className="lg:col-span-1 border border-border rounded-lg overflow-hidden bg-muted/30 flex flex-col">
                 <div className="px-4 py-3 border-b border-border bg-muted/50">
@@ -932,7 +936,7 @@ export default function AdminDashboard() {
                     className="w-full px-3 py-2 bg-muted text-foreground rounded border border-border focus:border-primary focus:outline-none text-sm"
                   />
                 </div>
-                <div className="max-h-96 overflow-y-auto flex-1">
+                <div className="overflow-y-auto flex-1">
                   {categoryTab === 'database' ? (
                     // Database categories
                     <div className="divide-y divide-border">
@@ -1054,7 +1058,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
-                <div className="flex flex-col">
+                <div className="flex flex-col h-full">
                   {rightPanelTab === 'videos' && categoryVideos.length > 0 && (
                     <div className="px-4 py-3 border-b border-border bg-muted/30">
                       <input
@@ -1069,7 +1073,7 @@ export default function AdminDashboard() {
                       />
                     </div>
                   )}
-                  <div className="max-h-96 overflow-y-auto flex-1">
+                  <div className="overflow-y-auto flex-1">
                     {rightPanelTab === 'videos' ? (
                       // Videos tab
                       <>

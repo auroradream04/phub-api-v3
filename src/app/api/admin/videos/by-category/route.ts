@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     const variants = searchParams.getAll('variants')
     const search = searchParams.get('search')
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10))
-    const limit = 100
+    const limit = 20
 
     // Handle both single category and multiple variants
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
