@@ -288,7 +288,7 @@ export default function HomeClient({ initialVideos, initialStats, allCategories 
         ) : (
           <>
             {/* Desktop Table View */}
-            <div className="hidden md:block bg-card border border-border/40 overflow-hidden">
+            <div className="hidden md:block bg-card border border-border/40 overflow-hidden pb-1">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/50 hover:bg-muted/50 border-b border-border/30">
