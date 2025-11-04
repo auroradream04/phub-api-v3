@@ -1182,11 +1182,11 @@ export default function AdminDashboard() {
                   )}
                   </div>
                   {rightPanelTab === 'videos' && categoryVideos.length > 0 && (
-                    <div className="px-4 py-3 border-t border-border bg-muted/30 flex items-center justify-between">
+                    <div className="px-4 py-3 border-t border-border bg-muted/30 flex items-center justify-between w-full">
                       <span className="text-xs text-muted-foreground">
                         {videoSearchQuery ? `${filteredVideos.length} found` : `${selectedCategoryCount.toLocaleString()} total`}
                       </span>
-                      {categoryTotalPages > 1 && (
+                      {categoryTotalPages > 1 ? (
                         <div className="flex gap-2 items-center text-xs">
                           <button
                             onClick={async () => {
@@ -1230,6 +1230,10 @@ export default function AdminDashboard() {
                             Next →
                           </button>
                         </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">
+                          Page 1 of 1
+                        </span>
                       )}
                     </div>
                   )}
