@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { Search } from 'lucide-react'
 import { getCategoryChineseName } from '@/lib/category-mapping'
+import { CONSOLIDATED_CATEGORIES, CONSOLIDATED_TO_CHINESE } from '@/lib/maccms-mappings'
 import {
   Table,
   TableBody,
@@ -38,6 +39,9 @@ export default function HomeClient({ initialVideos, initialStats, allCategories 
   const [featuredVideos, setFeaturedVideos] = useState<Video[]>(initialVideos)
   const [loading, setLoading] = useState(false)
   const [hasMore, setHasMore] = useState(true)
+  const [totalCount, setTotalCount] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+  const videosPerPage = 20
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || ''
   const telegramLink = process.env.NEXT_PUBLIC_TELEGRAM_LINK || 'https://t.me/your_group'
@@ -51,6 +55,9 @@ export default function HomeClient({ initialVideos, initialStats, allCategories 
       const response = await fetch(`/api/db/home?page=1${categoryParam}`)
       const data = await response.json()
       setFeaturedVideos(data.data)
+      const total = data.stats?.totalVideos || 0
+      setTotalCount(total)
+      setTotalPages(Math.ceil(total / videosPerPage))
       setHasMore(!data.paging?.isEnd)
     } finally {
       setLoading(false)
@@ -253,19 +260,22 @@ export default function HomeClient({ initialVideos, initialStats, allCategories 
             >
               全部
             </button>
-            {allCategories.map((category) => (
-              <button
-                key={category}
-                onClick={() => handleCategoryChange(category)}
-                className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                  selectedCategory === category
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-card text-foreground border border-border hover:border-primary'
-                }`}
-              >
-                {category}
-              </button>
-            ))}
+            {allCategories.map((category) => {
+              const chineseName = CONSOLIDATED_TO_CHINESE[category] || category
+              return (
+                <button
+                  key={category}
+                  onClick={() => handleCategoryChange(category)}
+                  className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                    selectedCategory === category
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-card text-foreground border border-border hover:border-primary'
+                  }`}
+                >
+                  {chineseName}
+                </button>
+              )
+            })}
           </div>
         )}
 
@@ -423,36 +433,29 @@ export default function HomeClient({ initialVideos, initialStats, allCategories 
 
         {/* Pagination */}
         {!loading && filteredVideos.length > 0 && (
-          <div className="flex items-center justify-center gap-4 mt-8">
-            <button
-              onClick={goToPrevPage}
-              disabled={currentPage === 1}
-              className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                currentPage === 1
-                  ? 'bg-muted text-muted-foreground cursor-not-allowed opacity-50'
-                  : 'bg-card text-primary border-2 border-primary hover:bg-primary hover:text-primary-foreground'
-              }`}
-            >
-              上一页
-            </button>
-
-            <div className="flex items-center gap-2 px-6 py-3 bg-card rounded-lg border border-border">
-              <span className="text-muted-foreground">第</span>
-              <span className="text-primary font-bold text-lg">{currentPage}</span>
-              <span className="text-muted-foreground">页</span>
+          <div className="flex items-center justify-between gap-4 mt-8 flex-wrap">
+            <div className="text-sm text-muted-foreground">
+              共 <span className="text-primary font-bold">{totalCount.toLocaleString()}</span> 个视频
             </div>
-
-            <button
-              onClick={goToNextPage}
-              disabled={!hasMore}
-              className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                !hasMore
-                  ? 'bg-muted text-muted-foreground cursor-not-allowed opacity-50'
-                  : 'bg-primary text-primary-foreground hover:bg-primary/90'
-              }`}
-            >
-              下一页
-            </button>
+            <div className="flex items-center justify-center gap-2">
+              <button
+                onClick={goToPrevPage}
+                disabled={currentPage === 1}
+                className="px-2 py-1 text-xs rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                上一页
+              </button>
+              <span className="text-xs text-muted-foreground">
+                {currentPage} / {totalPages || 1}
+              </span>
+              <button
+                onClick={goToNextPage}
+                disabled={!hasMore}
+                className="px-2 py-1 text-xs rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                下一页
+              </button>
+            </div>
           </div>
         )}
       </section>

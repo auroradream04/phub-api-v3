@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCategoryChineseName } from '@/lib/category-mapping'
+import { getConsolidatedFromDatabase, getVariantsForConsolidated, CONSOLIDATED_TO_CHINESE } from '@/lib/maccms-mappings'
 
 export const revalidate = 3600 // 1 hour
 
@@ -26,21 +27,29 @@ export async function GET(request: NextRequest) {
     })
 
     // Format and filter by category if provided
-    let formattedVideos = allVideos.map((video) => ({
-      id: video.vodId,
-      title: video.vodName,
-      preview: video.vodPic || '',
-      duration: video.vodRemarks || '',
-      views: video.views.toString(),
-      rating: '0',
-      category: getCategoryChineseName(video.typeName),
-      createdAt: video.createdAt.toISOString()
-    }))
+    let formattedVideos = allVideos.map((video) => {
+      // Map database category to consolidated category
+      const consolidatedCat = getConsolidatedFromDatabase(video.typeName)
+      // Get Chinese name for consolidated category
+      const chineseName = CONSOLIDATED_TO_CHINESE[consolidatedCat] || '其他'
 
-    // Filter by category if provided
+      return {
+        id: video.vodId,
+        title: video.vodName,
+        preview: video.vodPic || '',
+        duration: video.vodRemarks || '',
+        views: video.views.toString(),
+        rating: '0',
+        category: chineseName,
+        consolidatedCategory: consolidatedCat,
+        createdAt: video.createdAt.toISOString()
+      }
+    })
+
+    // Filter by consolidated category if provided
     if (categoryParam) {
       formattedVideos = formattedVideos.filter(video =>
-        video.category === categoryParam
+        video.consolidatedCategory === categoryParam
       )
     }
 
@@ -49,9 +58,10 @@ export async function GET(request: NextRequest) {
     const data = formattedVideos.slice((page - 1) * pageSize, page * pageSize)
 
     // Count today's updates
-    const todayUpdates = allVideos.filter(v =>
-      v.createdAt >= today && (!categoryParam || getCategoryChineseName(v.typeName) === categoryParam)
-    ).length
+    const todayUpdates = allVideos.filter(v => {
+      const consolidatedCat = getConsolidatedFromDatabase(v.typeName)
+      return v.createdAt >= today && (!categoryParam || consolidatedCat === categoryParam)
+    }).length
 
     const response = {
       data,
