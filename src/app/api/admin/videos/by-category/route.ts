@@ -6,6 +6,9 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const category = searchParams.get('category')
     const variants = searchParams.getAll('variants')
+    const search = searchParams.get('search')
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10))
+    const limit = 100
 
     // Handle both single category and multiple variants
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -19,27 +22,37 @@ export async function GET(request: NextRequest) {
     } else if (category) {
       // Single category - exact match
       whereClause.typeName = category
+    } else if (search) {
+      // Global search - search video names across all categories
+      whereClause.vodName = {
+        contains: search,
+      }
     } else {
       return NextResponse.json(
-        { error: 'Category or variants required' },
+        { error: 'Category, variants, or search required' },
         { status: 400 }
       )
     }
 
-    const dbVideos = await prisma.video.findMany({
-      where: whereClause,
-      select: {
-        vodId: true,
-        vodName: true,
-        vodPic: true,
-        views: true,
-        typeName: true,
-      },
-      orderBy: {
-        vodTime: 'desc',
-      },
-      take: 20,
-    })
+    const skip = (page - 1) * limit
+    const [dbVideos, totalCount] = await Promise.all([
+      prisma.video.findMany({
+        where: whereClause,
+        select: {
+          vodId: true,
+          vodName: true,
+          vodPic: true,
+          views: true,
+          typeName: true,
+        },
+        orderBy: {
+          vodTime: 'desc',
+        },
+        skip,
+        take: limit,
+      }),
+      prisma.video.count({ where: whereClause }),
+    ])
 
     // Transform to match MACCMS format (vod_id, vod_name, etc.)
     const videos = dbVideos.map(v => ({
@@ -50,7 +63,13 @@ export async function GET(request: NextRequest) {
       type_name: v.typeName,
     }))
 
-    return NextResponse.json({ list: videos })
+    return NextResponse.json({
+      list: videos,
+      page,
+      pagesize: limit,
+      pagecount: Math.ceil(totalCount / limit),
+      total: totalCount,
+    })
   } catch (error) {
     console.error('Failed to fetch videos by category:', error)
     return NextResponse.json(

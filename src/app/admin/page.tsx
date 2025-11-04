@@ -786,26 +786,12 @@ export default function AdminDashboard() {
                     }
                     setLoadingGlobalSearch(true)
                     try {
-                      let allVideos: MaccmsVideo[] = []
-                      let page = 1
-                      let hasMore = true
+                      // Fetch first page to get total count
+                      const res = await fetch(`/api/admin/videos/by-category?search=${encodeURIComponent(globalVideoSearchQuery)}&page=1`)
+                      const data = await res.json()
 
-                      // Fetch all pages (max 500 results to avoid excessive loading)
-                      while (hasMore && allVideos.length < 500) {
-                        const res = await fetch(`/api/provide/vod?ac=list&wd=${encodeURIComponent(globalVideoSearchQuery)}&pg=${page}&pagesize=100`)
-                        const data = await res.json()
-
-                        if (data.list && data.list.length > 0) {
-                          allVideos = allVideos.concat(data.list)
-                          page++
-                          hasMore = page <= data.pagecount
-                        } else {
-                          hasMore = false
-                        }
-                      }
-
-                      setGlobalSearchResults(allVideos)
-                      setGlobalSearchTotalCount(allVideos.length)
+                      setGlobalSearchResults(data.list || [])
+                      setGlobalSearchTotalCount(data.total || 0)
                       setGlobalSearchPage(1)
                     } catch (error) {
                       console.error('Global search failed:', error)
@@ -869,7 +855,17 @@ export default function AdminDashboard() {
                 {globalTotalPages > 1 && (
                   <div className="mt-3 flex items-center justify-between">
                     <button
-                      onClick={() => setGlobalSearchPage(prev => Math.max(1, prev - 1))}
+                      onClick={async () => {
+                        const newPage = Math.max(1, globalSearchPage - 1)
+                        try {
+                          const res = await fetch(`/api/admin/videos/by-category?search=${encodeURIComponent(globalVideoSearchQuery)}&page=${newPage}`)
+                          const data = await res.json()
+                          setGlobalSearchResults(data.list || [])
+                          setGlobalSearchPage(newPage)
+                        } catch (error) {
+                          console.error('Failed to fetch page:', error)
+                        }
+                      }}
                       disabled={globalSearchPage === 1}
                       className="px-2 py-1 text-xs rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
                     >
@@ -877,7 +873,17 @@ export default function AdminDashboard() {
                     </button>
                     <span className="text-xs text-muted-foreground">{globalSearchPage} / {globalTotalPages}</span>
                     <button
-                      onClick={() => setGlobalSearchPage(prev => Math.min(globalTotalPages, prev + 1))}
+                      onClick={async () => {
+                        const newPage = Math.min(globalTotalPages, globalSearchPage + 1)
+                        try {
+                          const res = await fetch(`/api/admin/videos/by-category?search=${encodeURIComponent(globalVideoSearchQuery)}&page=${newPage}`)
+                          const data = await res.json()
+                          setGlobalSearchResults(data.list || [])
+                          setGlobalSearchPage(newPage)
+                        } catch (error) {
+                          console.error('Failed to fetch page:', error)
+                        }
+                      }}
                       disabled={globalSearchPage === globalTotalPages}
                       className="px-2 py-1 text-xs rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
                     >
