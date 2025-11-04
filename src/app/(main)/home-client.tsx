@@ -237,7 +237,7 @@ export default function HomeClient({ initialVideos, initialStats, allCategories 
       </section>
 
       {/* Featured Videos Section - Table Layout */}
-      <section className="py-12">
+      <section className="pt-12">
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-foreground mb-2">影片资源列表</h2>
           <div className="h-1 w-20 bg-gradient-to-r from-primary to-accent rounded-full"></div>
@@ -288,7 +288,7 @@ export default function HomeClient({ initialVideos, initialStats, allCategories 
         ) : (
           <>
             {/* Desktop Table View */}
-            <div className="hidden md:block bg-card rounded-lg border border-border/40 overflow-hidden">
+            <div className="hidden md:block bg-card border border-border/40 overflow-hidden">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/50 hover:bg-muted/50 border-b border-border/30">
@@ -433,7 +433,7 @@ export default function HomeClient({ initialVideos, initialStats, allCategories 
 
         {/* Pagination */}
         {!loading && filteredVideos.length > 0 && (
-          <div className="px-4 py-3 border-t border-border bg-muted/30 flex items-center justify-between w-full">
+          <div className="px-4 py-3 border-t border-border bg-muted/30 flex items-center justify-between w-full rounded-bl-lg rounded-br-lg">
             <span className="text-xs text-muted-foreground">
               {totalCount.toLocaleString()} 个视频
             </span>
