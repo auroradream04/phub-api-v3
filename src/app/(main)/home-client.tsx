@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Search } from 'lucide-react'
 import { getCategoryChineseName } from '@/lib/category-mapping'
 import { CONSOLIDATED_CATEGORIES, CONSOLIDATED_TO_CHINESE } from '@/lib/maccms-mappings'
+import HorizontalAds from '@/components/HorizontalAds'
 import {
   Table,
   TableBody,
@@ -484,6 +485,13 @@ export default function HomeClient({ initialVideos, initialStats, allCategories 
             </div>
           </div>
         )}
+      </section>
+
+      {/* Horizontal Ads - Bottom */}
+      <section className="py-6">
+        <div>
+          <HorizontalAds />
+        </div>
       </section>
     </>
   )
