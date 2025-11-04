@@ -460,7 +460,7 @@ export default function HomeClient({ initialVideos, initialStats, allCategories 
 
         {/* Pagination */}
         {!loading && filteredVideos.length > 0 && (
-          <div className="px-4 py-2 border-t border-border bg-muted/30 flex items-center justify-between w-full rounded-bl-lg rounded-br-lg">
+          <div className="px-4 py-2 border-t border-b border-l border-r border-border bg-muted/30 flex items-center justify-between w-full rounded-bl-lg rounded-br-lg">
             <span className="text-xs text-muted-foreground">
               <span className="text-primary font-bold">{totalCount.toLocaleString()}</span> 个视频
             </span>
