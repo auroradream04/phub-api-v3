@@ -288,7 +288,7 @@ export default function HomeClient({ initialVideos, initialStats, allCategories 
         ) : (
           <>
             {/* Pagination Bar - Top */}
-            <div className="hidden md:block px-4 py-3 border-t border-b border-l border-r border-border bg-muted/30 flex items-center justify-between w-full">
+            <div className="hidden md:flex px-4 py-3 border-t border-b border-l border-r border-border bg-muted/30 items-center justify-between w-full">
               <span className="text-xs text-muted-foreground">
                 <span className="text-primary font-bold">{totalCount.toLocaleString()}</span> 个视频
               </span>
