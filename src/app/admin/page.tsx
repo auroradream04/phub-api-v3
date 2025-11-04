@@ -65,6 +65,11 @@ export default function AdminDashboard() {
   const [expandedVariantDropdown, setExpandedVariantDropdown] = useState(false)
   const [videoSearchQuery, setVideoSearchQuery] = useState('')
   const [videoPage, setVideoPage] = useState(1)
+  const [categorySearchQuery, setCategorySearchQuery] = useState('')
+  const [globalVideoSearchQuery, setGlobalVideoSearchQuery] = useState('')
+  const [globalSearchResults, setGlobalSearchResults] = useState<MaccmsVideo[]>([])
+  const [loadingGlobalSearch, setLoadingGlobalSearch] = useState(false)
+  const [globalSearchPage, setGlobalSearchPage] = useState(1)
 
   // Check for saved progress on load
   useEffect(() => {
@@ -164,6 +169,23 @@ export default function AdminDashboard() {
   const totalPages = Math.ceil(filteredVideos.length / videosPerPage)
   const startIndex = (videoPage - 1) * videosPerPage
   const paginatedVideos = filteredVideos.slice(startIndex, startIndex + videosPerPage)
+
+  // Filter categories based on search query
+  const getFilteredCategories = () => {
+    if (!stats) return []
+    return stats.categories.filter(cat =>
+      cat.typeName.toLowerCase().includes(categorySearchQuery.toLowerCase())
+    )
+  }
+  const filteredCategories = getFilteredCategories()
+
+  // Global search - filter all videos from all categories
+  const globalFilteredVideos = globalSearchResults.filter(video =>
+    video.vod_name.toLowerCase().includes(globalVideoSearchQuery.toLowerCase())
+  )
+  const globalTotalPages = Math.ceil(globalFilteredVideos.length / videosPerPage)
+  const globalStartIndex = (globalSearchPage - 1) * videosPerPage
+  const globalPaginatedVideos = globalFilteredVideos.slice(globalStartIndex, globalStartIndex + videosPerPage)
 
   const handleSelectConsolidatedCategory = async (consolidated: string, _typeId: number) => {
     setSelectedCategory(`${consolidated} (${CONSOLIDATED_TO_CHINESE[consolidated]})`)
@@ -738,6 +760,112 @@ export default function AdminDashboard() {
           <div className="bg-card border border-border rounded-xl p-6 shadow-lg mt-6">
             <h3 className="text-xl font-bold text-foreground mb-4">Category Browser</h3>
 
+            {/* Global Search */}
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-foreground mb-2">
+                Search all videos (without selecting category)
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Search video name..."
+                  value={globalVideoSearchQuery}
+                  onChange={(e) => {
+                    setGlobalVideoSearchQuery(e.target.value)
+                    setGlobalSearchPage(1)
+                  }}
+                  className="flex-1 px-4 py-2 bg-muted text-foreground rounded border border-border focus:border-primary focus:outline-none"
+                />
+                <button
+                  onClick={async () => {
+                    if (!globalVideoSearchQuery.trim()) {
+                      setGlobalSearchResults([])
+                      return
+                    }
+                    setLoadingGlobalSearch(true)
+                    try {
+                      const res = await fetch(`/api/provide/vod?ac=list&wd=${encodeURIComponent(globalVideoSearchQuery)}&pagesize=100`)
+                      const data = await res.json()
+                      setGlobalSearchResults(data.list || [])
+                    } catch (error) {
+                      console.error('Global search failed:', error)
+                      setGlobalSearchResults([])
+                    } finally {
+                      setLoadingGlobalSearch(false)
+                    }
+                  }}
+                  className="px-6 py-2 bg-primary text-primary-foreground rounded hover:opacity-80 transition-opacity font-medium"
+                >
+                  Search
+                </button>
+              </div>
+            </div>
+
+            {/* Global Search Results */}
+            {globalSearchResults.length > 0 && (
+              <div className="mb-6 p-4 bg-muted/50 rounded-lg border border-border">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm font-semibold text-foreground">{globalFilteredVideos.length} results found</p>
+                </div>
+                <div className="max-h-96 overflow-y-auto space-y-2">
+                  {globalPaginatedVideos.map((video) => (
+                    <div key={video.vod_id} className="p-3 bg-card rounded border border-border hover:border-primary/50 transition-colors flex gap-3 items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{video.vod_name}</p>
+                        <p className="text-xs text-muted-foreground">{video.vod_hits?.toLocaleString() || 0} views</p>
+                      </div>
+                      <div className="flex gap-1 flex-shrink-0">
+                        <a
+                          href={`/watch/${video.vod_id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1.5 rounded hover:bg-primary/10 text-primary transition-colors"
+                          title="View video"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </a>
+                        <button
+                          onClick={async () => {
+                            if (confirm('Delete this video?')) {
+                              try {
+                                await fetch(`/api/admin/videos/${video.vod_id}`, { method: 'DELETE' })
+                                setGlobalSearchResults(prev => prev.filter(v => v.vod_id !== video.vod_id))
+                              } catch (error) {
+                                console.error('Failed to delete video:', error)
+                              }
+                            }
+                          }}
+                          className="p-1.5 rounded hover:bg-red-500/10 text-red-600 transition-colors"
+                          title="Delete video"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {globalTotalPages > 1 && (
+                  <div className="mt-3 flex items-center justify-between">
+                    <button
+                      onClick={() => setGlobalSearchPage(prev => Math.max(1, prev - 1))}
+                      disabled={globalSearchPage === 1}
+                      className="px-2 py-1 text-xs rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      ← Prev
+                    </button>
+                    <span className="text-xs text-muted-foreground">{globalSearchPage} / {globalTotalPages}</span>
+                    <button
+                      onClick={() => setGlobalSearchPage(prev => Math.min(globalTotalPages, prev + 1))}
+                      disabled={globalSearchPage === globalTotalPages}
+                      className="px-2 py-1 text-xs rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Next →
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Tabs */}
             <div className="flex gap-2 mb-4 border-b border-border">
               <button
@@ -766,12 +894,21 @@ export default function AdminDashboard() {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               {/* Categories List */}
-              <div className="lg:col-span-1 border border-border rounded-lg overflow-hidden bg-muted/30">
-                <div className="max-h-96 overflow-y-auto">
+              <div className="lg:col-span-1 border border-border rounded-lg overflow-hidden bg-muted/30 flex flex-col">
+                <div className="px-4 py-3 border-b border-border bg-muted/50">
+                  <input
+                    type="text"
+                    placeholder="Search categories..."
+                    value={categorySearchQuery}
+                    onChange={(e) => setCategorySearchQuery(e.target.value)}
+                    className="w-full px-3 py-2 bg-muted text-foreground rounded border border-border focus:border-primary focus:outline-none text-sm"
+                  />
+                </div>
+                <div className="max-h-96 overflow-y-auto flex-1">
                   {categoryTab === 'database' ? (
                     // Database categories
                     <div className="divide-y divide-border">
-                      {stats.categories
+                      {filteredCategories
                         .sort((a, b) => b._count - a._count)
                         .map((cat, idx) => (
                           <button
