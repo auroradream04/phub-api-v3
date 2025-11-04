@@ -1172,12 +1172,12 @@ export default function AdminDashboard() {
                     </div>
                   )}
                   </div>
-                  {rightPanelTab === 'videos' && (selectedCategoryCount > 0 || filteredVideos.length > 0) && (
+                  {rightPanelTab === 'videos' && categoryVideos.length > 0 && (
                     <div className="px-4 py-3 border-t border-border bg-muted/30 flex items-center justify-between">
                       <span className="text-xs text-muted-foreground">
                         {videoSearchQuery ? `${filteredVideos.length} found` : `${selectedCategoryCount.toLocaleString()} total`}
                       </span>
-                      {!videoSearchQuery && categoryTotalPages > 1 && (
+                      {categoryTotalPages > 1 && (
                         <div className="flex gap-2 items-center text-xs">
                           <button
                             onClick={async () => {
