@@ -2,7 +2,8 @@
 
 import { useSession } from 'next-auth/react'
 import { useState, useEffect, useRef } from 'react'
-import { PlayCircle, RefreshCw, Trash2, Database, Languages, ChevronDown, ChevronUp } from 'lucide-react'
+import { PlayCircle, RefreshCw, Trash2, Database, Languages, ChevronDown, ChevronUp, Grid, List as ListIcon } from 'lucide-react'
+import { CONSOLIDATED_CATEGORIES, CONSOLIDATED_TO_CHINESE, CONSOLIDATED_TYPE_IDS, getVariantsForConsolidated } from '@/lib/maccms-mappings'
 
 interface Stats {
   totalVideos: number
@@ -28,6 +29,14 @@ interface ScraperProgress {
   pagesPerSecond?: number
 }
 
+interface MaccmsVideo {
+  vod_id: string
+  vod_name: string
+  vod_pic?: string
+  vod_hits?: number
+  type_name?: string
+}
+
 const STORAGE_KEY = 'scraper_progress'
 
 export default function AdminDashboard() {
@@ -45,6 +54,12 @@ export default function AdminDashboard() {
   const [savedProgress, setSavedProgress] = useState<ScraperProgress | null>(null)
   const [currentProgress, setCurrentProgress] = useState<ScraperProgress | null>(null)
   const checkpointIdRef = useRef<string>('')
+
+  // Category browser states
+  const [categoryTab, setCategoryTab] = useState<'database' | 'consolidated'>('database')
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [categoryVideos, setCategoryVideos] = useState<MaccmsVideo[]>([])
+  const [loadingCategoryVideos, setLoadingCategoryVideos] = useState(false)
 
   // Check for saved progress on load
   useEffect(() => {
@@ -95,6 +110,41 @@ export default function AdminDashboard() {
       if (data.success) setRetryStats(data)
     } catch (error) {
       console.error('Failed to fetch retry stats:', error)
+    }
+  }
+
+  // Category browser handlers
+  const handleSelectDatabaseCategory = async (categoryName: string) => {
+    setSelectedCategory(categoryName)
+    setLoadingCategoryVideos(true)
+    try {
+      const res = await fetch(
+        `/api/provide/vod?ac=list&wd=${encodeURIComponent(categoryName)}&pagesize=20`
+      )
+      const data = await res.json()
+      setCategoryVideos(data.list || [])
+    } catch (error) {
+      console.error('Failed to fetch videos:', error)
+      setCategoryVideos([])
+    } finally {
+      setLoadingCategoryVideos(false)
+    }
+  }
+
+  const handleSelectConsolidatedCategory = async (consolidated: string, typeId: number) => {
+    setSelectedCategory(`${consolidated} (${CONSOLIDATED_TO_CHINESE[consolidated]})`)
+    setLoadingCategoryVideos(true)
+    try {
+      const res = await fetch(
+        `/api/provide/vod?ac=list&t=${typeId}&pagesize=20`
+      )
+      const data = await res.json()
+      setCategoryVideos(data.list || [])
+    } catch (error) {
+      console.error('Failed to fetch videos:', error)
+      setCategoryVideos([])
+    } finally {
+      setLoadingCategoryVideos(false)
     }
   }
 
@@ -644,17 +694,141 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* Category Breakdown */}
+        {/* Category Browser */}
         {stats && stats.categories.length > 0 && (
           <div className="bg-card border border-border rounded-xl p-6 shadow-lg">
-            <h3 className="text-xl font-bold text-foreground mb-4">Category Breakdown</h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {stats.categories.map((cat, idx) => (
-                <div key={`${cat.typeId}-${cat.typeName}-${idx}`} className="bg-muted/50 rounded-lg p-3 border border-border">
-                  <p className="text-sm font-medium text-foreground truncate">{cat.typeName}</p>
-                  <p className="text-2xl font-bold text-primary">{cat._count.toLocaleString()}</p>
+            <h3 className="text-xl font-bold text-foreground mb-4">Category Browser</h3>
+
+            {/* Tabs */}
+            <div className="flex gap-2 mb-4 border-b border-border">
+              <button
+                onClick={() => {setCategoryTab('database'); setSelectedCategory(null); setCategoryVideos([])}}
+                className={`px-4 py-2 font-medium transition-all ${
+                  categoryTab === 'database'
+                    ? 'text-primary border-b-2 border-primary'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <ListIcon className="w-4 h-4 inline mr-2" />
+                Database ({stats.categories.length})
+              </button>
+              <button
+                onClick={() => {setCategoryTab('consolidated'); setSelectedCategory(null); setCategoryVideos([])}}
+                className={`px-4 py-2 font-medium transition-all ${
+                  categoryTab === 'consolidated'
+                    ? 'text-primary border-b-2 border-primary'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Grid className="w-4 h-4 inline mr-2" />
+                Consolidated ({CONSOLIDATED_CATEGORIES.length})
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {/* Categories List */}
+              <div className="lg:col-span-1 border border-border rounded-lg overflow-hidden bg-muted/30">
+                <div className="max-h-96 overflow-y-auto">
+                  {categoryTab === 'database' ? (
+                    // Database categories
+                    <div className="divide-y divide-border">
+                      {stats.categories
+                        .sort((a, b) => b._count - a._count)
+                        .map((cat, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => handleSelectDatabaseCategory(cat.typeName)}
+                            className={`w-full text-left px-4 py-3 hover:bg-muted transition-colors ${
+                              selectedCategory === cat.typeName ? 'bg-primary/10' : ''
+                            }`}
+                          >
+                            <div className="flex justify-between items-center gap-2">
+                              <span className="text-sm font-medium text-foreground truncate">{cat.typeName}</span>
+                              <span className="text-xs bg-muted px-2 py-1 rounded whitespace-nowrap font-bold">
+                                {cat._count.toLocaleString()}
+                              </span>
+                            </div>
+                          </button>
+                        ))}
+                    </div>
+                  ) : (
+                    // Consolidated categories
+                    <div className="divide-y divide-border">
+                      {CONSOLIDATED_CATEGORIES
+                        .map(cat => {
+                          const variants = getVariantsForConsolidated(cat)
+                          const count = stats.categories
+                            .filter(db => variants.includes(db.typeName.toLowerCase()))
+                            .reduce((sum, db) => sum + db._count, 0)
+                          return { cat, count, variants }
+                        })
+                        .sort((a, b) => b.count - a.count)
+                        .map((item, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => handleSelectConsolidatedCategory(item.cat, CONSOLIDATED_TYPE_IDS[item.cat])}
+                            className={`w-full text-left px-4 py-3 hover:bg-muted transition-colors ${
+                              selectedCategory?.includes(item.cat) ? 'bg-primary/10' : ''
+                            }`}
+                          >
+                            <div className="flex justify-between items-center gap-2">
+                              <div className="min-w-0">
+                                <p className="text-sm font-bold text-foreground">{CONSOLIDATED_TO_CHINESE[item.cat]}</p>
+                                <p className="text-xs text-muted-foreground">{item.cat}</p>
+                              </div>
+                              <span className="text-xs bg-muted px-2 py-1 rounded whitespace-nowrap font-bold">
+                                {item.count.toLocaleString()}
+                              </span>
+                            </div>
+                          </button>
+                        ))}
+                    </div>
+                  )}
                 </div>
-              ))}
+              </div>
+
+              {/* Videos Preview */}
+              <div className="lg:col-span-2 border border-border rounded-lg overflow-hidden bg-muted/30">
+                <div className="bg-muted/50 px-4 py-3 border-b border-border">
+                  <h4 className="font-semibold text-foreground">
+                    {selectedCategory ? `Videos: ${selectedCategory}` : 'Select a category to preview videos'}
+                  </h4>
+                </div>
+                <div className="max-h-96 overflow-y-auto">
+                  {loadingCategoryVideos ? (
+                    <div className="p-8 text-center text-muted-foreground">Loading videos...</div>
+                  ) : categoryVideos.length > 0 ? (
+                    <div className="divide-y divide-border">
+                      {categoryVideos.slice(0, 10).map((video) => (
+                        <div key={video.vod_id} className="px-4 py-3 hover:bg-muted/50 transition-colors">
+                          <div className="flex gap-3">
+                            {video.vod_pic && (
+                              <img
+                                src={video.vod_pic}
+                                alt={video.vod_name}
+                                className="w-12 h-16 rounded object-cover flex-shrink-0"
+                              />
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium text-foreground line-clamp-2">{video.vod_name}</p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {video.vod_hits?.toLocaleString() || 0} views
+                              </p>
+                              {video.type_name && (
+                                <p className="text-xs text-muted-foreground">{video.type_name}</p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-8 text-center text-muted-foreground">
+                      {selectedCategory ? 'No videos found' : 'Select a category to view videos'}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         )}
