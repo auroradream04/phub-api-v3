@@ -139,11 +139,9 @@ export const DATABASE_TO_CONSOLIDATED: Record<string, string> = {
   'czech': 'czech',
   'british': 'british',
 
-  // === ANIME (cartoon, hentai, 3d) ===
+  // === ANIME (hentai, cartoon) ===
   'hentai': 'anime',
   'cartoon': 'anime',
-  '3d': 'anime',
-  '2d': 'anime',
 
   // === VR (Virtual Reality) ===
   'vr': 'vr',
@@ -189,6 +187,8 @@ export const DATABASE_TO_CONSOLIDATED: Record<string, string> = {
   'music': 'niche',
   'sfw': 'niche',
   'podcast': 'niche',
+  '3d': 'niche',
+  '2d': 'niche',
 };
 
 /**

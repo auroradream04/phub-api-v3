@@ -58,9 +58,10 @@ export default function AdminDashboard() {
   // Category browser states
   const [categoryTab, setCategoryTab] = useState<'database' | 'consolidated'>('database')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [selectedConsolidated, setSelectedConsolidated] = useState<{ name: string; variants: string[] } | null>(null)
   const [categoryVideos, setCategoryVideos] = useState<MaccmsVideo[]>([])
   const [loadingCategoryVideos, setLoadingCategoryVideos] = useState(false)
-  const [expandedVariants, setExpandedVariants] = useState<string | null>(null)
+  const [rightPanelTab, setRightPanelTab] = useState<'videos' | 'variants'>('videos')
 
   // Check for saved progress on load
   useEffect(() => {
@@ -134,6 +135,9 @@ export default function AdminDashboard() {
 
   const handleSelectConsolidatedCategory = async (consolidated: string, typeId: number) => {
     setSelectedCategory(`${consolidated} (${CONSOLIDATED_TO_CHINESE[consolidated]})`)
+    const variants = getVariantsForConsolidated(consolidated)
+    setSelectedConsolidated({ name: consolidated, variants })
+    setRightPanelTab('videos')
     setLoadingCategoryVideos(true)
     try {
       const res = await fetch(
@@ -780,39 +784,6 @@ export default function AdminDashboard() {
                                 {item.count.toLocaleString()}
                               </span>
                             </button>
-                            {/* Expandable variants */}
-                            <button
-                              onClick={() => setExpandedVariants(expandedVariants === item.cat ? null : item.cat)}
-                              className="w-full text-left px-4 py-2 text-xs text-muted-foreground hover:bg-muted/50 transition-colors border-t border-border/50 flex items-center gap-1"
-                            >
-                              {expandedVariants === item.cat ? (
-                                <ChevronUp className="w-3 h-3" />
-                              ) : (
-                                <ChevronDown className="w-3 h-3" />
-                              )}
-                              {item.variants.length} variant{item.variants.length !== 1 ? 's' : ''}
-                            </button>
-                            {expandedVariants === item.cat && (
-                              <div className="bg-muted/20 px-4 py-2 border-t border-border/50">
-                                <div className="space-y-1">
-                                  {item.variants
-                                    .sort((a, b) => {
-                                      const countA = stats.categories.find(c => c.typeName.toLowerCase() === a)?._count || 0
-                                      const countB = stats.categories.find(c => c.typeName.toLowerCase() === b)?._count || 0
-                                      return countB - countA
-                                    })
-                                    .map((variant, vidx) => {
-                                      const variantCount = stats.categories.find(c => c.typeName.toLowerCase() === variant)?._count || 0
-                                      return (
-                                        <div key={vidx} className="flex justify-between items-center text-xs py-1 px-2 rounded hover:bg-muted/30 transition-colors">
-                                          <span className="text-muted-foreground truncate">{variant}</span>
-                                          <span className="text-muted-foreground font-semibold ml-2">{variantCount.toLocaleString()}</span>
-                                        </div>
-                                      )
-                                    })}
-                                </div>
-                              </div>
-                            )}
                           </div>
                         ))}
                     </div>
@@ -820,44 +791,95 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              {/* Videos Preview */}
+              {/* Videos/Variants Preview */}
               <div className="lg:col-span-2 border border-border rounded-lg overflow-hidden bg-muted/30">
                 <div className="bg-muted/50 px-4 py-3 border-b border-border">
-                  <h4 className="font-semibold text-foreground">
-                    {selectedCategory ? `Videos: ${selectedCategory}` : 'Select a category to preview videos'}
-                  </h4>
+                  <div className="flex justify-between items-center gap-4">
+                    <h4 className="font-semibold text-foreground">
+                      {selectedCategory ? selectedCategory : 'Select a category'}
+                    </h4>
+                    {selectedConsolidated && categoryTab === 'consolidated' && (
+                      <div className="flex gap-2 text-sm">
+                        <button
+                          onClick={() => setRightPanelTab('videos')}
+                          className={`px-3 py-1 rounded transition-colors ${
+                            rightPanelTab === 'videos'
+                              ? 'bg-primary text-primary-foreground'
+                              : 'hover:bg-muted text-muted-foreground'
+                          }`}
+                        >
+                          Videos
+                        </button>
+                        <button
+                          onClick={() => setRightPanelTab('variants')}
+                          className={`px-3 py-1 rounded transition-colors ${
+                            rightPanelTab === 'variants'
+                              ? 'bg-primary text-primary-foreground'
+                              : 'hover:bg-muted text-muted-foreground'
+                          }`}
+                        >
+                          Variants ({selectedConsolidated.variants.length})
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
+
                 <div className="max-h-96 overflow-y-auto">
-                  {loadingCategoryVideos ? (
-                    <div className="p-8 text-center text-muted-foreground">Loading videos...</div>
-                  ) : categoryVideos.length > 0 ? (
-                    <div className="divide-y divide-border">
-                      {categoryVideos.slice(0, 10).map((video) => (
-                        <div key={video.vod_id} className="px-4 py-3 hover:bg-muted/50 transition-colors">
-                          <div className="flex gap-3">
-                            {video.vod_pic && (
-                              <img
-                                src={video.vod_pic}
-                                alt={video.vod_name}
-                                className="w-12 h-16 rounded object-cover flex-shrink-0"
-                              />
-                            )}
-                            <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium text-foreground line-clamp-2">{video.vod_name}</p>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {video.vod_hits?.toLocaleString() || 0} views
-                              </p>
-                              {video.type_name && (
-                                <p className="text-xs text-muted-foreground">{video.type_name}</p>
-                              )}
+                  {rightPanelTab === 'videos' ? (
+                    // Videos tab
+                    <>
+                      {loadingCategoryVideos ? (
+                        <div className="p-8 text-center text-muted-foreground">Loading videos...</div>
+                      ) : categoryVideos.length > 0 ? (
+                        <div className="divide-y divide-border">
+                          {categoryVideos.slice(0, 10).map((video) => (
+                            <div key={video.vod_id} className="px-4 py-3 hover:bg-muted/50 transition-colors">
+                              <div className="flex gap-3">
+                                {video.vod_pic && (
+                                  <img
+                                    src={video.vod_pic}
+                                    alt={video.vod_name}
+                                    className="w-12 h-16 rounded object-cover flex-shrink-0"
+                                  />
+                                )}
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-sm font-medium text-foreground line-clamp-2">{video.vod_name}</p>
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    {video.vod_hits?.toLocaleString() || 0} views
+                                  </p>
+                                  {video.type_name && (
+                                    <p className="text-xs text-muted-foreground">{video.type_name}</p>
+                                  )}
+                                </div>
+                              </div>
                             </div>
-                          </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
+                      ) : (
+                        <div className="p-8 text-center text-muted-foreground">
+                          {selectedCategory ? 'No videos found' : 'Select a category to view videos'}
+                        </div>
+                      )}
+                    </>
                   ) : (
-                    <div className="p-8 text-center text-muted-foreground">
-                      {selectedCategory ? 'No videos found' : 'Select a category to view videos'}
+                    // Variants tab (consolidated only)
+                    <div className="divide-y divide-border">
+                      {selectedConsolidated?.variants
+                        .sort((a, b) => {
+                          const countA = stats?.categories.find(c => c.typeName.toLowerCase() === a)?._count || 0
+                          const countB = stats?.categories.find(c => c.typeName.toLowerCase() === b)?._count || 0
+                          return countB - countA
+                        })
+                        .map((variant, vidx) => {
+                          const variantCount = stats?.categories.find(c => c.typeName.toLowerCase() === variant)?._count || 0
+                          return (
+                            <div key={vidx} className="px-4 py-3 hover:bg-muted/50 transition-colors flex justify-between items-center">
+                              <span className="text-sm font-medium text-foreground truncate">{variant}</span>
+                              <span className="text-sm font-bold text-primary ml-2 whitespace-nowrap">{variantCount.toLocaleString()}</span>
+                            </div>
+                          )
+                        })}
                     </div>
                   )}
                 </div>
