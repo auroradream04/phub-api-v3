@@ -11,17 +11,13 @@ export async function GET(request: NextRequest) {
     const whereClause: any = {}
 
     if (variants && variants.length > 0) {
-      // Multiple variants (for consolidated categories)
+      // Multiple variants (for consolidated categories) - exact match
       whereClause.typeName = {
         in: variants,
-        mode: 'insensitive',
       }
     } else if (category) {
-      // Single category
-      whereClause.typeName = {
-        equals: category,
-        mode: 'insensitive',
-      }
+      // Single category - exact match
+      whereClause.typeName = category
     } else {
       return NextResponse.json(
         { error: 'Category or variants required' },
