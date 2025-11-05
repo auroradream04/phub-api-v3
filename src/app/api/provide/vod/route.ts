@@ -538,9 +538,14 @@ export async function GET(_request: NextRequest) {
         },
       })
     } else {
-      // For JSON, remove the class array as most maccms importers don't expect it
-      const { class: _, ...jsonResponse } = response
-      return NextResponse.json(jsonResponse, { status: 200 })
+      // For JSON, remove the class array only for ID-based lookups as maccms importers don't expect it
+      // but keep it for list requests since they need category information
+      if (params.ids) {
+        const { class: _, ...jsonResponse } = response
+        return NextResponse.json(jsonResponse, { status: 200 })
+      } else {
+        return NextResponse.json(response, { status: 200 })
+      }
     }
 
   } catch (error) {
