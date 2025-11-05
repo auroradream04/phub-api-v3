@@ -1,8 +1,6 @@
 import { translate } from '@vitalets/google-translate-api'
-// import { PrismaClient } from '@/generated/prisma'
+import { prisma } from '@/lib/prisma'
 import { getRandomProxy } from './proxy'
-
-const prisma = new PrismaClient()
 
 // In-memory cache for translations (cleared on server restart)
 const translationCache = new Map<string, string>()

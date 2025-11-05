@@ -3,9 +3,7 @@
  * Handles: validation, parsing, crash recovery
  */
 
-// import { PrismaClient } from '../generated/prisma'
-
-const prisma = new PrismaClient()
+import { prisma } from './prisma'
 
 // ============================================================================
 // 1. NUMERIC PARSING WITH VALIDATION
