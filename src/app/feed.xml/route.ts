@@ -2,9 +2,19 @@ import { prisma } from '@/lib/prisma'
 
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:4444'
 
+// Helper function to escape XML special characters
+function escapeXml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;')
+}
+
 export async function GET() {
   try {
-    // Fetch the 50 most recent videos
+    // Fetch the 500 most recent videos (RSS readers typically handle this fine)
     const videos = await prisma.video.findMany({
       select: {
         vodId: true,
@@ -18,7 +28,7 @@ export async function GET() {
       orderBy: {
         createdAt: 'desc',
       },
-      take: 50,
+      take: 500,
     })
 
     const rssFeed = `<?xml version="1.0" encoding="UTF-8" ?>
@@ -33,19 +43,23 @@ export async function GET() {
   ${videos
     .map((video) => {
       // Clean description for RSS (remove HTML tags if any)
-      const description = video.vodContent
+      const rawDescription = video.vodContent
         ? video.vodContent.replace(/<[^>]*>/g, '').substring(0, 200)
         : video.vodRemarks || '暂无描述'
 
+      const description = escapeXml(rawDescription)
+      const title = escapeXml(video.vodName)
+      const category = escapeXml(video.typeName || '未分类')
+
       return `
   <item>
-    <title><![CDATA[${video.vodName}]]></title>
+    <title>${title}</title>
     <link>${BASE_URL}/watch/${video.vodId}</link>
     <guid isPermaLink="true">${BASE_URL}/watch/${video.vodId}</guid>
-    <description><![CDATA[${description}]]></description>
+    <description>${description}</description>
     <pubDate>${video.createdAt.toUTCString()}</pubDate>
-    <category>${video.typeName || '未分类'}</category>
-    ${video.vodPic ? `<enclosure url="${video.vodPic}" type="image/jpeg" />` : ''}
+    <category>${category}</category>
+    ${video.vodPic ? `<enclosure url="${escapeXml(video.vodPic)}" type="image/jpeg" />` : ''}
   </item>`
     })
     .join('')}
