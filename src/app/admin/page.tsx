@@ -931,7 +931,7 @@ export default function AdminDashboard() {
             {/* Tabs */}
             <div className="flex gap-2 mb-4 border-b border-border">
               <button
-                onClick={() => {setCategoryTab('database'); setSelectedCategory(null); setCategoryVideos([])}}
+                onClick={() => {setCategoryTab('database'); setSelectedCategory(null); setCategoryVideos([]); setVideoPage(1); setVideoSearchQuery('')}}
                 className={`px-4 py-2 font-medium transition-all ${
                   categoryTab === 'database'
                     ? 'text-primary border-b-2 border-primary'
@@ -942,7 +942,7 @@ export default function AdminDashboard() {
                 Database ({stats.categories.length})
               </button>
               <button
-                onClick={() => {setCategoryTab('consolidated'); setSelectedCategory(null); setCategoryVideos([])}}
+                onClick={() => {setCategoryTab('consolidated'); setSelectedCategory(null); setCategoryVideos([]); setVideoPage(1); setVideoSearchQuery('')}}
                 className={`px-4 py-2 font-medium transition-all ${
                   categoryTab === 'consolidated'
                     ? 'text-primary border-b-2 border-primary'
