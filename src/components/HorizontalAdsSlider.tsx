@@ -22,8 +22,8 @@ export default function HorizontalAdsSlider() {
         setDefaultUrl(adsData.url || '')
         setAds(adsData.horizontalAds || [])
       })
-      .catch(error => {
-
+      .catch(() => {
+        // Silently fail - ads are optional
       })
   }, [])
 

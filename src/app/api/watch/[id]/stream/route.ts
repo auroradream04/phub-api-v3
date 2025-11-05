@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PornHub } from 'pornhub.js'
 import { getRandomProxy } from '@/lib/proxy'
-import { prisma } from '@/lib/prisma'
+// import { prisma } from '@/lib/prisma'
 import { getSiteSetting, SETTING_KEYS } from '@/lib/site-settings'
 import { getClientIP, getCountryFromIP } from '@/lib/geo'
 import { checkAndLogDomain } from '@/lib/domain-middleware'
@@ -50,7 +50,7 @@ export async function GET(
 
     // ALWAYS use proxy - try up to 3 different proxies
     let retries = 3
-    let attemptNum = 1
+    const _attemptNum = 1
 
     while (retries > 0 && !videoInfo) {
       // Select proxy BEFORE making request
@@ -67,7 +67,7 @@ export async function GET(
       const startTime = Date.now()
       try {
         const response = await pornhub.video(id)
-        const duration = Date.now() - startTime
+        const _duration = Date.now() - startTime
 
         // Check for soft blocking (missing media definitions)
         if (!response.mediaDefinitions || response.mediaDefinitions.length < 1) {
@@ -78,7 +78,7 @@ export async function GET(
           videoInfo = response
         }
       } catch (error: unknown) {
-        const duration = Date.now() - startTime
+        const _duration = Date.now() - startTime
         console.error(`[Stream API] Proxy ${proxyInfo.proxyUrl} failed (${duration}ms):`, error instanceof Error ? error.message : error)
         // Try different proxy
       }
@@ -259,7 +259,7 @@ async function injectAds(m3u8Text: string, quality: string, baseUrl: string, vid
   const segmentsToSkipSetting = await getSiteSetting(SETTING_KEYS.SEGMENTS_TO_SKIP, '2')
   const segmentsToSkip = parseInt(segmentsToSkipSetting, 10) || 2
 
-  let segmentCount = 0
+  const _segmentCount = 0
   let adInjected = false
   let pendingExtInf = ''
   let skippedSegments = 0
@@ -319,7 +319,7 @@ async function injectAds(m3u8Text: string, quality: string, baseUrl: string, vid
               country: country
             }
           })
-        } catch (error) {
+        } catch {
           // Failed to record impression
         }
 

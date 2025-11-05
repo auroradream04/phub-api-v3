@@ -1,7 +1,7 @@
 import { getServerSession } from 'next-auth/next'
 import { NextRequest, NextResponse } from 'next/server'
 import { PornHub } from '@/lib/pornhub.js'
-import { prisma } from '@/lib/prisma'
+// import { prisma } from '@/lib/prisma'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 
 export async function GET(req: NextRequest) {
@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
       if (matchedVideo?.previewVideo) {
         previewVideo = matchedVideo.previewVideo
       }
-    } catch (error) {
+    } catch {
 
       // Continue without previewVideo if search fails
     }
@@ -67,7 +67,7 @@ export async function GET(req: NextRequest) {
       previewVideo,
       url: video.url,
     })
-  } catch (error) {
+  } catch {
 
     return NextResponse.json({ error: 'Failed to fetch video details' }, { status: 500 })
   }

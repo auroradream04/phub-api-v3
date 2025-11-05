@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma'
+// import { prisma } from '@/lib/prisma'
 
 /**
  * Extract domain from referer or origin header
@@ -57,7 +57,7 @@ export async function checkDomainAccess(domain: string | null): Promise<{
       allowed: true,
       domainAccessId: domainRule.id
     }
-  } catch (error) {
+  } catch {
     // On error, allow the request (fail open)
     return { allowed: true }
   }
@@ -93,7 +93,7 @@ export async function logApiRequest(data: {
         blocked: data.blocked
       }
     })
-  } catch (error) {
+  } catch {
     // Silently fail - don't block requests if logging fails
   }
 }

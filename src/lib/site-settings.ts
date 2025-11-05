@@ -1,4 +1,4 @@
-import { PrismaClient } from '@/generated/prisma'
+// import { PrismaClient } from '@/generated/prisma'
 
 const prisma = new PrismaClient()
 
@@ -24,7 +24,7 @@ export async function getSiteSetting(key: string, defaultValue: string = ''): Pr
     settingsCache.set(key, { value, timestamp: Date.now() })
 
     return value
-  } catch (error) {
+  } catch {
     return defaultValue
   }
 }
@@ -39,7 +39,7 @@ export async function setSiteSetting(key: string, value: string): Promise<void> 
 
     // Update cache
     settingsCache.set(key, { value, timestamp: Date.now() })
-  } catch (error) {
+  } catch {
     throw error
   }
 }

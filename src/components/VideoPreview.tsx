@@ -30,9 +30,8 @@ export default function VideoPreview({
     setIsHovering(true)
     if (videoRef.current) {
       videoRef.current.currentTime = 0
-      videoRef.current.play().catch((err) => {
+      videoRef.current.play().catch(() => {
         // Autoplay might fail in some browsers
-
         setIsHovering(false)
       })
     }

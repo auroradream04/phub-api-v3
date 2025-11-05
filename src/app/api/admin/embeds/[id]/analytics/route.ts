@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth/next'
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+// import { prisma } from '@/lib/prisma'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 
 interface BrowserData {
@@ -186,7 +186,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       chartData,
       period: { from: dateFrom.toISOString(), to: new Date().toISOString(), days },
     })
-  } catch (error) {
+  } catch {
 
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }

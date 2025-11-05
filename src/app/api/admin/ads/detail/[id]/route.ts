@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
-import { prisma } from '@/lib/prisma'
+// import { prisma } from '@/lib/prisma'
 import { getDomainDisplayName } from '@/lib/extract-domain'
 
 export async function GET(
@@ -64,7 +64,7 @@ export async function GET(
 
     // Group by domain extracted from referrer for top sources
     const sourceMap = new Map<string, number>()
-    impressions.forEach(imp => {
+    impressions.forEach((imp: typeof impressions[number]) => {
       const domain = getDomainDisplayName(imp.referrer)
       sourceMap.set(domain, (sourceMap.get(domain) || 0) + 1)
     })
@@ -76,7 +76,7 @@ export async function GET(
 
     // Group by video for top pages
     const videoMap = new Map<string, number>()
-    impressions.forEach(imp => {
+    impressions.forEach((imp: typeof impressions[number]) => {
       videoMap.set(imp.videoId, (videoMap.get(imp.videoId) || 0) + 1)
     })
 
@@ -90,7 +90,7 @@ export async function GET(
     const deviceMap = new Map<string, number>()
     const osMap = new Map<string, number>()
 
-    impressions.forEach(imp => {
+    impressions.forEach((imp: typeof impressions[number]) => {
       const ua = imp.userAgent || 'unknown'
 
       // Browser detection (order matters - check Edge before Chrome!)
@@ -147,7 +147,7 @@ export async function GET(
 
     // Group by country
     const countryMap = new Map<string, number>()
-    impressions.forEach(imp => {
+    impressions.forEach((imp: typeof impressions[number]) => {
       const country = imp.country || 'Unknown'
       countryMap.set(country, (countryMap.get(country) || 0) + 1)
     })
@@ -163,7 +163,7 @@ export async function GET(
 
     // Group by day for chart
     const dailyMap = new Map<string, number>()
-    impressions.forEach(imp => {
+    impressions.forEach((imp: typeof impressions[number]) => {
       const day = imp.timestamp.toISOString().split('T')[0]
       dailyMap.set(day, (dailyMap.get(day) || 0) + 1)
     })
@@ -202,7 +202,7 @@ export async function GET(
         endDate: endDate.toISOString()
       }
     })
-  } catch (error) {
+  } catch {
 
     return NextResponse.json(
       { error: 'Failed to fetch analytics' },

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { checkDomainAccess, extractDomain } from '@/lib/domain-checker'
 
 // Internal API for domain checking (called from middleware or routes)
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const body = await request.json()
     const { referer, origin } = body
@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
       domainAccessId: accessCheck.domainAccessId,
       reason: accessCheck.reason
     })
-  } catch (error) {
+  } catch {
 
     // Fail open - allow request on error
     return NextResponse.json({ allowed: true })

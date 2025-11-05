@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+// import { prisma } from '@/lib/prisma'
 
 export const revalidate = 7200 // 2 hours
 
 // POST endpoint to scrape videos from all categories
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const { pagesPerCategory = 5, parallel = false } = await request.json()
 
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
             { id: 'asc' }
           ]
         })
-      } catch (error) {
+      } catch {
         return NextResponse.json({
           success: false,
           message: 'No categories found in database and failed to fetch from PornHub. Please check logs.',
@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
 
               await new Promise(resolve => setTimeout(resolve, 200))
 
-            } catch (error) {
+            } catch {
               categoryErrors++
               consecutiveErrors++
 
@@ -230,7 +230,7 @@ export async function POST(request: NextRequest) {
 
             await new Promise(resolve => setTimeout(resolve, 500))
 
-          } catch (error) {
+          } catch {
             categoryErrors++
             totalErrors++
             consecutiveErrors++

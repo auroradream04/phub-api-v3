@@ -1,11 +1,5 @@
 import HorizontalAdsClient from './HorizontalAds.client'
 
-interface HorizontalAd {
-  title: string
-  image: string
-  urlArray?: string[]
-}
-
 async function fetchAds() {
   try {
     const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'

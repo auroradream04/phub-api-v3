@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+// import { prisma } from '@/lib/prisma'
 import { decryptEmbedId } from '@/lib/embed-encryption'
 import { PornHub } from 'pornhub.js'
 import { getRandomProxy } from '@/lib/proxy'
@@ -105,7 +105,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
         'Cache-Control': 'public, max-age=7200', // Match revalidate period
       },
     })
-  } catch (error) {
+  } catch {
 
     return NextResponse.json(
       { error: 'Internal server error' },

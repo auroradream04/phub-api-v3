@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+// import { prisma } from '@/lib/prisma'
 import { getCategoryChineseName } from '@/lib/category-mapping'
 
 export const revalidate = 3600 // 1 hour
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
     const provider = searchParams.get('provider')

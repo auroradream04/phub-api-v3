@@ -78,7 +78,7 @@ export default function EmbedDetailPage() {
             previewVideo: preview.previewVideo,
           })
         }
-      } catch (err) {
+      } catch {
 
         // Silently fail - preview is optional
       } finally {

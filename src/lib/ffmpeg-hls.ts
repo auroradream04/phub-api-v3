@@ -27,7 +27,7 @@ function getFFmpegPath(): string | null {
     }
 
     return null
-  } catch (error) {
+  } catch {
 
     return null
   }
@@ -92,7 +92,7 @@ export async function getVideoDuration(inputPath: string): Promise<number> {
           // Fallback to ffmpeg method if ffprobe fails
           getVideoDurationWithFFmpeg(inputPath).then(resolve).catch(reject)
         } else {
-          const duration = data.format.duration || 0
+          const _duration = data.format.duration || 0
           resolve(Math.floor(duration))
         }
       })
@@ -126,9 +126,8 @@ function getVideoDurationWithFFmpeg(inputPath: string): Promise<number> {
           }
         }
       })
-      .on('error', (err) => {
+      .on('error', () => {
         // If we can't get duration, default to 10 seconds
-
         resolve(10)
       })
       .on('end', () => {
@@ -223,7 +222,7 @@ export async function convertToHLSSegments(
         // Calculate duration for each segment
         segmentFiles.forEach((filename, index) => {
           const isLastSegment = index === segmentFiles.length - 1
-          const duration = isLastSegment
+          const _duration = isLastSegment
             ? totalDuration - (index * segmentDuration)
             : segmentDuration
 

@@ -38,7 +38,7 @@ export default function EmbedEditClient({ embedId }: { embedId: string }) {
       setDisplayName(data.displayName || '')
       setRedirectUrl(data.redirectUrl)
       setEnabled(data.enabled)
-    } catch (error) {
+    } catch {
 
       alert('Failed to load embed')
     } finally {

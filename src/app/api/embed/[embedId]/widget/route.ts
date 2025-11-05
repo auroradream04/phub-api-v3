@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+// import { prisma } from '@/lib/prisma'
 import { decryptEmbedId } from '@/lib/embed-encryption'
 
 function getCorsHeaders() {
@@ -78,7 +78,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
             tags: ['embed-preview', encryptedId], // For on-demand revalidation
           },
         })
-        const searchTime = Date.now() - searchStart
+        const _searchTime = Date.now() - searchStart
 
         if (searchResponse.ok) {
           const preview = await searchResponse.json()
@@ -87,14 +87,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
             console.log('[Embed] Widget route - Using dynamic preview from search')
           }
         }
-      } catch (err) {
+      } catch {
         // Continue without preview - it's not critical
         console.log('[Embed] Widget route - Failed to fetch dynamic preview, continuing without it')
       }
     }
 
     // Return widget data
-    const totalTime = Date.now() - startTime
+    const _totalTime = Date.now() - startTime
 
     const responseData = {
       id: embed.id,
@@ -116,7 +116,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
         },
       }
     )
-  } catch (error) {
+  } catch {
 
     return NextResponse.json(
       { error: 'Internal server error' },

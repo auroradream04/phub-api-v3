@@ -59,7 +59,7 @@ export default function EmbedDetailClient({ embedId }: { embedId: string }) {
         const analyticsData = await analyticsRes.json()
         setAnalytics(analyticsData)
       }
-    } catch (error) {
+    } catch {
 
     } finally {
       setLoading(false)
@@ -81,7 +81,7 @@ export default function EmbedDetailClient({ embedId }: { embedId: string }) {
         setIsEditing(false)
         alert('Updated successfully!')
       }
-    } catch (error) {
+    } catch {
 
       alert('Error updating embed')
     }

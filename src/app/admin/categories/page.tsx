@@ -6,7 +6,6 @@ import {
   CONSOLIDATED_CATEGORIES,
   CONSOLIDATED_TO_CHINESE,
   CONSOLIDATED_TYPE_IDS,
-  DATABASE_TO_CONSOLIDATED,
   getVariantsForConsolidated
 } from '@/lib/maccms-mappings'
 
@@ -44,6 +43,7 @@ export default function CategoriesAdmin() {
   useEffect(() => {
     fetchDatabaseCategories()
     buildConsolidatedCategories()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const fetchDatabaseCategories = async () => {
@@ -242,6 +242,7 @@ export default function CategoriesAdmin() {
                       <div key={idx} className="px-4 py-3 hover:bg-slate-700 transition-colors">
                         <div className="flex gap-3">
                           {video.vod_pic && (
+                            // eslint-disable-next-line @next/next/no-img-element
                             <img
                               src={video.vod_pic}
                               alt={video.vod_name}

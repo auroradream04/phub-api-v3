@@ -158,7 +158,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ embe
         ...getCorsHeaders(),
       },
     })
-  } catch (error) {
+  } catch {
     const errorScript = `// Failed to load embed script`
     return new NextResponse(errorScript, {
       status: 500,

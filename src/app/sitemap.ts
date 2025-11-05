@@ -99,8 +99,8 @@ export default async function sitemap({
 
     return [...staticPages, ...videoPages]
   } catch (error) {
-    console.error(`Error generating sitemap ${id}:`, error)
-    // Return at least the static pages if video fetch fails
+    console.error('Error generating sitemap:', error)
+    // Return static pages on error
     return staticPages
   }
 }

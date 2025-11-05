@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+// import { prisma } from '@/lib/prisma'
 import { translateBatch } from '@/lib/translate'
 
 export const revalidate = 0 // No caching for retry endpoint
@@ -14,7 +14,7 @@ export const revalidate = 0 // No caching for retry endpoint
  * - limit: Number of videos to retry (default: 100)
  * - maxRetries: Skip videos that have been retried this many times (default: 5)
  */
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
     const limit = parseInt(searchParams.get('limit') || '100')

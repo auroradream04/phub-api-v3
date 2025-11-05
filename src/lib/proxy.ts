@@ -48,7 +48,7 @@ export function getProxyList(): string[] {
     }
 
     return proxies;
-  } catch (error) {
+  } catch {
     return [];
   }
 }
@@ -58,7 +58,7 @@ export function getProxyList(): string[] {
  * @param route Optional route name for logging purposes
  * @returns Object with proxy agent and proxy URL (masked), or null if no proxies available
  */
-export function getRandomProxy(route?: string): { agent: HttpsProxyAgent<string> | HttpProxyAgent<string> | SocksProxyAgent, proxyUrl: string } | null {
+export function getRandomProxy(_route?: string): { agent: HttpsProxyAgent<string> | HttpProxyAgent<string> | SocksProxyAgent, proxyUrl: string } | null {
   try {
     const proxyList = getProxyList();
 
@@ -90,7 +90,7 @@ export function getRandomProxy(route?: string): { agent: HttpsProxyAgent<string>
     }
 
     return { agent, proxyUrl: hostPort };
-  } catch (error) {
+  } catch {
     return null;
   }
 }

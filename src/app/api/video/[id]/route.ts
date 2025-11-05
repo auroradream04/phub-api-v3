@@ -32,7 +32,7 @@ export async function GET(
 
     // ALWAYS use proxy - try up to 3 different proxies
     let retries = 3
-    let attemptNum = 1
+    const _attemptNum = 1
 
     while (retries > 0 && !videoInfo) {
       // Select proxy BEFORE making request
@@ -50,7 +50,7 @@ export async function GET(
       try {
         const response = await pornhub.video(id)
 
-        const duration = Date.now() - startTime
+        const _duration = Date.now() - startTime
 
         // Check for soft blocking (missing media definitions)
         if (!response.mediaDefinitions || response.mediaDefinitions.length < 1) {
@@ -59,9 +59,8 @@ export async function GET(
 
           videoInfo = response
         }
-      } catch (error: unknown) {
-        const duration = Date.now() - startTime
-
+      } catch {
+        const _duration = Date.now() - startTime
       }
 
       retries--
@@ -84,7 +83,7 @@ export async function GET(
       }
     })
 
-  } catch (error) {
+  } catch {
 
     return NextResponse.json(
       { error: 'Failed to fetch video information' },

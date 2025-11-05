@@ -60,7 +60,7 @@ async function searchVideos(query: string, page: number = 1): Promise<{ videos: 
     })
 
     return {
-      videos: videos.map(video => ({
+      videos: videos.map((video: typeof videos[number]) => ({
         id: video.vodId,
         title: video.vodName,
         preview: video.vodPic || '',
@@ -124,7 +124,7 @@ async function getVideosByCategory(consolidatedCategory: string, page: number = 
     const displayName = CONSOLIDATED_TO_CHINESE[consolidatedCategory] || consolidatedCategory
 
     return {
-      videos: videos.map(video => ({
+      videos: videos.map((video: typeof videos[number]) => ({
         id: video.vodId,
         title: video.vodName,
         preview: video.vodPic || '',

@@ -98,7 +98,7 @@ export function parseByDom(html: string, $: CheerioAPI) {
     const categories = getDataAttribute<string>(trafficJunkyMeta, 'context-category')?.split(',') || []
 
     const durationMeta = $('head meta[property="video:duration"]')
-    const duration = +getAttribute<number>(durationMeta, 'content', 0)
+    const _duration = +getAttribute<number>(durationMeta, 'content', 0)
     const durationFormatted = toHHMMSS(duration)
 
     return {

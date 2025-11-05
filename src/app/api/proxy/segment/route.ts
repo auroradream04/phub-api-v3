@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export const revalidate = 7200 // 2 hours
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const url = request.nextUrl.searchParams.get('url')
 
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
       }
     })
 
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Failed to proxy segment' },
       { status: 500 }

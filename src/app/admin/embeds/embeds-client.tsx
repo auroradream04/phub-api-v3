@@ -102,7 +102,7 @@ export default function EmbedsClient() {
 
       setEmbeds(data.data)
       setTotal(data.total)
-    } catch (error) {
+    } catch {
 
     } finally {
       setLoading(false)
@@ -141,7 +141,7 @@ export default function EmbedsClient() {
 
         const data: SearchResponse = await res.json()
         setSearchResults(data.videos)
-      } catch (error) {
+      } catch {
 
       } finally {
         setSearching(false)
@@ -199,7 +199,7 @@ export default function EmbedsClient() {
         const video: SearchVideo = await res.json()
         handleSelectVideo(video)
         setManualVideoInput('')
-      } catch (error) {
+      } catch {
 
       } finally {
         setFetchingManualVideo(false)
@@ -246,7 +246,7 @@ export default function EmbedsClient() {
       resetCreateModal()
       setPage(1)
       fetchEmbeds()
-    } catch (error) {
+    } catch {
       alert('Error creating embed')
     }
   }
@@ -270,7 +270,7 @@ export default function EmbedsClient() {
         return
       }
       fetchEmbeds()
-    } catch (error) {
+    } catch {
 
       alert('Error deleting embed')
     }
@@ -605,7 +605,7 @@ export default function EmbedsClient() {
                                       previewSourceUrl: video.previewVideo || link
                                     }))
                                     setFetchingManualVideo(false)
-                                  } catch (error) {
+                                  } catch {
                                     setFetchingManualVideo(false)
                                   }
                                 }, 1000)

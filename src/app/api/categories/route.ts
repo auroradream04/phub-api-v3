@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { PornHub } from 'pornhub.js'
 import { getRandomProxy } from '@/lib/proxy'
 import { checkAndLogDomain } from '@/lib/domain-middleware'
-import { prisma } from '@/lib/prisma'
+// import { prisma } from '@/lib/prisma'
 
 // Custom categories that use search instead of PornHub category IDs
 // Use high numeric IDs (9998-9999) to avoid conflicts with PornHub category IDs
@@ -14,7 +14,7 @@ const CUSTOM_CATEGORIES = [
 
 export const revalidate = 7200 // 2 hours
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   const requestStart = Date.now()
 
   // Check domain access
@@ -61,7 +61,6 @@ export async function GET(request: NextRequest) {
 
     // ALWAYS use proxy - try up to 3 different proxies
     let retries = 3
-    let attemptNum = 1
 
     while (retries > 0 && !categories) {
       const proxyInfo = getRandomProxy('Categories API')

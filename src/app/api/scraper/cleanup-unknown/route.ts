@@ -7,7 +7,7 @@ import { prisma } from '@/lib/prisma'
  *
  * Usage: POST /api/scraper/cleanup-unknown
  */
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     // Find all videos with "Unknown" category
     const unknownVideos = await prisma.video.findMany({

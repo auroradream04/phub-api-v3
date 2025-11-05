@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../../../auth/[...nextauth]/route'
-import { prisma } from '@/lib/prisma'
+// import { prisma } from '@/lib/prisma'
 
 // GET /api/admin/domains/logs - Get request logs grouped by domain
 export async function GET() {
@@ -90,7 +90,7 @@ export async function GET() {
         'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0'
       }
     })
-  } catch (error) {
+  } catch {
 
     return NextResponse.json(
       { error: 'Failed to fetch logs' },

@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../../auth/[...nextauth]/route'
-import { prisma } from '@/lib/prisma'
+// import { prisma } from '@/lib/prisma'
 
 // GET /api/admin/domains - List all domains with pagination and filters
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
 
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
         totalPages: Math.ceil(total / limit)
       }
     })
-  } catch (error) {
+  } catch {
 
     return NextResponse.json(
       { error: 'Failed to fetch domains' },
@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
 }
 
 // POST /api/admin/domains - Add new domain to whitelist/blacklist
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
 
@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
 
 
     return NextResponse.json(newDomain, { status: 201 })
-  } catch (error) {
+  } catch {
 
     return NextResponse.json(
       { error: 'Failed to create domain' },

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+// import { prisma } from '@/lib/prisma'
 import crypto from 'crypto'
 
 /**
@@ -133,7 +133,7 @@ function generateClientFingerprint(request: NextRequest): string {
  * Use this at the START of your route handlers
  *
  * @example
- * export async function GET(request: NextRequest) {
+ * export async function GET(_request: NextRequest) {
  *   const domainCheck = await checkAndLogDomain(request, '/api/home', 'GET')
  *   if (!domainCheck.allowed) {
  *     return domainCheck.response // Returns 403 with error message
@@ -183,7 +183,7 @@ export async function checkAndLogDomain(
           blockReason = domainRule.reason || 'Domain is blocked'
         }
       }
-    } catch (error) {
+    } catch {
       // Fail open - allow request on database error
     }
   }
@@ -208,14 +208,14 @@ export async function checkAndLogDomain(
           blocked: !allowed
         }
       })
-    } catch (error) {
+    } catch {
       // Silently fail - don't block requests if logging fails
     }
   }
 
   // If blocked, return 403 response and log it
   if (!allowed) {
-    const responseTime = Date.now() - startTime
+    const _responseTime = Date.now() - startTime
     await logRequest(403, responseTime)
 
     return {
@@ -277,7 +277,7 @@ export async function checkDomainAccess(request: NextRequest): Promise<{
         )
       }
     }
-  } catch (error) {
+  } catch {
     // Fail open on error
   }
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../../../auth/[...nextauth]/route'
-import { prisma } from '@/lib/prisma'
+// import { prisma } from '@/lib/prisma'
 import { convertToHLSSegments, getVideoDuration, checkFFmpeg } from '@/lib/ffmpeg-hls'
 import { writeFile, mkdir, stat, unlink } from 'fs/promises'
 import { join } from 'path'
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
         // Delete temp file after conversion
         await unlink(tempFilePath)
 
-      } catch (error) {
+      } catch {
 
         // Fallback: save as single file
         const fallbackPath = join(uploadDir, 'ad.mp4')
@@ -172,7 +172,7 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json(ad)
-  } catch (error) {
+  } catch {
 
     return NextResponse.json(
       { error: 'Failed to upload ad' },

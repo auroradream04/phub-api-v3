@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../../../auth/[...nextauth]/route'
-import { prisma } from '@/lib/prisma'
+// import { prisma } from '@/lib/prisma'
 
 // PATCH /api/admin/domains/[id] - Update domain access
 export async function PATCH(
@@ -44,7 +44,7 @@ export async function PATCH(
 
 
     return NextResponse.json(updated)
-  } catch (error) {
+  } catch {
 
     return NextResponse.json(
       { error: 'Failed to update domain' },
@@ -87,7 +87,7 @@ export async function DELETE(
 
 
     return NextResponse.json({ success: true })
-  } catch (error) {
+  } catch {
 
     return NextResponse.json(
       { error: 'Failed to delete domain' },

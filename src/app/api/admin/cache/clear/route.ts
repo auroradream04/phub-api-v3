@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
           timestamp: new Date()
         }
       })
-    } catch (dbError) {
+    } catch {
 
       // Don't fail the whole request if logging fails
     }
@@ -91,8 +91,8 @@ export async function POST(request: NextRequest) {
           timestamp: new Date()
         }
       })
-    } catch (dbError) {
-
+    } catch {
+      // Silently fail - logging is not critical
     }
 
     return NextResponse.json(

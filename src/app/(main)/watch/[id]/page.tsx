@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Eye, Clock, User } from 'lucide-react'
 import { notFound } from 'next/navigation'
-import { prisma } from '@/lib/prisma'
+// import { prisma } from '@/lib/prisma'
 import { getCategoryChineseName } from '@/lib/category-mapping'
 import HorizontalAdsSlider from '@/components/HorizontalAdsSlider'
 import VideoPreview from '@/components/VideoPreview'
@@ -98,7 +98,7 @@ async function getVideoData(videoId: string) {
         }
       ],
       tags: [],
-      pornstars: video.vodActor ? video.vodActor.split(',').map(a => a.trim()) : [],
+      pornstars: video.vodActor ? video.vodActor.split(',').map((a: string) => a.trim()) : [],
       categories: [
         {
           id: video.typeId,
@@ -137,7 +137,7 @@ async function getRecommendedVideos(videoId: string, provider: string) {
       take: 6,
     })
 
-    return videos.map((video) => ({
+    return videos.map((video: typeof videos[number]) => ({
       id: video.vodId,
       title: video.vodName,
       preview: video.vodPic || '',
@@ -251,7 +251,7 @@ export default async function WatchPage({ params }: { params: Promise<{ id: stri
             <div className="h-1 w-20 bg-gradient-to-r from-primary to-accent rounded-full"></div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {recommendedVideos.map((video) => (
+            {recommendedVideos.map((video: typeof recommendedVideos[number]) => (
               <Link
                 key={video.id}
                 href={`/watch/${video.id}`}

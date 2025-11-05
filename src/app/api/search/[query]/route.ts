@@ -40,7 +40,7 @@ export async function GET(
 
     // ALWAYS use proxy - try up to 3 different proxies
     let retries = 3
-    let attemptNum = 1
+    const _attemptNum = 1
 
     while (retries > 0 && !result) {
       // Select proxy BEFORE making request
@@ -61,7 +61,7 @@ export async function GET(
         } else {
           result = response
         }
-      } catch (error: unknown) {
+      } catch {
         // Try different proxy
       }
 

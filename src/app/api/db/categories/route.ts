@@ -4,7 +4,7 @@ import { getCategoryChineseName } from '@/lib/category-mapping'
 
 export const revalidate = 3600 // 1 hour
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // Get all unique typeName (categories) from videos in database
     const videos = await prisma.video.findMany({

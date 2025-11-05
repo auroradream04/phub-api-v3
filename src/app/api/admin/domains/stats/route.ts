@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../../../auth/[...nextauth]/route'
-import { prisma } from '@/lib/prisma'
+// import { prisma } from '@/lib/prisma'
 
 // GET /api/admin/domains/stats - Get domain usage statistics
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
 
@@ -107,7 +107,7 @@ export async function GET(request: NextRequest) {
         requests: c._count.country
       }))
     })
-  } catch (error) {
+  } catch {
 
     return NextResponse.json(
       { error: 'Failed to fetch statistics' },

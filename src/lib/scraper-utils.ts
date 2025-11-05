@@ -3,7 +3,7 @@
  * Handles: validation, parsing, crash recovery
  */
 
-import { PrismaClient } from '../generated/prisma'
+// import { PrismaClient } from '../generated/prisma'
 
 const prisma = new PrismaClient()
 
@@ -195,7 +195,7 @@ export async function updateScraperCheckpoint(
   let current: ScraperCheckpoint
   try {
     current = JSON.parse(existing.value) as ScraperCheckpoint
-  } catch (error) {
+  } catch {
     console.error(`[Scraper] Corrupted checkpoint JSON for ${checkpointId}`)
     return
   }
@@ -223,7 +223,7 @@ export async function getScraperCheckpoint(
 
   try {
     return JSON.parse(setting.value) as ScraperCheckpoint
-  } catch (error) {
+  } catch {
     console.error(`[Scraper] Corrupted checkpoint JSON for ${checkpointId}`)
     return null
   }
@@ -240,7 +240,7 @@ export async function getLatestScraperCheckpoint(): Promise<ScraperCheckpoint | 
 
   try {
     return JSON.parse(settings[0]!.value) as ScraperCheckpoint
-  } catch (error) {
+  } catch {
     console.error(`[Scraper] Corrupted checkpoint JSON`)
     return null
   }

@@ -77,7 +77,7 @@ export async function downloadPreview(source: string): Promise<{
           await downloadSegment(segment.url, filepath)
           downloadedSegments.push(filename)
           console.log('[Preview] Downloaded segment:', filename)
-        } catch (err) {
+        } catch {
           console.error('[Preview] Failed to download segment:', segment.url, err)
         }
       }

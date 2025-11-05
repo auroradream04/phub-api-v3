@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+// import { prisma } from '@/lib/prisma'
 import { readFile } from 'fs/promises'
 import { join } from 'path'
 import { existsSync } from 'fs'
@@ -61,7 +61,7 @@ export async function GET(
       },
     })
 
-  } catch (error) {
+  } catch {
 
     return NextResponse.json(
       { error: 'Failed to serve ad segment' },

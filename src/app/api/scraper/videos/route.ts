@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+// import { prisma } from '@/lib/prisma'
 import { isTranslationEnabled, translateBatch } from '@/lib/translate'
 import { parseViews, parseDuration, mergeCategories } from '@/lib/scraper-utils'
 import { getCategoryChineseName, getCanonicalCategory } from '@/lib/category-mapping'
@@ -43,7 +43,7 @@ function stripEmojis(str: string): string {
 
 // parseDuration is now imported from scraper-utils
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const { page = 1, categoryId, categoryName } = await request.json()
     console.log(`[Scraper Videos] Processing: categoryId=${categoryId}, categoryName=${categoryName}, page=${page}`)
@@ -356,7 +356,7 @@ export async function GET() {
       totalVideos,
       categories: videosByCategory.sort((a, b) => a.typeId - b.typeId),
     })
-  } catch (error) {
+  } catch {
 
     return NextResponse.json({
       success: false,
@@ -374,7 +374,7 @@ export async function DELETE() {
       message: `Deleted ${deleted.count} videos`,
       deleted: deleted.count,
     })
-  } catch (error) {
+  } catch {
 
     return NextResponse.json({
       success: false,

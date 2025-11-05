@@ -41,7 +41,7 @@ export async function getCountryFromIP(ip: string | null): Promise<string | null
 
     const data = await response.json()
     return data.countryCode || null
-  } catch (error) {
+  } catch {
     return null
   }
 }

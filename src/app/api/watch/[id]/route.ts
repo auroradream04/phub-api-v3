@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PornHub } from 'pornhub.js'
 import { getRandomProxy } from '@/lib/proxy'
-import { prisma } from '@/lib/prisma'
 
 export const revalidate = 7200 // 2 hours
 
@@ -11,7 +10,7 @@ export async function GET(
 ) {
   const startTime = Date.now()
   const requestId = Math.random().toString(36).substring(7)
-  let apiCallTime = 0
+  const _apiCallTime = 0
 
   try {
     const { id } = await params
@@ -47,7 +46,7 @@ export async function GET(
 
     // ALWAYS use proxy - try up to 3 different proxies
     let retries = 3
-    let attemptNum = 1
+    const _attemptNum = 1
 
     while (retries > 0 && !videoData) {
       // Select proxy BEFORE making request
@@ -64,11 +63,11 @@ export async function GET(
       const startTime = Date.now()
       try {
         videoData = await pornhub.video(id)
-        const duration = Date.now() - startTime
+        const _duration = Date.now() - startTime
         console.log(`[Watch API] ✓ Success with proxy ${proxyInfo.proxyUrl} (${duration}ms)`)
         break
       } catch (apiError) {
-        const duration = Date.now() - startTime
+        const _duration = Date.now() - startTime
         lastError = apiError instanceof Error ? apiError : new Error(String(apiError))
 
         // Check if it's a 404 error (video not found) - don't retry with more proxies for 404s
@@ -192,8 +191,8 @@ export async function GET(
       }
     })
 
-  } catch (error) {
-    const responseTime = Date.now() - startTime
+  } catch {
+    const _responseTime = Date.now() - startTime
     const isDevMode = process.env.NODE_ENV === 'development'
 
     // Determine error type and details

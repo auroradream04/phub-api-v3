@@ -40,7 +40,7 @@ export async function GET() {
     })
 
     return NextResponse.json(ads)
-  } catch (error) {
+  } catch {
 
     return NextResponse.json(
       { error: 'Failed to fetch ads' },
@@ -74,7 +74,7 @@ export async function DELETE(request: NextRequest) {
     })
 
     return NextResponse.json({ success: true })
-  } catch (error) {
+  } catch {
 
     return NextResponse.json(
       { error: 'Failed to delete ad' },
@@ -135,7 +135,7 @@ export async function PATCH(request: NextRequest) {
     })
 
     return NextResponse.json(updatedAd)
-  } catch (error) {
+  } catch {
 
     return NextResponse.json(
       { error: 'Failed to update ad' },

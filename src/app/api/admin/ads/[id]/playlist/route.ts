@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
-import { prisma } from '@/lib/prisma'
+// import { prisma } from '@/lib/prisma'
 
 export async function GET(
   request: NextRequest,
@@ -57,7 +57,7 @@ export async function GET(
         'Cache-Control': 'no-cache'
       }
     })
-  } catch (error) {
+  } catch {
 
     return NextResponse.json(
       { error: 'Failed to generate playlist' },

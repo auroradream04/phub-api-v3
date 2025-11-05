@@ -48,7 +48,7 @@ export default function AdminDashboard() {
   const [retryStats, setRetryStats] = useState<RetryStats | null>(null)
   const [message, setMessage] = useState('')
   const [pagesPerCategory, setPagesPerCategory] = useState(5)
-  const [retryLimit, setRetryLimit] = useState(100)
+  const [retryLimit, _setRetryLimit] = useState(100)
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [checkpointId, setCheckpointId] = useState('')
   const [savedProgress, setSavedProgress] = useState<ScraperProgress | null>(null)
@@ -172,7 +172,7 @@ export default function AdminDashboard() {
     video.vod_name.toLowerCase().includes(videoSearchQuery.toLowerCase())
   )
   const videosPerPage = 20
-  const totalPages = Math.ceil(filteredVideos.length / videosPerPage)
+  const _totalPages = Math.ceil(filteredVideos.length / videosPerPage)
   const startIndex = (videoPage - 1) * videosPerPage
   const paginatedVideos = filteredVideos.slice(startIndex, startIndex + videosPerPage)
 
@@ -425,7 +425,7 @@ export default function AdminDashboard() {
         setMessage(`✅ Deleted ${data.deleted} videos`)
         await fetchStats()
       }
-    } catch (error) {
+    } catch {
       setMessage(`❌ Failed to delete videos`)
     }
   }
@@ -460,7 +460,7 @@ export default function AdminDashboard() {
       } else {
         setMessage(`❌ ${deleteData.message}`)
       }
-    } catch (error) {
+    } catch {
       setMessage(`❌ Failed to cleanup Unknown videos`)
     }
   }
@@ -480,7 +480,7 @@ export default function AdminDashboard() {
       } else {
         setMessage(`❌ ${data.message}`)
       }
-    } catch (error) {
+    } catch {
       setMessage(`❌ Failed to clear cache`)
     }
   }
@@ -1142,6 +1142,7 @@ export default function AdminDashboard() {
                               <div className="flex gap-2 items-start justify-between">
                                 <div className="flex gap-2 flex-1 min-w-0">
                                   {video.vod_pic && (
+                                    // eslint-disable-next-line @next/next/no-img-element
                                     <img
                                       src={video.vod_pic}
                                       alt={video.vod_name}

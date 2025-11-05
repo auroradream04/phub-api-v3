@@ -31,7 +31,7 @@ function getFFmpegPath(): string | null {
 
 
     return null
-  } catch (error) {
+  } catch {
 
     return null
   }

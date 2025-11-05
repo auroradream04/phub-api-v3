@@ -1,5 +1,5 @@
 import { translate } from '@vitalets/google-translate-api'
-import { PrismaClient } from '@/generated/prisma'
+// import { PrismaClient } from '@/generated/prisma'
 import { getRandomProxy } from './proxy'
 
 const prisma = new PrismaClient()

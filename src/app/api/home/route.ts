@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { checkAndLogDomain } from '@/lib/domain-middleware'
-import { prisma } from '@/lib/prisma'
+// import { prisma } from '@/lib/prisma'
 import { getCategoryChineseName } from '@/lib/category-mapping'
 
 export const revalidate = 3600 // 1 hour
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   const requestStart = Date.now()
 
   // Check domain access
