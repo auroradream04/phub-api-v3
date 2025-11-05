@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Eye, Clock, User } from 'lucide-react'
 import { notFound } from 'next/navigation'
-// import { prisma } from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 import { getCategoryChineseName } from '@/lib/category-mapping'
 import HorizontalAdsSlider from '@/components/HorizontalAdsSlider'
 import VideoPreview from '@/components/VideoPreview'
@@ -164,8 +164,31 @@ export default async function WatchPage({ params }: { params: Promise<{ id: stri
     ? await getRecommendedVideos(videoId, videoInfo.provider)
     : []
 
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:4444'
+
+  // JSON-LD structured data for video
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'VideoObject',
+    name: videoInfo.title,
+    description: videoInfo.duration,
+    thumbnailUrl: videoInfo.preview,
+    uploadDate: new Date().toISOString(),
+    contentUrl: `${baseUrl}/watch/${videoId}`,
+    embedUrl: `${baseUrl}/watch/${videoId}`,
+    interactionStatistic: {
+      '@type': 'InteractionCounter',
+      interactionType: { '@type': 'WatchAction' },
+      userInteractionCount: videoInfo.views
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* Video Player Section */}
       <div className="py-8 px-4 sm:px-6 lg:px-8">
         <div className="space-y-6">
