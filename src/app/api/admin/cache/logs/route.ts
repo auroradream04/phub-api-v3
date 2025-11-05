@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 
 export const revalidate = 0 // Don't cache this endpoint
 
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
     // Check authentication - admin only
     const session = await getServerSession(authOptions)
