@@ -10,44 +10,12 @@ export const metadata: Metadata = {
 }
 
 export default function MacCMSGuide() {
-  const apiUrl = 'https://your-domain.com/api/maccms/api.php/provide/vod/at/xml'
-  const jsonUrl = 'https://your-domain.com/api/maccms/api.php/provide/vod'
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:4444'
+  const apiUrl = `${appUrl}/api/provide/vod?ac=list&at=xml`
+  const jsonUrl = `${appUrl}/api/provide/vod?ac=list`
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-card/80 backdrop-blur-md border-b border-border sticky top-0 z-50">
-        <div className="px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-8">
-              <Link href="/" className="text-2xl font-bold text-primary">
-                视频中心
-              </Link>
-              <nav className="hidden md:flex space-x-6">
-                <Link href="/" className="text-foreground/80 hover:text-primary transition-colors">
-                  首页
-                </Link>
-                <Link href="/trending" className="text-foreground/80 hover:text-primary transition-colors">
-                  热门
-                </Link>
-                <Link href="/categories" className="text-foreground/80 hover:text-primary transition-colors">
-                  分类
-                </Link>
-                <Link href="/docs" className="text-foreground/80 hover:text-primary transition-colors font-medium">
-                  文档
-                </Link>
-              </nav>
-            </div>
-            <Link
-              href="/admin"
-              className="text-sm text-muted-foreground hover:text-primary transition-colors"
-            >
-              管理后台
-            </Link>
-          </div>
-        </div>
-      </header>
-
       <div className="space-y-12 py-12">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -178,7 +146,7 @@ export default function MacCMSGuide() {
               </div>
 
               <p className="text-sm text-muted-foreground">
-                <strong>提示：</strong> 请将上面的 <code className="bg-muted px-2 py-1 rounded">your-domain.com</code> 替换为您实际的服务器域名或IP地址。
+                <strong>提示：</strong> 以上URL已自动配置为当前应用的域名地址。
               </p>
             </div>
           </div>
@@ -281,7 +249,7 @@ export default function MacCMSGuide() {
             {[
               {
                 q: '如何获取我的API URL？',
-                a: '您的API URL应该是：https://your-domain.com/api/maccms/api.php/provide/vod/at/xml 请将 your-domain.com 替换为您实际的域名或服务器地址。'
+                a: `您的API URL显示在上方的配置表单中。XML格式：${apiUrl}，JSON格式：${jsonUrl}`
               },
               {
                 q: '测试连接失败，显示&quot;无法连接&quot;？',

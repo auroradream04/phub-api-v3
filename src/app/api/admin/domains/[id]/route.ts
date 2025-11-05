@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../../../auth/[...nextauth]/route'
-// import { prisma } from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 
 // PATCH /api/admin/domains/[id] - Update domain access
 export async function PATCH(

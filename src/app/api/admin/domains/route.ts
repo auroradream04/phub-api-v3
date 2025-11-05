@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../../auth/[...nextauth]/route'
-// import { prisma } from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 
 // GET /api/admin/domains - List all domains with pagination and filters
 export async function GET(_request: NextRequest) {

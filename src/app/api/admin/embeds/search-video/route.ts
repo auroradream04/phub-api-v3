@@ -1,7 +1,7 @@
 import { getServerSession } from 'next-auth/next'
 import { NextRequest, NextResponse } from 'next/server'
 import { PornHub } from '@/lib/pornhub.js'
-// import { prisma } from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 
 export async function GET(req: NextRequest) {

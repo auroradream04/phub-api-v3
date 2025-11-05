@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { PornHub } from 'pornhub.js'
 import { getRandomProxy } from '@/lib/proxy'
 import { checkAndLogDomain } from '@/lib/domain-middleware'
-// import { prisma } from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 
 // Custom categories that use search instead of PornHub category IDs
 // Use high numeric IDs (9998-9999) to avoid conflicts with PornHub category IDs

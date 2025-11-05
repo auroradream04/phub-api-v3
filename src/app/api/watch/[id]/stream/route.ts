@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PornHub } from 'pornhub.js'
 import { getRandomProxy } from '@/lib/proxy'
-// import { prisma } from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 import { getSiteSetting, SETTING_KEYS } from '@/lib/site-settings'
 import { getClientIP, getCountryFromIP } from '@/lib/geo'
 import { checkAndLogDomain } from '@/lib/domain-middleware'

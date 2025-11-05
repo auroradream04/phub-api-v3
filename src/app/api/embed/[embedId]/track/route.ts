@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { z } from 'zod'
-// import { prisma } from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 import { decryptEmbedId } from '@/lib/embed-encryption'
 
 const trackEventSchema = z.object({

@@ -1,11 +1,11 @@
 import NextAuth from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 // import { PrismaAdapter } from '@next-auth/prisma-adapter'
-// import { prisma } from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 
 export const authOptions = {
-  adapter: PrismaAdapter(prisma),
+  // adapter: PrismaAdapter(prisma), // Not needed with JWT strategy
   providers: [
     CredentialsProvider({
       name: 'credentials',

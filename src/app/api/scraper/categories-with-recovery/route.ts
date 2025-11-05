@@ -9,7 +9,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-// import { prisma } from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 import { createScraperCheckpoint, updateScraperCheckpoint, getScraperCheckpoint } from '@/lib/scraper-utils'
 
 const CUSTOM_CATEGORY_IDS: Record<string, number> = {

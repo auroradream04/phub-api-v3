@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-// import { prisma } from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 import { translateBatch } from '@/lib/translate'
 
 export const revalidate = 0 // No caching for retry endpoint

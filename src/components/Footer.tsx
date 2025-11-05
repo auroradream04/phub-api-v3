@@ -25,8 +25,9 @@ export function Footer() {
               <Image
                 src="/logo.png"
                 alt="MD8AV"
-                width={50}
-                height={40}
+                width={300}
+                height={100}
+                quality={100}
                 className="h-10 w-auto"
               />
             </Link>

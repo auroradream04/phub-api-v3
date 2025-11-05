@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../../../../auth/[...nextauth]/route'
-// import { prisma } from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 
 // GET /api/admin/domains/logs/detail - Get detailed request logs for a specific domain
 export async function GET(_request: NextRequest) {

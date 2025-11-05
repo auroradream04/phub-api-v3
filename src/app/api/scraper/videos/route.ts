@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-// import { prisma } from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 import { isTranslationEnabled, translateBatch } from '@/lib/translate'
 import { parseViews, parseDuration, mergeCategories } from '@/lib/scraper-utils'
 import { getCategoryChineseName, getCanonicalCategory } from '@/lib/category-mapping'

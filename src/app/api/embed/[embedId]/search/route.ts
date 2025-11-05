@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-// import { prisma } from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 import { decryptEmbedId } from '@/lib/embed-encryption'
 import { PornHub } from 'pornhub.js'
 import { getRandomProxy } from '@/lib/proxy'

@@ -1,7 +1,7 @@
 import { getServerSession } from 'next-auth/next'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-// import { prisma } from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 
 const updateEmbedSchema = z.object({
