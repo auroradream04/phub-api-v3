@@ -34,7 +34,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:4444'
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://api.md8av.com'
 
   const jsonLd = {
     '@context': 'https://schema.org',

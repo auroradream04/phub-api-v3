@@ -116,7 +116,7 @@ async function scrapeInBackground(checkpointId: string, pagesPerCategory: number
 
       for (let page = pageStart; page <= pagesPerCategory; page++) {
         try {
-          const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:4444'
+          const baseUrl = process.env.NEXTAUTH_URL || 'https://api.md8av.com'
 
           // Add timeout to prevent hanging
           const controller = new AbortController()

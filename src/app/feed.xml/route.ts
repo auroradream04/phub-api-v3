@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:4444'
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://api.md8av.com'
 
 // Helper function to escape XML special characters
 function escapeXml(unsafe: string): string {

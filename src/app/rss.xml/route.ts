@@ -5,7 +5,7 @@ export const revalidate = 3600 // Cache for 1 hour
 
 export async function GET() {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:4444'
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://api.md8av.com'
 
     // Fetch latest 50 videos
     const videos = await prisma.video.findMany({

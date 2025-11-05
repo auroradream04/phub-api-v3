@@ -164,7 +164,7 @@ export default async function WatchPage({ params }: { params: Promise<{ id: stri
     ? await getRecommendedVideos(videoId, videoInfo.provider)
     : []
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:4444'
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://api.md8av.com'
 
   // JSON-LD structured data for video
   const jsonLd = {

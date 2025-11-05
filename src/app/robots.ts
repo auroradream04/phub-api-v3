@@ -1,6 +1,6 @@
 import { MetadataRoute } from 'next'
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:4444'
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://api.md8av.com'
 
 export default function robots(): MetadataRoute.Robots {
   return {
