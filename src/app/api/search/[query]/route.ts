@@ -85,10 +85,16 @@ export async function GET(
     })
 
   } catch (error) {
+    // Log error details for debugging (in development only)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[Search API] Error:', error)
+    }
+
+    // Return generic error message in production
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'An error occurred while searching'
+        error: 'An error occurred while searching. Please try again later.'
       },
       { status: 500 }
     )

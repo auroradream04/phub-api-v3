@@ -136,10 +136,16 @@ export async function GET(_request: NextRequest) {
       refreshed: true
     })
   } catch (error) {
+    // Log error details for debugging (in development only)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[Categories API] Error:', error)
+    }
+
+    // Return generic error message in production
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to fetch categories from PornHub'
+        error: 'Failed to fetch categories. Please try again later.'
       },
       { status: 500 }
     )
