@@ -16,7 +16,24 @@ export async function GET(_request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
     const status = searchParams.get('status') // allowed, blocked
-    const search = searchParams.get('search')
+    let search = searchParams.get('search')
+
+    // Validate and sanitize inputs
+    if (page < 1) return NextResponse.json({ error: 'Invalid page' }, { status: 400 })
+    if (limit < 1 || limit > 100) return NextResponse.json({ error: 'Invalid limit' }, { status: 400 })
+
+    // Validate status
+    if (status && !['allowed', 'blocked'].includes(status)) {
+      return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
+    }
+
+    // Sanitize search - only allow domain-like characters
+    if (search) {
+      search = search.replace(/[^a-zA-Z0-9.-]/g, '').slice(0, 255)
+      if (search.length < 2) {
+        return NextResponse.json({ error: 'Search term too short' }, { status: 400 })
+      }
+    }
 
     const skip = (page - 1) * limit
 
