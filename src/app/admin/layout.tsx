@@ -2,6 +2,7 @@
 
 import { signOut, useSession } from 'next-auth/react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 
@@ -51,15 +52,21 @@ export default function AdminLayout({
   return (
     <div className="min-h-screen bg-background">
       <nav className="bg-card border-b border-border">
-        <div>
+        <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 justify-between">
-            <div className="flex">
-              <div className="flex flex-shrink-0 items-center">
-                <h1 className="text-xl font-bold text-foreground">
-                  Admin Panel
-                </h1>
-              </div>
-              <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+            <div className="flex items-center gap-8">
+              <Link href="/admin" className="flex items-center gap-2 hover:opacity-80 transition-opacity flex-shrink-0">
+                <Image
+                  src="/logo.png"
+                  alt="MD8AV Logo"
+                  width={300}
+                  height={100}
+                  quality={100}
+                  className="h-10 w-auto"
+                  priority
+                />
+              </Link>
+              <div className="hidden sm:flex sm:space-x-8">
                 {navigation.map((item) => (
                   <Link
                     key={item.name}
@@ -75,8 +82,8 @@ export default function AdminLayout({
                 ))}
               </div>
             </div>
-            <div className="flex items-center">
-              <span className="text-sm text-muted-foreground mr-4">
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-muted-foreground">
                 {session?.user?.email}
               </span>
               <button
