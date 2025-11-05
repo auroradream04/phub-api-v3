@@ -93,7 +93,7 @@ export async function getVideoDuration(inputPath: string): Promise<number> {
           getVideoDurationWithFFmpeg(inputPath).then(resolve).catch(reject)
         } else {
           const _duration = data.format.duration || 0
-          resolve(Math.floor(duration))
+          resolve(Math.floor(_duration))
         }
       })
     } else {
@@ -228,7 +228,7 @@ export async function convertToHLSSegments(
 
           segments.push({
             filename,
-            duration,
+            duration: _duration,
             index
           })
         })

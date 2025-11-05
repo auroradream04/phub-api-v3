@@ -10,7 +10,7 @@ export async function GET(
 ) {
   const startTime = Date.now()
   const requestId = Math.random().toString(36).substring(7)
-  const _apiCallTime = 0
+  let _apiCallTime = 0
 
   try {
     const { id } = await params
@@ -89,9 +89,10 @@ export async function GET(
         console.error(`[Watch API] Proxy ${proxyInfo.proxyUrl} failed (${duration}ms):`, lastError.message)
       }
 
-      retries--    }
+      retries--
+    }
 
-    apiCallTime = Date.now() - apiStartTime
+    _apiCallTime = Date.now() - apiStartTime
 
     if (!videoData) {
       console.error(`[Watch API] ❌ All proxy attempts failed for video ${id}`)
@@ -186,7 +187,7 @@ export async function GET(
       }
     })
 
-  } catch {
+  } catch (error) {
     const _responseTime = Date.now() - startTime
     const isDevMode = process.env.NODE_ENV === 'development'
 

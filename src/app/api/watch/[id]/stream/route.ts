@@ -254,7 +254,7 @@ async function injectAds(m3u8Text: string, quality: string, baseUrl: string, vid
   const segmentsToSkipSetting = await getSiteSetting(SETTING_KEYS.SEGMENTS_TO_SKIP, '2')
   const segmentsToSkip = parseInt(segmentsToSkipSetting, 10) || 2
 
-  const _segmentCount = 0
+  let _segmentCount = 0
   let adInjected = false
   let pendingExtInf = ''
   let skippedSegments = 0
@@ -344,7 +344,7 @@ async function injectAds(m3u8Text: string, quality: string, baseUrl: string, vid
         continue
       }
 
-      segmentCount++
+      _segmentCount++
 
       // Add the pending EXTINF before this segment
       if (pendingExtInf) {

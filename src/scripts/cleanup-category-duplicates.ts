@@ -17,7 +17,7 @@
  *   npm run ts-node -- src/scripts/cleanup-category-duplicates.ts --fix
  */
 
-// import { PrismaClient } from '../generated/prisma'
+import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
@@ -68,7 +68,7 @@ async function analyzeCategories(): Promise<CleanupStats> {
     },
   })
 
-  const categoryMap = new Map(categories.map((c) => [c.id, c.name]))
+  const categoryMap: Map<number, string> = new Map(categories.map((c: { id: number; name: string }) => [c.id, c.name]))
   console.log(`Total categories in database: ${categories.length}\n`)
 
   // Check for issues
@@ -96,7 +96,7 @@ async function analyzeCategories(): Promise<CleanupStats> {
           expectedName,
           mismatchedCount: 0,
           mismatchedNames: [],
-        })
+        } as CategoryStats)
       }
 
       const issue = issueMap.get(video.typeId)!
@@ -159,7 +159,7 @@ async function fixCategories(dryRun: boolean = true): Promise<CleanupStats> {
               await prisma.category.findMany({
                 select: { id: true },
               })
-            ).map((c) => c.id),
+            ).map((c: { id: number }) => c.id),
           },
         },
         data: {

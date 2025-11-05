@@ -37,7 +37,7 @@ export async function setSiteSetting(key: string, value: string): Promise<void> 
 
     // Update cache
     settingsCache.set(key, { value, timestamp: Date.now() })
-  } catch {
+  } catch (error) {
     throw error
   }
 }

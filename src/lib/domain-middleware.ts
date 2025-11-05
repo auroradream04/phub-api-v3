@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-// import { prisma } from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 import crypto from 'crypto'
 
 /**
@@ -216,7 +216,7 @@ export async function checkAndLogDomain(
   // If blocked, return 403 response and log it
   if (!allowed) {
     const _responseTime = Date.now() - startTime
-    await logRequest(403, responseTime)
+    await logRequest(403, _responseTime)
 
     return {
       allowed: false,

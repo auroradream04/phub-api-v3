@@ -48,7 +48,7 @@ export async function GET(
       try {
         const response = await pornhub.video(id)
 
-        const duration = Date.now() - startTime
+        const _duration = Date.now() - startTime
 
         // Check for soft blocking (missing media definitions)
         if (!response.mediaDefinitions || response.mediaDefinitions.length < 1) {
@@ -58,10 +58,11 @@ export async function GET(
           videoInfo = response
         }
       } catch {
-        const duration = Date.now() - startTime
+        const _duration = Date.now() - startTime
       }
 
-      retries--    }
+      retries--
+    }
 
     if (!videoInfo || !videoInfo.mediaDefinitions || videoInfo.mediaDefinitions.length < 1) {
       await domainCheck.logRequest(500, Date.now() - requestStart)
