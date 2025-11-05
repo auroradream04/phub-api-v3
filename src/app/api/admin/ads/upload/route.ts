@@ -50,7 +50,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate file type
+    // File size validation - 500MB max
+    const MAX_FILE_SIZE = 500 * 1024 * 1024 // 500MB
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        { error: `File too large. Maximum size is ${MAX_FILE_SIZE / 1024 / 1024}MB` },
+        { status: 413 }
+      )
+    }
+
+    // Validate file type (MIME type check)
     const validTypes = ['video/mp4', 'video/webm', 'video/ogg']
     if (!validTypes.includes(file.type)) {
       return NextResponse.json(
@@ -59,17 +68,37 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Validate file content (magic bytes)
+    const bytes = await file.arrayBuffer()
+    const buffer = Buffer.from(bytes)
+
+    // Check file signature (magic bytes) to verify actual file type
+    const isValidMp4 = buffer.length >= 4 &&
+      buffer[0] === 0x00 && buffer[1] === 0x00 && buffer[2] === 0x00 &&
+      (buffer[3] === 0x18 || buffer[3] === 0x20) // ftyp box
+
+    const isValidWebM = buffer.length >= 4 &&
+      buffer[0] === 0x1A && buffer[1] === 0x45 && buffer[2] === 0xDF && buffer[3] === 0xA3
+
+    const isValidOgg = buffer.length >= 4 &&
+      buffer[0] === 0x4F && buffer[1] === 0x67 && buffer[2] === 0x67 && buffer[3] === 0x53
+
+    if (!isValidMp4 && !isValidWebM && !isValidOgg) {
+      return NextResponse.json(
+        { error: 'Invalid video file. File content does not match the declared type.' },
+        { status: 400 }
+      )
+    }
+
     // Generate unique ID for the ad
     const adId = crypto.randomBytes(16).toString('hex')
 
-    // Create upload directory for this ad
-    const uploadDir = join(process.cwd(), 'public', 'uploads', 'ads', adId)
+    // Create upload directory for this ad (store outside public for security)
+    const uploadDir = join(process.cwd(), 'private', 'uploads', 'ads', adId)
     await ensureUploadDir(uploadDir)
 
     // Save original file temporarily
     const tempFilePath = join(uploadDir, 'original.mp4')
-    const bytes = await file.arrayBuffer()
-    const buffer = Buffer.from(bytes)
     await writeFile(tempFilePath, buffer)
 
     // Check if FFmpeg is available
@@ -100,7 +129,7 @@ export async function POST(request: NextRequest) {
 
           segments.push({
             quality: segment.index, // Use index as quality (0, 1, 2, etc.)
-            filepath: `/uploads/ads/${adId}/${segment.filename}`,
+            filepath: `/api/ads/serve/${adId}/${segment.filename}`, // Use API route instead of direct path
             filesize: stats.size
           })
         }
@@ -116,7 +145,7 @@ export async function POST(request: NextRequest) {
         duration = 3 // Default duration
         segments = [{
           quality: 0,
-          filepath: `/uploads/ads/${adId}/ad.mp4`,
+          filepath: `/api/ads/serve/${adId}/ad.mp4`, // Use API route
           filesize: buffer.length
         }]
         await unlink(tempFilePath)
@@ -129,7 +158,7 @@ export async function POST(request: NextRequest) {
       duration = 3 // Default duration
       segments = [{
         quality: 0,
-        filepath: `/uploads/ads/${adId}/ad.mp4`,
+        filepath: `/api/ads/serve/${adId}/ad.mp4`, // Use API route
         filesize: buffer.length
       }]
       await unlink(tempFilePath)
