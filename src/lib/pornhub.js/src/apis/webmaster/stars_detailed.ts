@@ -20,7 +20,6 @@ export async function stars_detailed(engine: Engine): Promise<DetailedStar[]> {
         return result.stars.map(x => x.star)
     }
     catch (err) {
-
         return []
     }
 }

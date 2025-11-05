@@ -21,7 +21,6 @@ export async function categories(engine: Engine): Promise<Category[]> {
         return result.categories.sort((a, b) => +a.id - +b.id)
     }
     catch (err) {
-
         return []
     }
 }

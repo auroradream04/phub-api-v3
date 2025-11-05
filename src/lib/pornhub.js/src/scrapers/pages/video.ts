@@ -98,7 +98,7 @@ export function parseByDom(html: string, $: CheerioAPI) {
     const categories = getDataAttribute<string>(trafficJunkyMeta, 'context-category')?.split(',') || []
 
     const durationMeta = $('head meta[property="video:duration"]')
-    const _duration = +getAttribute<number>(durationMeta, 'content', 0)
+    const duration = +getAttribute<number>(durationMeta, 'content', 0)
     const durationFormatted = toHHMMSS(duration)
 
     return {
@@ -160,7 +160,6 @@ export function parseMediaDefinition(html: string): MediaDefinition[] {
     while (true) {
         const match = mediaDefinitionRegex.exec(html)
         if (!match) {
-
             break
         }
         matchCount++
@@ -235,7 +234,6 @@ export function parseMediaDefinition(html: string): MediaDefinition[] {
                     continue
                 }
                 catch (parseError) {
-
                     videoUrl = actualFirstUrl
                 }
             }

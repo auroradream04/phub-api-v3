@@ -19,7 +19,6 @@ export async function tags(engine: Engine, letter: string): Promise<string[]> {
         return result.tags
     }
     catch (err) {
-
         return []
     }
 }

@@ -17,7 +17,6 @@ export async function deleted(engine: Engine, page: number): Promise<DeletedVide
         return result.videos
     }
     catch (err) {
-
         return []
     }
 }

@@ -62,13 +62,14 @@ export function parseVideoResult($: CheerioAPI, container: string | Cheerio<Elem
 
         // Extract preview video URL from data-mediabook attribute on the img element
         // This is the WebM preview video that PornHub provides
-        const previewVideo = getAttribute<string>(img, 'data-mediabook', '') ||
-                            getDataAttribute<string>(img, 'mediabook', '')
+        const previewVideo = getAttribute<string>(img, 'data-mediabook', '')
+            || getDataAttribute<string>(img, 'mediabook', '')
 
         // Debug: Log if we found a preview video
         if (!previewVideo && preview) {
 
-        } else if (previewVideo) {
+        }
+        else if (previewVideo) {
 
         }
 
