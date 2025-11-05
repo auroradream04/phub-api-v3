@@ -116,7 +116,7 @@ interface MaccmsJsonResponse {
 
 // Validation schema for query parameters
 const querySchema = z.object({
-  ac: z.enum(['list', 'detail']),
+  ac: z.enum(['list', 'detail', 'videolist']).transform(val => val === 'videolist' ? 'list' : val),
   t: z.string().optional(),
   pg: z.coerce.number().min(1).default(1),
   wd: z.string().optional(),
