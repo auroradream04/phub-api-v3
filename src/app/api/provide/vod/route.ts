@@ -118,9 +118,9 @@ interface MaccmsJsonResponse {
 const querySchema = z.object({
   ac: z.enum(['list', 'detail', 'videolist']).transform(val => val === 'videolist' ? 'list' : val),
   t: z.string().optional(),
-  pg: z.coerce.number().min(1).default(1),
+  pg: z.coerce.number().min(1).default(1).catch(1),
   wd: z.string().optional(),
-  h: z.coerce.number().optional(),
+  h: z.coerce.number().optional().catch(undefined),
   ids: z.string().optional(),
   at: z.enum(['xml', '']).optional().default(''),
 })
@@ -219,15 +219,21 @@ export async function GET(_request: NextRequest) {
   try {
     const { searchParams } = new URL(_request.url)
 
+    // Helper to normalize empty query params
+    const getParam = (key: string) => {
+      const val = searchParams.get(key)
+      return val === '' || val === null ? undefined : val
+    }
+
     // Parse and validate query parameters
     const params = querySchema.parse({
-      ac: searchParams.get('ac'),
-      t: searchParams.get('t') || undefined,
-      pg: searchParams.get('pg') || 1,
-      wd: searchParams.get('wd') || undefined,
-      h: searchParams.get('h') || undefined,
-      ids: searchParams.get('ids') || undefined,
-      at: searchParams.get('at') || '',
+      ac: getParam('ac'),
+      t: getParam('t'),
+      pg: getParam('pg'),
+      wd: getParam('wd'),
+      h: getParam('h'),
+      ids: getParam('ids'),
+      at: getParam('at') || '',
     })
 
     console.log(`[MacCMS API] ${params.ac === 'detail' ? 'Detail' : 'List'} request - Page: ${params.pg}${params.t ? `, Type: ${params.t}` : ''}${params.wd ? `, Search: ${params.wd}` : ''}${params.ids ? `, IDs: ${params.ids}` : ''}`)
