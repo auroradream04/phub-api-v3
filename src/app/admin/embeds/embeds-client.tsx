@@ -308,11 +308,14 @@ export default function EmbedsClient() {
   return (
     <div className="space-y-6">
       {/* Create Button */}
-      <div>
+      <div className="flex items-center justify-between">
         <button
           onClick={() => setShowCreateModal(true)}
-          className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+          className="px-6 py-2.5 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground rounded-lg hover:shadow-lg hover:shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-semibold flex items-center justify-center gap-2"
         >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
           Create Embed
         </button>
       </div>
@@ -327,81 +330,107 @@ export default function EmbedsClient() {
             setSearch(e.target.value)
             setPage(1)
           }}
-          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+          className="w-full px-4 py-2.5 border border-border/50 bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/50"
         />
       </div>
 
       {/* Embeds Table */}
-      <div className="bg-card border border-border rounded-lg overflow-hidden">
+      <div className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+        <div className="px-6 py-5 border-b border-border/30 bg-gradient-to-r from-card to-card/50">
+          <h3 className="text-xl font-bold text-foreground">
+            Embeds
+          </h3>
+          <p className="text-sm text-muted-foreground mt-1">{total} total embed{total !== 1 ? 's' : ''}</p>
+        </div>
+
         {loading ? (
-          <div className="p-8 text-center text-muted-foreground">Loading...</div>
+          <div className="p-8 text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <p className="mt-2 text-muted-foreground">Loading embeds...</p>
+          </div>
         ) : embeds.length === 0 ? (
-          <div className="p-8 text-center text-muted-foreground">No embeds found</div>
+          <div className="p-8 text-center">
+            <svg
+              className="mx-auto h-12 w-12 text-muted-foreground"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+              />
+            </svg>
+            <p className="mt-2 text-foreground">No embeds found</p>
+            <p className="text-sm text-muted-foreground">Create your first embed to get started</p>
+          </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-muted/50 border-b border-border">
+            <table className="w-full divide-y divide-border/30">
+              <thead className="bg-muted/30 border-b border-border/50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">Title</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">Video ID</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">Impressions</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">Clicks</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">Status</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">Created</th>
-                  <th className="px-6 py-3 text-right text-sm font-semibold">Actions</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-foreground uppercase tracking-wider">Title</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-foreground uppercase tracking-wider">Video ID</th>
+                  <th className="px-6 py-4 text-center text-xs font-semibold text-foreground uppercase tracking-wider">Impressions</th>
+                  <th className="px-6 py-4 text-center text-xs font-semibold text-foreground uppercase tracking-wider">Clicks</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-foreground uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-foreground uppercase tracking-wider">Created</th>
+                  <th className="px-6 py-4 text-right text-xs font-semibold text-foreground uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="bg-card divide-y divide-border/20">
                 {embeds.map((embed) => (
-                  <tr key={embed.id} className="border-b border-border hover:bg-muted/50 transition-colors">
+                  <tr key={embed.id} className="hover:bg-muted/40 transition-colors duration-150">
                     <td className="px-6 py-4 text-sm">
                       <div className="font-medium text-foreground">{embed.displayName || embed.title}</div>
-                      <div className="text-xs text-muted-foreground truncate">{embed.redirectUrl}</div>
+                      <div className="text-xs text-muted-foreground truncate mt-1">{embed.redirectUrl}</div>
                     </td>
                     <td className="px-6 py-4 text-sm font-mono text-muted-foreground">{embed.videoId}</td>
-                    <td className="px-6 py-4 text-sm text-foreground">{embed.impressions || 0}</td>
-                    <td className="px-6 py-4 text-sm text-foreground">{embed.clicks || 0}</td>
+                    <td className="px-6 py-4 text-sm font-medium text-foreground text-center">{embed.impressions || 0}</td>
+                    <td className="px-6 py-4 text-sm font-medium text-foreground text-center">{embed.clicks || 0}</td>
                     <td className="px-6 py-4 text-sm">
                       <span
-                        className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
+                        className={`inline-flex rounded-full px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
                           embed.enabled
-                            ? 'bg-green-100/20 text-green-600 dark:bg-green-900/20 dark:text-green-400'
-                            : 'bg-red-100/20 text-red-600 dark:bg-red-900/20 dark:text-red-400'
+                            ? 'bg-primary/20 text-primary hover:bg-primary/30'
+                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
                         }`}
                       >
                         {embed.enabled ? 'Active' : 'Disabled'}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-muted-foreground">
-                      {new Date(embed.createdAt).toLocaleDateString()}
+                      {new Date(embed.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </td>
                     <td className="px-6 py-4 text-sm">
-                      <div className="flex items-center gap-3 justify-end">
+                      <div className="flex items-center gap-2 justify-end">
                         <button
                           onClick={() => copyEmbedCode(embed.id)}
                           title="Copy embed code"
-                          className="text-primary hover:text-primary/80 transition-colors"
+                          className="p-1.5 rounded-lg text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all duration-200"
                         >
                           <Copy size={18} />
                         </button>
                         <Link
                           href={`/admin/embeds/${embed.id}/edit`}
                           title="Edit embed settings"
-                          className="text-primary hover:text-primary/80 transition-colors"
+                          className="p-1.5 rounded-lg text-muted-foreground hover:bg-accent/10 hover:text-accent transition-all duration-200"
                         >
                           <Edit size={18} />
                         </Link>
                         <Link
                           href={`/admin/embeds/${embed.id}`}
                           title="View details and analytics"
-                          className="text-primary hover:text-primary/80 transition-colors"
+                          className="p-1.5 rounded-lg text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all duration-200"
                         >
                           <Eye size={18} />
                         </Link>
                         <button
                           onClick={() => handleDeleteEmbed(embed.id)}
                           title="Delete embed"
-                          className="text-destructive hover:text-destructive/80 transition-colors"
+                          className="p-1.5 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all duration-200"
                         >
                           <Trash2 size={18} />
                         </button>
@@ -417,25 +446,25 @@ export default function EmbedsClient() {
 
       {/* Pagination */}
       {total > 0 && (
-        <div className="flex justify-between items-center">
-          <div className="text-sm text-muted-foreground">
-            Total: {total} embed{total !== 1 ? 's' : ''}
+        <div className="flex justify-between items-center px-6 py-4">
+          <div className="text-sm font-medium text-foreground">
+            Total: <span className="text-primary font-semibold">{total}</span> embed{total !== 1 ? 's' : ''}
           </div>
-          <div className="space-x-2">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => setPage(Math.max(1, page - 1))}
               disabled={page === 1}
-              className="rounded-md border border-input px-3 py-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
+              className="px-4 py-2 rounded-lg border border-border/50 bg-card text-sm font-medium text-foreground hover:bg-muted/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
             >
               Previous
             </button>
-            <span className="text-sm text-muted-foreground">
-              Page {page} of {Math.ceil(total / 20)}
+            <span className="px-4 py-2 text-sm font-medium text-foreground">
+              Page <span className="text-primary">{page}</span> of <span className="text-primary">{Math.ceil(total / 20)}</span>
             </span>
             <button
               onClick={() => setPage(page + 1)}
               disabled={page >= Math.ceil(total / 20)}
-              className="rounded-md border border-input px-3 py-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
+              className="px-4 py-2 rounded-lg border border-border/50 bg-card text-sm font-medium text-foreground hover:bg-muted/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
             >
               Next
             </button>
@@ -446,14 +475,24 @@ export default function EmbedsClient() {
       {/* Create Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-card border border-border rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <h2 className="text-lg font-bold text-foreground mb-4">Create New Embed</h2>
+          <div className="bg-card border border-border/50 rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2.5 rounded-lg bg-primary/10">
+                <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-foreground">Create New Embed</h2>
+                <p className="text-sm text-muted-foreground mt-0.5">Add a new embeddable video widget</p>
+              </div>
+            </div>
 
             {/* Video Selection Step */}
             <div className="space-y-4">
                 {/* Search Option */}
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">Option 1: Search for a Video</label>
+                  <label className="block text-sm font-semibold text-foreground mb-2">Option 1: Search for a Video</label>
                   <div className="relative">
                     <input
                       type="text"
@@ -463,7 +502,7 @@ export default function EmbedsClient() {
                         handleSearchVideosDebounced(e.target.value)
                       }}
                       placeholder="e.g., teen, amateur, etc..."
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="w-full px-4 py-2.5 border border-border/50 bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/50"
                     />
                     {searching && (
                       <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -526,7 +565,7 @@ export default function EmbedsClient() {
 
                 {/* Option 2: Enter Direct Video/M3U8 URL */}
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">Option 2: Enter Direct Video/M3U8 URL</label>
+                  <label className="block text-sm font-semibold text-foreground mb-2">Option 2: Enter Direct Video/M3U8 URL</label>
                   <div className="relative">
                     <input
                       type="text"
@@ -535,10 +574,10 @@ export default function EmbedsClient() {
                         setManualVideoInput(e.target.value)
                       }}
                       placeholder="e.g., https://example.com/preview.webm or https://example.com/playlist.m3u8"
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="w-full px-4 py-2.5 border border-border/50 bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/50"
                     />
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-xs text-muted-foreground mt-1.5">
                     Paste a direct .webm, .mp4, or .m3u8 URL
                   </p>
 
@@ -572,9 +611,9 @@ export default function EmbedsClient() {
 
                   {/* Always show all form fields */}
                   {manualVideoInput && (
-                    <div className="space-y-3 pt-3 border-t border-border">
+                    <div className="space-y-4 pt-4 border-t border-border/30">
                       <div>
-                        <label className="block text-sm font-medium text-foreground mb-1">PornHub Video Link *</label>
+                        <label className="block text-sm font-semibold text-foreground mb-2">PornHub Video Link <span className="text-destructive">*</span></label>
                         <div className="relative">
                           <input
                             type="text"
@@ -612,7 +651,7 @@ export default function EmbedsClient() {
                               }
                             }}
                             placeholder="e.g., https://pornhub.com/view_video.php?viewkey=ph123456"
-                            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                            className="w-full px-4 py-2.5 border border-border/50 bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/50"
                           />
                           {fetchingManualVideo && (
                             <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -620,46 +659,46 @@ export default function EmbedsClient() {
                             </div>
                           )}
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">PornHub link - we&apos;ll auto-fetch the video ID and title</p>
+                        <p className="text-xs text-muted-foreground mt-1.5">PornHub link - we&apos;ll auto-fetch the video ID and title</p>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-foreground mb-1">Title *</label>
+                        <label className="block text-sm font-semibold text-foreground mb-2">Title <span className="text-destructive">*</span></label>
                         <input
                           type="text"
                           value={formData.title}
                           onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                           placeholder="e.g., Premium Video Title"
-                          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                          className="w-full px-4 py-2.5 border border-border/50 bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/50"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-foreground mb-1">Video ID *</label>
+                        <label className="block text-sm font-semibold text-foreground mb-2">Video ID <span className="text-destructive">*</span></label>
                         <input
                           type="text"
                           value={formData.videoId}
                           onChange={(e) => setFormData({ ...formData, videoId: e.target.value })}
                           placeholder="e.g., ph123456 or custom-id"
-                          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                          className="w-full px-4 py-2.5 border border-border/50 bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/50"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-foreground mb-1">Redirect URL *</label>
+                        <label className="block text-sm font-semibold text-foreground mb-2">Redirect URL <span className="text-destructive">*</span></label>
                         <input
                           type="url"
                           value={formData.redirectUrl}
                           onChange={(e) => setFormData({ ...formData, redirectUrl: e.target.value })}
                           placeholder="https://yoursite.com or https://affiliate-link.com"
-                          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                          className="w-full px-4 py-2.5 border border-border/50 bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/50"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-foreground mb-1">Custom Display Name (Optional)</label>
+                        <label className="block text-sm font-semibold text-foreground mb-2">Custom Display Name <span className="text-muted-foreground">(Optional)</span></label>
                         <input
                           type="text"
                           value={formData.displayName}
                           onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
                           placeholder="e.g., Premium Video 1, Featured Content"
-                          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                          className="w-full px-4 py-2.5 border border-border/50 bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/50"
                         />
                       </div>
                     </div>
@@ -668,10 +707,10 @@ export default function EmbedsClient() {
               </div>
 
             {/* Buttons */}
-            <div className="flex gap-2 mt-6">
+            <div className="flex gap-3 mt-8 pt-6 border-t border-border/30">
               <button
                 onClick={resetCreateModal}
-                className="flex-1 rounded-md border border-input px-4 py-2 text-sm font-semibold hover:bg-muted transition-colors"
+                className="flex-1 px-6 py-2.5 rounded-lg border border-border/50 bg-card text-sm font-semibold text-foreground hover:bg-muted/50 transition-all duration-200"
               >
                 Cancel
               </button>
@@ -679,7 +718,7 @@ export default function EmbedsClient() {
                 <button
                   onClick={handleCreateEmbed}
                   disabled={!formData.redirectUrl || !formData.title || !formData.videoId}
-                  className="flex-1 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex-1 px-6 py-2.5 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground rounded-lg hover:shadow-lg hover:shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-semibold"
                 >
                   Create Embed
                 </button>

@@ -244,24 +244,37 @@ export default function AdsManagement() {
   }
 
   return (
-    <div className="px-4 sm:px-0">
-      <h2 className="text-2xl font-bold text-foreground mb-6">
-        Ads Management
-      </h2>
+    <div className="py-8">
+      <div className="mb-8">
+        <h2 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
+          Ads Management
+        </h2>
+        <p className="text-muted-foreground mt-2">Upload and manage video advertisements</p>
+      </div>
 
       {/* Upload Section */}
-      <div className="bg-card border border-border rounded-lg p-6 mb-6">
-        <h3 className="text-lg font-semibold text-foreground mb-4">
-          Upload New Ad
-        </h3>
+      <div className="bg-gradient-to-br from-card to-card/50 border border-border/50 rounded-2xl p-8 mb-8 shadow-sm hover:shadow-md transition-shadow">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2.5 rounded-lg bg-primary/10">
+            <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+          </div>
+          <div>
+            <h3 className="text-2xl font-bold text-foreground">
+              Upload New Ad
+            </h3>
+            <p className="text-sm text-muted-foreground mt-0.5">Add a new video advertisement to your collection</p>
+          </div>
+        </div>
 
-        <div className="space-y-4">
+        <div className="space-y-6">
           {/* Drag and Drop Area */}
           <div
-            className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+            className={`relative border-2 border-dashed rounded-2xl p-12 text-center transition-all duration-300 ${
               dragActive
-                ? 'border-primary bg-primary/10'
-                : 'border-border hover:border-primary/50'
+                ? 'border-primary bg-primary/15 shadow-md'
+                : 'border-border/50 hover:border-primary/50 hover:bg-card/50'
             }`}
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
@@ -278,70 +291,77 @@ export default function AdsManagement() {
             />
             <label
               htmlFor="file-upload"
-              className="cursor-pointer"
+              className="cursor-pointer block"
             >
-              <svg
-                className="mx-auto h-12 w-12 text-muted-foreground"
-                stroke="currentColor"
-                fill="none"
-                viewBox="0 0 48 48"
-              >
-                <path
-                  d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              <p className="mt-2 text-sm text-foreground">
-                <span className="font-semibold">Click to upload</span> or drag and drop
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
+                <svg
+                  className="w-8 h-8 text-primary"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                  />
+                </svg>
+              </div>
+              <p className="text-lg font-semibold text-foreground">
+                <span className="text-primary">Click to upload</span> or drag and drop
               </p>
-              <p className="text-xs text-muted-foreground">
-                MP4, WebM, or Ogg video files
+              <p className="text-sm text-muted-foreground mt-1">
+                MP4, WebM, or Ogg • Maximum 500MB
               </p>
             </label>
             {formData.file && (
-              <p className="mt-4 text-sm text-primary">
-                Selected: {formData.file.name} ({formatFileSize(formData.file.size)})
-              </p>
+              <div className="mt-4 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                <p className="text-sm font-medium text-primary">
+                  ✓ Selected: {formData.file.name}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {formatFileSize(formData.file.size)}
+                </p>
+              </div>
             )}
           </div>
 
           {/* Form Fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">
-                Title *
+              <label className="block text-sm font-semibold text-foreground mb-2">
+                Title <span className="text-destructive">*</span>
               </label>
               <input
                 type="text"
                 value={formData.title}
                 onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                className="w-full px-3 py-2 border border-border rounded-md bg-input text-foreground focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
-                placeholder="Ad title"
+                className="w-full px-4 py-2.5 border border-border/50 bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/50"
+                placeholder="Enter ad title"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">
-                Segment Duration (seconds)
+              <label className="block text-sm font-semibold text-foreground mb-2">
+                Segment Duration
               </label>
               <select
                 value={formData.duration}
                 onChange={(e) => setFormData(prev => ({ ...prev, duration: parseInt(e.target.value) }))}
-                className="w-full px-3 py-2 border border-border rounded-md bg-input text-foreground focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
+                className="w-full px-4 py-2.5 border border-border/50 bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all"
               >
                 <option value="3">3 seconds (recommended)</option>
                 <option value="5">5 seconds</option>
                 <option value="10">10 seconds</option>
               </select>
-              <p className="text-xs text-muted-foreground mt-1">
-                Video will be split into segments of this duration
+              <p className="text-xs text-muted-foreground mt-1.5">
+                How the video will be split into segments
               </p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">
+              <label className="block text-sm font-semibold text-foreground mb-2">
                 Weight (Probability)
               </label>
               <input
@@ -350,48 +370,51 @@ export default function AdsManagement() {
                 max="100"
                 value={formData.weight}
                 onChange={(e) => setFormData(prev => ({ ...prev, weight: parseInt(e.target.value) || 1 }))}
-                className="w-full px-3 py-2 border border-border rounded-md bg-input text-foreground focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
+                className="w-full px-4 py-2.5 border border-border/50 bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/50"
                 placeholder="1"
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                Higher weight = higher chance of appearing (1-100)
+              <p className="text-xs text-muted-foreground mt-1.5">
+                1-100: Higher = more likely to display
               </p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">
+              <label className="block text-sm font-semibold text-foreground mb-3">
                 Force Display
               </label>
-              <div className="flex items-center h-10">
+              <div className="flex items-center">
                 <input
                   type="checkbox"
                   checked={formData.forceDisplay}
                   onChange={(e) => setFormData(prev => ({ ...prev, forceDisplay: e.target.checked }))}
-                  className="h-4 w-4 text-primary focus:ring-primary border-border rounded bg-input"
+                  className="h-4 w-4 text-primary focus:ring-2 focus:ring-primary border-border rounded bg-input cursor-pointer"
                 />
-                <span className="ml-2 text-sm text-muted-foreground">
-                  Always show this ad (ignores weight)
+                <span className="ml-3 text-sm text-muted-foreground">
+                  Always show this ad
                 </span>
               </div>
+              <p className="text-xs text-muted-foreground mt-1.5">
+                Ignores weight settings if enabled
+              </p>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">
+            <label className="block text-sm font-semibold text-foreground mb-2">
               Description
             </label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               rows={3}
-              className="w-full px-3 py-2 border border-border rounded-md bg-input text-foreground focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
-              placeholder="Ad description (optional)"
+              className="w-full px-4 py-2.5 border border-border/50 bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/50"
+              placeholder="Add optional description for this ad..."
             />
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <label className="block text-sm font-medium text-foreground mr-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-2 border-t border-border/30">
+            <div className="flex items-center gap-3">
+              <label className="block text-sm font-semibold text-foreground">
                 Status
               </label>
               <button
@@ -399,19 +422,21 @@ export default function AdsManagement() {
                   ...prev,
                   status: prev.status === 'active' ? 'inactive' : 'active'
                 }))}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-200 ${
                   formData.status === 'active'
-                    ? 'bg-primary'
+                    ? 'bg-primary shadow-md shadow-primary/30'
                     : 'bg-muted'
                 }`}
               >
                 <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform duration-200 ${
                     formData.status === 'active' ? 'translate-x-6' : 'translate-x-1'
                   }`}
                 />
               </button>
-              <span className="ml-2 text-sm text-muted-foreground">
+              <span className={`text-sm font-medium ${
+                formData.status === 'active' ? 'text-primary' : 'text-muted-foreground'
+              }`}>
                 {formData.status === 'active' ? 'Active' : 'Inactive'}
               </span>
             </div>
@@ -419,43 +444,80 @@ export default function AdsManagement() {
             <button
               onClick={handleUpload}
               disabled={uploading || !formData.file || !formData.title}
-              className="px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full sm:w-auto px-8 py-2.5 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground rounded-lg hover:shadow-lg hover:shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-semibold flex items-center justify-center gap-2"
             >
-              {uploading ? 'Uploading...' : 'Upload Ad'}
+              {uploading ? (
+                <>
+                  <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 12a8 8 0 018-8v8m0-8a8 8 0 008 8v-8" />
+                  </svg>
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                  Upload Ad
+                </>
+              )}
             </button>
           </div>
 
           {/* Upload Progress */}
           {uploading && (
-            <div className="w-full bg-muted rounded-full h-2">
-              <div
-                className="bg-primary h-2 rounded-full transition-all duration-300"
-                style={{ width: `${uploadProgress}%` }}
-              />
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-muted-foreground">Uploading...</p>
+                <span className="text-sm font-semibold text-primary">{uploadProgress}%</span>
+              </div>
+              <div className="w-full bg-muted/50 rounded-full h-2.5 overflow-hidden">
+                <div
+                  className="bg-gradient-to-r from-primary to-primary/80 h-2.5 rounded-full transition-all duration-300 shadow-sm shadow-primary/20"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
             </div>
           )}
 
           {/* Upload Messages */}
           {uploadError && (
-            <div className="p-4 bg-destructive/10 border border-destructive/30 rounded-md">
-              <p className="text-sm text-destructive">{uploadError}</p>
+            <div className="p-4 bg-destructive/10 border border-destructive/30 rounded-lg flex items-start gap-3">
+              <div className="flex-shrink-0 mt-0.5">
+                <svg className="w-5 h-5 text-destructive" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-destructive">Upload failed</p>
+                <p className="text-sm text-destructive/80 mt-0.5">{uploadError}</p>
+              </div>
             </div>
           )}
 
           {uploadSuccess && (
-            <div className="p-4 bg-primary/10 border border-primary/30 rounded-md">
-              <p className="text-sm text-primary">Ad uploaded successfully!</p>
+            <div className="p-4 bg-primary/10 border border-primary/30 rounded-lg flex items-start gap-3">
+              <div className="flex-shrink-0 mt-0.5">
+                <svg className="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-primary">Upload successful</p>
+                <p className="text-sm text-primary/80 mt-0.5">Your ad has been uploaded and is ready to use</p>
+              </div>
             </div>
           )}
         </div>
       </div>
 
       {/* Ads Table */}
-      <div className="bg-card border border-border rounded-lg overflow-hidden">
-        <div className="px-6 py-4 border-b border-border">
-          <h3 className="text-lg font-semibold text-foreground">
-            Existing Ads ({ads.length})
+      <div className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+        <div className="px-6 py-5 border-b border-border/30 bg-gradient-to-r from-card to-card/50">
+          <h3 className="text-xl font-bold text-foreground">
+            Existing Ads
           </h3>
+          <p className="text-sm text-muted-foreground mt-1">{ads.length} {ads.length === 1 ? 'ad' : 'ads'} uploaded</p>
         </div>
 
         {loading ? (
@@ -493,88 +555,88 @@ export default function AdsManagement() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-border">
-              <thead className="bg-muted/50">
+            <table className="min-w-full divide-y divide-border/30">
+              <thead className="bg-muted/30 border-b border-border/50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
                     Title
                   </th>
-                  <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  <th className="px-4 py-4 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-3 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  <th className="px-4 py-4 text-center text-xs font-semibold text-foreground uppercase tracking-wider">
                     Weight
                   </th>
-                  <th className="px-3 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  <th className="px-4 py-4 text-center text-xs font-semibold text-foreground uppercase tracking-wider">
                     Force
                   </th>
-                  <th className="px-3 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  <th className="px-4 py-4 text-center text-xs font-semibold text-foreground uppercase tracking-wider">
                     Duration
                   </th>
-                  <th className="px-3 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  <th className="px-4 py-4 text-center text-xs font-semibold text-foreground uppercase tracking-wider">
                     Views
                   </th>
-                  <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  <th className="px-4 py-4 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
                     Created
                   </th>
-                  <th className="px-3 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  <th className="px-4 py-4 text-center text-xs font-semibold text-foreground uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-card divide-y divide-border">
+              <tbody className="bg-card divide-y divide-border/20">
                 {ads.map((ad) => (
-                  <tr key={ad.id} className="hover:bg-muted/30 transition-colors">
-                    <td className="px-4 py-3">
+                  <tr key={ad.id} className="hover:bg-muted/40 transition-colors duration-150">
+                    <td className="px-6 py-4">
                       <div className="text-sm font-medium text-foreground truncate max-w-xs">
                         {ad.title}
                       </div>
                       {ad.segments[0] && (
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-xs text-muted-foreground mt-1">
                           {formatFileSize(ad.segments[0].filesize)}
                         </div>
                       )}
                     </td>
-                    <td className="px-3 py-3 whitespace-nowrap">
+                    <td className="px-4 py-4 whitespace-nowrap">
                       <button
                         onClick={() => handleStatusToggle(ad)}
-                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full transition-colors ${
+                        className={`inline-flex px-3 py-1.5 text-xs font-semibold rounded-full transition-all duration-200 ${
                           ad.status === 'active'
-                            ? 'bg-primary/20 text-primary'
-                            : 'bg-muted text-muted-foreground'
+                            ? 'bg-primary/20 text-primary hover:bg-primary/30'
+                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
                         }`}
                       >
                         {ad.status}
                       </button>
                     </td>
-                    <td className="px-3 py-3 whitespace-nowrap text-sm text-foreground text-center">
+                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-foreground text-center">
                       {ad.weight}
                     </td>
-                    <td className="px-3 py-3 whitespace-nowrap text-center">
+                    <td className="px-4 py-4 whitespace-nowrap text-center">
                       {ad.forceDisplay ? (
-                        <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary/20 text-primary">
-                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary">
+                          <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                         </span>
                       ) : (
-                        <span className="text-sm text-muted-foreground">-</span>
+                        <span className="text-sm text-muted-foreground font-medium">-</span>
                       )}
                     </td>
-                    <td className="px-3 py-3 whitespace-nowrap text-sm text-foreground text-center">
+                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-foreground text-center">
                       {ad.duration}s
                     </td>
-                    <td className="px-3 py-3 whitespace-nowrap text-sm text-foreground text-center">
+                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-foreground text-center">
                       {ad._count.impressions.toLocaleString()}
                     </td>
-                    <td className="px-3 py-3 whitespace-nowrap text-xs text-muted-foreground">
+                    <td className="px-4 py-4 whitespace-nowrap text-xs text-muted-foreground">
                       {new Date(ad.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </td>
-                    <td className="px-3 py-3 whitespace-nowrap">
+                    <td className="px-4 py-4 whitespace-nowrap">
                       <div className="flex items-center justify-center space-x-2">
                         <button
                           onClick={() => window.location.href = `/admin/ads/detail/${ad.id}`}
-                          className="text-muted-foreground hover:text-primary transition-colors"
+                          className="p-1.5 rounded-lg text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all duration-200"
                           title="View Details"
                         >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -585,7 +647,7 @@ export default function AdsManagement() {
                           onClick={() => {
                             alert('Edit functionality would be implemented here')
                           }}
-                          className="text-muted-foreground hover:text-accent transition-colors"
+                          className="p-1.5 rounded-lg text-muted-foreground hover:bg-accent/10 hover:text-accent transition-all duration-200"
                           title="Edit"
                         >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -596,23 +658,27 @@ export default function AdsManagement() {
                           <>
                             <button
                               onClick={() => handleDelete(ad.id)}
-                              className="text-destructive hover:text-destructive/80 font-medium text-xs transition-colors"
+                              className="p-1.5 rounded-lg text-destructive hover:bg-destructive/10 transition-all duration-200"
                               title="Confirm delete"
                             >
-                              ✓
+                              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
                             </button>
                             <button
                               onClick={() => setDeleteConfirm(null)}
-                              className="text-muted-foreground hover:text-foreground font-medium text-xs transition-colors"
+                              className="p-1.5 rounded-lg text-muted-foreground hover:bg-muted transition-all duration-200"
                               title="Cancel"
                             >
-                              ✕
+                              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                              </svg>
                             </button>
                           </>
                         ) : (
                           <button
                             onClick={() => setDeleteConfirm(ad.id)}
-                            className="text-muted-foreground hover:text-destructive transition-colors"
+                            className="p-1.5 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all duration-200"
                             title="Delete"
                           >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

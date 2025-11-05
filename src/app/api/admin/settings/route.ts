@@ -12,6 +12,15 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Clean up old scraper checkpoints
+    await prisma.siteSetting.deleteMany({
+      where: {
+        key: {
+          startsWith: 'scrape_'
+        }
+      }
+    })
+
     let settings = await prisma.siteSetting.findMany({
       orderBy: { key: 'asc' }
     })

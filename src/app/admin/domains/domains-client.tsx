@@ -199,36 +199,36 @@ export default function DomainsClient() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
+    <div className="py-8">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
           Domain Access Control
         </h1>
-        <p className="mt-1 text-sm text-zinc-500">
+        <p className="mt-2 text-muted-foreground">
           Monitor API usage and manage domain access
         </p>
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-zinc-200 mb-6">
+      <div className="border-b border-border/30 mb-6">
         <nav className="-mb-px flex space-x-8">
           <button
             onClick={() => setActiveTab('logs')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+            className={`py-4 px-1 border-b-2 font-semibold text-sm transition-all duration-200 ${
               activeTab === 'logs'
-                ? 'border-zinc-950 text-zinc-950 dark:border-white dark:text-white'
-                : 'border-transparent text-zinc-500 hover:text-zinc-700 hover:border-zinc-300'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:border-primary/50 hover:text-foreground'
             }`}
           >
             Request Logs
           </button>
           <button
             onClick={() => setActiveTab('domains')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+            className={`py-4 px-1 border-b-2 font-semibold text-sm transition-all duration-200 ${
               activeTab === 'domains'
-                ? 'border-zinc-950 text-zinc-950 dark:border-white dark:text-white'
-                : 'border-transparent text-zinc-500 hover:text-zinc-700 hover:border-zinc-300'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:border-primary/50 hover:text-foreground'
             }`}
           >
             Blocked Domains
@@ -239,43 +239,53 @@ export default function DomainsClient() {
       {/* Request Logs Tab */}
       {activeTab === 'logs' && !selectedDomainForDetail && (
         <div>
-          <div className="mb-4 flex items-center justify-between">
-            <p className="text-sm text-zinc-600">
+          <div className="mb-6 flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
               See which domains are accessing your API. Click on a domain to see detailed logs.
             </p>
             <button
               onClick={() => fetchLogs()}
-              className="px-3 py-1 text-sm bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-white rounded hover:bg-zinc-300 dark:hover:bg-zinc-600"
+              className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-all duration-200 font-medium flex items-center gap-2"
             >
-              🔄 Refresh
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Refresh
             </button>
           </div>
 
-          <div className="bg-white dark:bg-zinc-800 shadow rounded-lg overflow-hidden">
-            <table className="min-w-full divide-y divide-zinc-200 dark:divide-zinc-700">
-              <thead className="bg-zinc-50 dark:bg-zinc-700">
+          <div className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+            <div className="px-6 py-5 border-b border-border/30 bg-gradient-to-r from-card to-card/50">
+              <h3 className="text-lg font-bold text-foreground">
+                Recent API Requests
+              </h3>
+              <p className="text-sm text-muted-foreground mt-1">Domains accessing your API</p>
+            </div>
+
+            <table className="min-w-full divide-y divide-border/30">
+              <thead className="bg-muted/30 border-b border-border/50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-300 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
                     Domain
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-300 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
                     Total Requests
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-300 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
                     Allowed
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-300 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
                     Blocked
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-300 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
                     Last Seen
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-zinc-500 dark:text-zinc-300 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-right text-xs font-semibold text-foreground uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white dark:bg-zinc-800 divide-y divide-zinc-200 dark:divide-zinc-700">
+              <tbody className="bg-card divide-y divide-border/20">
                 {loading ? (
                   <tr>
                     <td colSpan={6} className="px-6 py-4 text-center text-sm text-zinc-500">

@@ -35,10 +35,13 @@ export default function AdminSettingsPage() {
     setMessage(null)
 
     try {
+      // Filter out checkpoint scrape entries before saving
+      const settingsToSave = settings.filter(s => !s.key.startsWith('scrape_'))
+
       const response = await fetch('/api/admin/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ settings })
+        body: JSON.stringify({ settings: settingsToSave })
       })
 
       if (!response.ok) throw new Error('Failed to save settings')
@@ -64,54 +67,71 @@ export default function AdminSettingsPage() {
   }
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8">
-      <div className="sm:flex sm:items-center">
-        <div className="sm:flex-auto">
-          <h1 className="text-2xl font-semibold text-foreground">Site Settings</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Configure global site settings for CORS proxy, ads, and video streaming.
-          </p>
-        </div>
+    <div className="py-8">
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
+          Site Settings
+        </h1>
+        <p className="mt-2 text-muted-foreground">
+          Configure global site settings for CORS proxy, ads, and video streaming.
+        </p>
       </div>
 
       {message && (
-        <div className={`mt-4 p-4 rounded-md border ${
+        <div className={`mb-6 p-4 rounded-lg border flex items-start gap-3 ${
           message.type === 'success'
             ? 'bg-primary/10 text-primary border-primary/30'
             : 'bg-destructive/10 text-destructive border-destructive/30'
         }`}>
-          {message.text}
+          <div className="flex-shrink-0 mt-0.5">
+            {message.type === 'success' ? (
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            )}
+          </div>
+          <div>
+            <p className="text-sm font-medium">{message.text}</p>
+          </div>
         </div>
       )}
 
-      <div className="mt-8 space-y-6">
-        {settings.map((setting) => {
+      <div className="space-y-4">
+        {settings
+          .filter(setting => !setting.key.startsWith('scrape_'))
+          .map((setting) => {
           const isBooleanSetting = setting.key === 'cors_proxy_enabled' || setting.key === 'auto_translate_titles'
           const isNumberSetting = setting.key.includes('min_views') || setting.key.includes('min_duration')
 
           return (
-            <div key={setting.id} className="bg-card border border-border rounded-lg">
-              <div className="px-4 py-5 sm:p-6">
+            <div key={setting.id} className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+              <div className="px-6 py-5 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <label htmlFor={setting.key} className="block text-sm font-medium text-foreground">
+                    <label htmlFor={setting.key} className="block text-sm font-semibold text-foreground">
                       {setting.key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
                     </label>
-                    <p className="mt-1 text-sm text-muted-foreground">
+                    <p className="mt-1.5 text-sm text-muted-foreground">
                       {getSettingDescription(setting.key)}
                     </p>
                   </div>
 
-                  <div className="ml-4">
+                  <div className="ml-6">
                     {isBooleanSetting ? (
                       <button
                         onClick={() => updateSetting(setting.key, setting.value === 'true' ? 'false' : 'true')}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                          setting.value === 'true' ? 'bg-primary' : 'bg-muted'
+                        className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-200 ${
+                          setting.value === 'true'
+                            ? 'bg-primary shadow-md shadow-primary/30'
+                            : 'bg-muted'
                         }`}
                       >
                         <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${
+                          className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform duration-200 ${
                             setting.value === 'true' ? 'translate-x-6' : 'translate-x-1'
                           }`}
                         />
@@ -122,7 +142,7 @@ export default function AdminSettingsPage() {
                         id={setting.key}
                         value={setting.value}
                         onChange={(e) => updateSetting(setting.key, e.target.value)}
-                        className="block w-64 rounded-md border-border bg-input text-foreground focus:border-primary focus:ring-2 focus:ring-primary sm:text-sm px-3 py-2 transition-colors"
+                        className="block w-64 px-4 py-2.5 border border-border/50 bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/50 sm:text-sm"
                         min={isNumberSetting ? "0" : undefined}
                       />
                     )}
@@ -134,13 +154,27 @@ export default function AdminSettingsPage() {
         })}
       </div>
 
-      <div className="mt-6 flex justify-end">
+      <div className="mt-8 flex justify-end">
         <button
           onClick={handleSave}
           disabled={saving}
-          className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="px-6 py-2.5 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground rounded-lg hover:shadow-lg hover:shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-semibold flex items-center justify-center gap-2"
         >
-          {saving ? 'Saving...' : 'Save Settings'}
+          {saving ? (
+            <>
+              <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 12a8 8 0 018-8v8m0-8a8 8 0 008 8v-8" />
+              </svg>
+              Saving...
+            </>
+          ) : (
+            <>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              Save Settings
+            </>
+          )}
         </button>
       </div>
     </div>
