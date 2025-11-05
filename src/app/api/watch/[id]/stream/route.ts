@@ -50,8 +50,6 @@ export async function GET(
 
     // ALWAYS use proxy - try up to 3 different proxies
     let retries = 3
-    const _attemptNum = 1
-
     while (retries > 0 && !videoInfo) {
       // Select proxy BEFORE making request
       const proxyInfo = getRandomProxy('Stream API')
@@ -61,13 +59,12 @@ export async function GET(
         break
       }
 
-      console.log(`[Stream API] Attempt ${attemptNum}/3 for video ${id}: Using proxy ${proxyInfo.proxyUrl}`)
       pornhub.setAgent(proxyInfo.agent)
 
       const startTime = Date.now()
       try {
         const response = await pornhub.video(id)
-        const _duration = Date.now() - startTime
+        const duration = Date.now() - startTime
 
         // Check for soft blocking (missing media definitions)
         if (!response.mediaDefinitions || response.mediaDefinitions.length < 1) {
@@ -78,14 +75,12 @@ export async function GET(
           videoInfo = response
         }
       } catch (error: unknown) {
-        const _duration = Date.now() - startTime
+        const duration = Date.now() - startTime
         console.error(`[Stream API] Proxy ${proxyInfo.proxyUrl} failed (${duration}ms):`, error instanceof Error ? error.message : error)
         // Try different proxy
       }
 
-      retries--
-      attemptNum++
-    }
+      retries--    }
 
     if (!videoInfo || !videoInfo.mediaDefinitions || videoInfo.mediaDefinitions.length < 1) {
       await domainCheck.logRequest(500, Date.now() - requestStart)

@@ -217,7 +217,7 @@ function jsonToXml(response: MaccmsJsonResponse): string {
 export async function GET(_request: NextRequest) {
   const requestStart = Date.now()
   try {
-    const { searchParams } = new URL(request.url)
+    const { searchParams } = new URL(_request.url)
 
     // Parse and validate query parameters
     const params = querySchema.parse({
@@ -519,7 +519,7 @@ export async function GET(_request: NextRequest) {
     }
 
     // Return response in requested format
-    const _duration = Date.now() - requestStart
+    const duration = Date.now() - requestStart
     console.log(`[MacCMS API] Success - Returned ${videos.length} videos (format: ${params.at === 'xml' ? 'XML' : 'JSON'}, duration: ${duration}ms)`)
 
     if (params.at === 'xml') {
@@ -535,7 +535,7 @@ export async function GET(_request: NextRequest) {
     }
 
   } catch (error) {
-    const _duration = Date.now() - requestStart
+    const duration = Date.now() - requestStart
     console.error(`[MacCMS API] Request failed (${duration}ms):`, error instanceof Error ? error.message : error)
 
 
@@ -559,7 +559,7 @@ export async function GET(_request: NextRequest) {
     }
 
     // Check if XML format was requested
-    const searchParams = new URL(request.url).searchParams
+    const searchParams = new URL(_request.url).searchParams
     if (searchParams.get('at') === 'xml') {
       const xmlError = `<?xml version="1.0" encoding="utf-8"?>
 <rss version="1.0">
@@ -584,5 +584,5 @@ export async function GET(_request: NextRequest) {
 // Support for alternate path patterns
 export async function POST(_request: NextRequest) {
   // Some Maccms clients might use POST, redirect to GET
-  return GET(request)
+  return GET(_request)
 }

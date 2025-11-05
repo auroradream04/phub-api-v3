@@ -12,7 +12,7 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const searchParams = request.nextUrl.searchParams
+    const searchParams = _request.nextUrl.searchParams
     const days = parseInt(searchParams.get('days') || '30')
 
     const startDate = new Date()

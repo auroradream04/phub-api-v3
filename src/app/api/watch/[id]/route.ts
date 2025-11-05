@@ -46,8 +46,6 @@ export async function GET(
 
     // ALWAYS use proxy - try up to 3 different proxies
     let retries = 3
-    const _attemptNum = 1
-
     while (retries > 0 && !videoData) {
       // Select proxy BEFORE making request
       const proxyInfo = getRandomProxy('Watch API')
@@ -57,17 +55,16 @@ export async function GET(
         break
       }
 
-      console.log(`[Watch API] Attempt ${attemptNum}/3 for video ${id}: Using proxy ${proxyInfo.proxyUrl}`)
       pornhub.setAgent(proxyInfo.agent)
 
       const startTime = Date.now()
       try {
         videoData = await pornhub.video(id)
-        const _duration = Date.now() - startTime
+        const duration = Date.now() - startTime
         console.log(`[Watch API] ✓ Success with proxy ${proxyInfo.proxyUrl} (${duration}ms)`)
         break
       } catch (apiError) {
-        const _duration = Date.now() - startTime
+        const duration = Date.now() - startTime
         lastError = apiError instanceof Error ? apiError : new Error(String(apiError))
 
         // Check if it's a 404 error (video not found) - don't retry with more proxies for 404s
@@ -92,9 +89,7 @@ export async function GET(
         console.error(`[Watch API] Proxy ${proxyInfo.proxyUrl} failed (${duration}ms):`, lastError.message)
       }
 
-      retries--
-      attemptNum++
-    }
+      retries--    }
 
     apiCallTime = Date.now() - apiStartTime
 

@@ -9,13 +9,13 @@ export async function GET(_request: NextRequest) {
   const requestStart = Date.now()
 
   // Check domain access
-  const domainCheck = await checkAndLogDomain(request, '/api/home', 'GET')
+  const domainCheck = await checkAndLogDomain(_request, '/api/home', 'GET')
   if (!domainCheck.allowed) {
     return domainCheck.response // Returns 403 if blocked
   }
 
   try {
-    const searchParams = request.nextUrl.searchParams
+    const searchParams = _request.nextUrl.searchParams
 
     // Parse query parameters
     const pageParam = searchParams.get('page')

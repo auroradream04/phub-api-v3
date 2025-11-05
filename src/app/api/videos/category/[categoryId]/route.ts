@@ -43,14 +43,14 @@ async function fetchWithRetry(
       }
 
       return result
-    } catch {
+    } catch (err) {
       retries--
       if (retries > 0) {
         console.warn(`[Category API] Request failed, retrying with different proxy (${maxRetries - retries}/${maxRetries})...`)
         await new Promise(resolve => setTimeout(resolve, 500))
         continue
       }
-      throw error
+      throw err
     }
   }
 

@@ -64,7 +64,7 @@ export async function PUT(_request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { settings } = await request.json()
+    const { settings } = await _request.json()
 
     if (!Array.isArray(settings)) {
       return NextResponse.json({ error: 'Invalid settings format' }, { status: 400 })

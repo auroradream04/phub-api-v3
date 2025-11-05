@@ -16,7 +16,7 @@ export const revalidate = 0 // No caching for retry endpoint
  */
 export async function POST(_request: NextRequest) {
   try {
-    const searchParams = request.nextUrl.searchParams
+    const searchParams = _request.nextUrl.searchParams
     const limit = parseInt(searchParams.get('limit') || '100')
     const maxRetries = parseInt(searchParams.get('maxRetries') || '5')
 

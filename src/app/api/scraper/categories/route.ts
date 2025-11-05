@@ -7,7 +7,7 @@ export const revalidate = 7200 // 2 hours
 
 export async function POST(_request: NextRequest) {
   try {
-    const { pagesPerCategory = 5, parallel = false } = await request.json()
+    const { pagesPerCategory = 5, parallel = false } = await _request.json()
 
     const baseUrl = process.env.NEXTAUTH_URL || 'http://md8av.com'
 

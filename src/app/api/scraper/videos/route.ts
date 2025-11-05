@@ -45,7 +45,7 @@ function stripEmojis(str: string): string {
 
 export async function POST(_request: NextRequest) {
   try {
-    const { page = 1, categoryId, categoryName } = await request.json()
+    const { page = 1, categoryId, categoryName } = await _request.json()
     console.log(`[Scraper Videos] Processing: categoryId=${categoryId}, categoryName=${categoryName}, page=${page}`)
 
     // Track unmapped categories for this scraping session

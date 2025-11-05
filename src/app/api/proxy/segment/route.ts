@@ -4,7 +4,7 @@ export const revalidate = 7200 // 2 hours
 
 export async function GET(_request: NextRequest) {
   try {
-    const url = request.nextUrl.searchParams.get('url')
+    const url = _request.nextUrl.searchParams.get('url')
 
     if (!url) {
       return NextResponse.json(

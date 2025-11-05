@@ -40,8 +40,6 @@ export async function GET(
 
     // ALWAYS use proxy - try up to 3 different proxies
     let retries = 3
-    const _attemptNum = 1
-
     while (retries > 0 && !result) {
       // Select proxy BEFORE making request
       const proxyInfo = getRandomProxy('Search API')
@@ -66,7 +64,6 @@ export async function GET(
       }
 
       retries--
-      attemptNum++
     }
 
     if (!result || !result.data) {

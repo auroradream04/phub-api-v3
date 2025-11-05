@@ -18,14 +18,14 @@ export async function GET(_request: NextRequest) {
   const requestStart = Date.now()
 
   // Check domain access
-  const domainCheck = await checkAndLogDomain(request, '/api/categories', 'GET')
+  const domainCheck = await checkAndLogDomain(_request, '/api/categories', 'GET')
   if (!domainCheck.allowed) {
     return domainCheck.response
   }
 
   try {
     // Check if we need to refresh categories
-    const searchParams = request.nextUrl.searchParams
+    const searchParams = _request.nextUrl.searchParams
     const forceRefresh = searchParams.get('refresh') === 'true'
 
     // Try to get categories from database first
@@ -86,7 +86,6 @@ export async function GET(_request: NextRequest) {
       }
 
       retries--
-      attemptNum++
     }
 
     if (!categories || categories.length === 0) {

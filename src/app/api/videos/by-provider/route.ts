@@ -6,7 +6,7 @@ export const revalidate = 3600 // 1 hour
 
 export async function GET(_request: NextRequest) {
   try {
-    const searchParams = request.nextUrl.searchParams
+    const searchParams = _request.nextUrl.searchParams
     const provider = searchParams.get('provider')
     const typeName = searchParams.get('typeName') // Fallback category
     const limit = parseInt(searchParams.get('limit') || '6', 10)

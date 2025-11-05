@@ -110,8 +110,8 @@ async function scrapeInBackground(checkpointId: string, pagesPerCategory: number
         `[Scraper Progress] Category ${categoryIndex + 1}/${totalCategories}: ${category.name} (ID: ${category.id}) - Pages ${pageStart}-${pagesPerCategory}`
       )
 
-      const __categoryScraped = 0
-      const __categoryFailed = 0
+      let __categoryScraped = 0
+      let __categoryFailed = 0
       let consecutiveErrors = 0
 
       for (let page = pageStart; page <= pagesPerCategory; page++) {
@@ -137,7 +137,7 @@ async function scrapeInBackground(checkpointId: string, pagesPerCategory: number
 
             if (!response.ok) {
               consecutiveErrors++
-              _categoryFailed++
+              __categoryFailed++
 
               if (consecutiveErrors >= 3) {
                 console.warn(
@@ -152,8 +152,8 @@ async function scrapeInBackground(checkpointId: string, pagesPerCategory: number
 
             if (data.success && data.scraped > 0) {
               consecutiveErrors = 0
-              _categoryScraped += data.scraped
-              _categoryFailed += data.errors || 0
+              __categoryScraped += data.scraped
+              __categoryFailed += data.errors || 0
 
               try {
                 // Update checkpoint with current position
@@ -182,7 +182,7 @@ async function scrapeInBackground(checkpointId: string, pagesPerCategory: number
                 break
               }
             } else {
-              _categoryFailed++
+              __categoryFailed++
               console.warn(`[Background Scraper] No videos for category ${category.id} page ${page}`)
               break
             }
@@ -191,7 +191,7 @@ async function scrapeInBackground(checkpointId: string, pagesPerCategory: number
           } catch (timeoutError) {
             clearTimeout(timeout)
             consecutiveErrors++
-            _categoryFailed++
+            __categoryFailed++
             console.error(
               `[Background Scraper] Request timeout for category ${category.id} page ${page}:`,
               timeoutError instanceof Error ? timeoutError.message : 'Request timeout'
@@ -203,7 +203,7 @@ async function scrapeInBackground(checkpointId: string, pagesPerCategory: number
           }
         } catch (error) {
           consecutiveErrors++
-          _categoryFailed++
+          __categoryFailed++
           console.error(
             `[Background Scraper] Error on category ${category.id} page ${page}:`,
             error instanceof Error ? error.message : error
@@ -253,7 +253,7 @@ export async function POST(_request: NextRequest) {
   let checkpointId: string = ''
 
   try {
-    const { pagesPerCategory = 5, resumeCheckpointId } = await request.json()
+    const { pagesPerCategory = 5, resumeCheckpointId } = await _request.json()
 
     console.log(`[Scraper Categories] Started with options:`, {
       pagesPerCategory,
@@ -324,7 +324,7 @@ export async function POST(_request: NextRequest) {
 
 // GET endpoint to check checkpoint status
 export async function GET(_request: NextRequest) {
-  const { searchParams } = new URL(request.url)
+  const { searchParams } = new URL(_request.url)
   const checkpointId = searchParams.get('checkpointId')
 
   if (!checkpointId) {

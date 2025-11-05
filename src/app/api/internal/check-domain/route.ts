@@ -4,7 +4,7 @@ import { checkDomainAccess, extractDomain } from '@/lib/domain-checker'
 // Internal API for domain checking (called from middleware or routes)
 export async function POST(_request: NextRequest) {
   try {
-    const body = await request.json()
+    const body = await _request.json()
     const { referer, origin } = body
 
     const domain = extractDomain(referer, origin)
