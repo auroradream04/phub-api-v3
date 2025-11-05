@@ -538,7 +538,9 @@ export async function GET(_request: NextRequest) {
         },
       })
     } else {
-      return NextResponse.json(response, { status: 200 })
+      // For JSON, remove the class array as most maccms importers don't expect it
+      const { class: _, ...jsonResponse } = response
+      return NextResponse.json(jsonResponse, { status: 200 })
     }
 
   } catch (error) {
@@ -562,7 +564,6 @@ export async function GET(_request: NextRequest) {
       code: 0,
       msg: 'Internal server error',
       list: [],
-      class: [],
     }
 
     // Check if XML format was requested
