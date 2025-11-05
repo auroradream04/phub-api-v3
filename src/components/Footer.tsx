@@ -79,6 +79,14 @@ export function Footer() {
                   网站地图
                 </Link>
               </li>
+              <li>
+                <Link
+                  href="/feed.xml"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  RSS订阅
+                </Link>
+              </li>
             </ul>
           </div>
 
