@@ -159,15 +159,17 @@ export const DATABASE_TO_CONSOLIDATED: Record<string, string> = {
   // === BEHIND THE SCENES ===
   'behind the scenes': 'behind-the-scenes',
 
-  // === SPECIAL FORMATS (other HD/caption formats) ===
-  'hd porn': 'special',
-  'uncensored': 'special',
-  'uncensored 1': 'special',
-  'closed captions': 'special',
-  'described video': 'special',
-  'interactive': 'special',
-  'exclusive': 'special',
-  'verified couples': 'special',
+  // === VERIFIED COUPLES (belongs with verified amateurs) ===
+  'verified couples': 'verified-amateurs',
+
+  // === FORMAT/ACCESSIBILITY FEATURES (miscellaneous) ===
+  'hd porn': 'niche',
+  'uncensored': 'niche',
+  'uncensored 1': 'niche',
+  'closed captions': 'niche',
+  'described video': 'niche',
+  'interactive': 'niche',
+  'exclusive': 'niche',
 
   // === JAPANESE (SEPARATE - no consolidation) ===
   'japanese': 'japanese',
@@ -193,7 +195,7 @@ export const DATABASE_TO_CONSOLIDATED: Record<string, string> = {
 
 /**
  * Consolidated categories shown in MACCMS API
- * These are the main categories users see and select from (29 categories)
+ * These are the main categories users see and select from (28 categories)
  */
 export const CONSOLIDATED_CATEGORIES = [
   'gay',
@@ -221,7 +223,6 @@ export const CONSOLIDATED_CATEGORIES = [
   'cosplay',
   'verified-amateurs',
   'behind-the-scenes',
-  'special',
   'japanese',
   'chinese',
   'niche',
@@ -256,7 +257,6 @@ export const CONSOLIDATED_TO_CHINESE: Record<string, string> = {
   'cosplay': '角色扮演',
   'verified-amateurs': '认证业余',
   'behind-the-scenes': '幕后花絮',
-  'special': '特殊格式',
   'japanese': '日本',
   'chinese': '中文',
   'niche': '其他',
@@ -264,7 +264,7 @@ export const CONSOLIDATED_TO_CHINESE: Record<string, string> = {
 
 /**
  * Map consolidated category to a type_id for MACCMS
- * We assign consistent IDs for API compatibility (1-29)
+ * We assign consistent IDs for API compatibility (1-28)
  */
 export const CONSOLIDATED_TYPE_IDS: Record<string, number> = {
   'gay': 1,
@@ -292,10 +292,9 @@ export const CONSOLIDATED_TYPE_IDS: Record<string, number> = {
   'cosplay': 23,
   'verified-amateurs': 24,
   'behind-the-scenes': 25,
-  'special': 26,
-  'japanese': 27,
-  'chinese': 28,
-  'niche': 29,
+  'japanese': 26,
+  'chinese': 27,
+  'niche': 28,
 };
 
 /**
