@@ -256,6 +256,7 @@ export const CONSOLIDATED_TO_CHINESE: Record<string, string> = {
   'behind-the-scenes': '幕后花絮',
   'japanese': '日本',
   'chinese': '中文',
+  'niche': '其他',
 };
 
 /**
