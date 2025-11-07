@@ -193,7 +193,7 @@ export const DATABASE_TO_CONSOLIDATED: Record<string, string> = {
 
 /**
  * Consolidated categories shown in MACCMS API
- * These are the main categories users see and select from (28 categories)
+ * These are the main categories users see and select from (29 categories)
  */
 export const CONSOLIDATED_CATEGORIES = [
   'gay',
@@ -221,6 +221,7 @@ export const CONSOLIDATED_CATEGORIES = [
   'cosplay',
   'verified-amateurs',
   'behind-the-scenes',
+  'special',
   'japanese',
   'chinese',
   'niche',
@@ -255,6 +256,7 @@ export const CONSOLIDATED_TO_CHINESE: Record<string, string> = {
   'cosplay': '角色扮演',
   'verified-amateurs': '认证业余',
   'behind-the-scenes': '幕后花絮',
+  'special': '特殊格式',
   'japanese': '日本',
   'chinese': '中文',
   'niche': '其他',
@@ -262,7 +264,7 @@ export const CONSOLIDATED_TO_CHINESE: Record<string, string> = {
 
 /**
  * Map consolidated category to a type_id for MACCMS
- * We assign consistent IDs for API compatibility (1-28)
+ * We assign consistent IDs for API compatibility (1-29)
  */
 export const CONSOLIDATED_TYPE_IDS: Record<string, number> = {
   'gay': 1,
@@ -290,9 +292,10 @@ export const CONSOLIDATED_TYPE_IDS: Record<string, number> = {
   'cosplay': 23,
   'verified-amateurs': 24,
   'behind-the-scenes': 25,
-  'japanese': 26,
-  'chinese': 27,
-  'niche': 28,
+  'special': 26,
+  'japanese': 27,
+  'chinese': 28,
+  'niche': 29,
 };
 
 /**
