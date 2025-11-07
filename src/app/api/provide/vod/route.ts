@@ -195,8 +195,7 @@ function jsonToXml(response: MaccmsJsonResponse): string {
     xml += `      <director>${wrapCDATA(video.vod_director)}</director>\n`
     xml += `      <hit>${video.vod_hits}</hit>\n`
     xml += '      <dl>\n'
-    xml += `        <dt>${escapeXml(video.vod_play_from)}</dt>\n`
-    xml += `        <dd>${wrapCDATA(video.vod_play_url)}</dd>\n`
+    xml += `        <dd flag="${escapeXml(video.vod_play_from)}">${wrapCDATA(video.vod_play_url)}</dd>\n`
     xml += '      </dl>\n'
     xml += `      <des>${wrapCDATA(video.vod_content)}</des>\n`
     xml += '    </video>\n'
