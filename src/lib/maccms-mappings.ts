@@ -193,7 +193,7 @@ export const DATABASE_TO_CONSOLIDATED: Record<string, string> = {
 
 /**
  * Consolidated categories shown in MACCMS API
- * These are the main categories users see and select from (27 categories)
+ * These are the main categories users see and select from (28 categories)
  */
 export const CONSOLIDATED_CATEGORIES = [
   'gay',
@@ -223,6 +223,7 @@ export const CONSOLIDATED_CATEGORIES = [
   'behind-the-scenes',
   'japanese',
   'chinese',
+  'niche',
 ] as const;
 
 /**
@@ -261,7 +262,7 @@ export const CONSOLIDATED_TO_CHINESE: Record<string, string> = {
 
 /**
  * Map consolidated category to a type_id for MACCMS
- * We assign consistent IDs for API compatibility (1-25)
+ * We assign consistent IDs for API compatibility (1-28)
  */
 export const CONSOLIDATED_TYPE_IDS: Record<string, number> = {
   'gay': 1,
@@ -291,6 +292,7 @@ export const CONSOLIDATED_TYPE_IDS: Record<string, number> = {
   'behind-the-scenes': 25,
   'japanese': 26,
   'chinese': 27,
+  'niche': 28,
 };
 
 /**
