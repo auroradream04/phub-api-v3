@@ -344,6 +344,7 @@ export async function GET(_request: NextRequest) {
           vod_plot_name: '',
           vod_plot_detail: '',
           type_name: CONSOLIDATED_TO_CHINESE[DATABASE_TO_CONSOLIDATED[v.typeName.toLowerCase().trim()] || 'niche'] || '',
+          dl: v.vodPlayFrom && v.vodPlayUrl ? { [v.vodPlayFrom]: v.vodPlayUrl } : {},
         }
       })
 
@@ -500,6 +501,7 @@ export async function GET(_request: NextRequest) {
           vod_plot_name: '',
           vod_plot_detail: '',
           type_name: CONSOLIDATED_TO_CHINESE[DATABASE_TO_CONSOLIDATED[v.typeName.toLowerCase().trim()] || 'niche'] || '',
+          dl: v.vodPlayFrom && v.vodPlayUrl ? { [v.vodPlayFrom]: v.vodPlayUrl } : {},
         }
       })
 
