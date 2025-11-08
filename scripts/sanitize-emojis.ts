@@ -1,9 +1,11 @@
 /**
  * Migration script to remove emojis from existing video records
- * Run with: npx ts-node -O '{"module":"commonjs"}' scripts/sanitize-emojis.ts
+ * Run with: npx ts-node scripts/sanitize-emojis.ts
  */
 
-import { prisma } from '../src/lib/prisma'
+import { PrismaClient } from '@prisma/client'
+
+const prisma = new PrismaClient()
 
 // Helper to strip emojis and special unicode characters
 function stripEmojis(str: string | null | undefined): string {
