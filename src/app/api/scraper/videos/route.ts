@@ -163,14 +163,18 @@ export async function POST(_request: NextRequest) {
       const publishDate = new Date()
       const year = publishDate.getFullYear().toString()
 
-      // Clean title to remove emojis
+      // Clean all text fields to remove emojis (latin1 compatible)
       const cleanTitle = stripEmojis(video.title)
+      const cleanDuration = stripEmojis(video.duration)
+      const cleanProvider = stripEmojis(normalizeProvider(video.provider))
 
       videosToProcess.push({
         video,
         views,
         durationSeconds,
         cleanTitle,
+        cleanDuration,
+        cleanProvider,
         publishDate,
         year
       })
@@ -256,12 +260,13 @@ export async function POST(_request: NextRequest) {
               vodPic: item.video.preview,
               vodTime: item.publishDate,
               duration: item.durationSeconds,
-              vodRemarks: `HD ${item.video.duration}`,
+              vodRemarks: `HD ${item.cleanDuration}`,
               views: item.views,
               vodClass,
               vodYear: item.year,
               vodLang: 'zh',
               vodArea: 'CN',
+              vodActor: item.cleanProvider,
               // Translation tracking
               needsTranslation: translationFailed,
               translationFailedAt: translationFailed ? new Date() : null,
@@ -276,17 +281,17 @@ export async function POST(_request: NextRequest) {
               vodClass: typeName,
               vodEn,
               vodTime: item.publishDate,
-              vodRemarks: `HD ${item.video.duration}`,
+              vodRemarks: `HD ${item.cleanDuration}`,
               vodPlayFrom: 'dplayer',
               vodPic: item.video.preview,
               vodArea: 'CN',
               vodLang: 'zh',
               vodYear: item.year,
-              vodActor: normalizeProvider(item.video.provider) || '',
+              vodActor: item.cleanProvider,
               vodDirector: '',
               vodContent: finalTitle,
               vodPlayUrl: `HD$${baseUrl}/api/watch/${item.video.id}/stream.m3u8?q=720`,
-              vodProvider: normalizeProvider(item.video.provider),
+              vodProvider: item.cleanProvider,
               views: item.views,
               duration: item.durationSeconds,
               // Translation tracking
