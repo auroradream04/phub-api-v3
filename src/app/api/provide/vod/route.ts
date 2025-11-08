@@ -130,6 +130,14 @@ function formatDate(date: Date): string {
   return date.toISOString().replace('T', ' ').split('.')[0]
 }
 
+// Helper to strip emojis and special unicode characters (failsafe for MACCMS latin1 encoding)
+function stripEmojis(str: string): string {
+  if (!str) return ''
+  // Remove emojis and other problematic unicode characters
+  return str.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{FE00}-\u{FE0F}\u{1F000}-\u{1F02F}\u{1F0A0}-\u{1F0FF}]/gu, '')
+    .trim()
+}
+
 // Build consolidated MACCMS categories from the mapping
 function buildMaccmsCategories(): MaccmsClass[] {
   return CONSOLIDATED_CATEGORIES.map(cat => ({
@@ -260,16 +268,22 @@ export async function GET(_request: NextRequest) {
       // Map videos with consolidated typeIds
       videos = dbVideos.map(v => {
         const typeId = getTypeIdForDatabaseCategory(v.typeName)
+        // Sanitize all text fields to remove emojis (failsafe for MACCMS latin1 encoding)
+        const cleanName = stripEmojis(v.vodName)
+        const cleanActor = stripEmojis(v.vodActor || '')
+        const cleanRemarks = stripEmojis(v.vodRemarks || '')
+        const cleanContent = stripEmojis(v.vodContent || '')
+
         return {
           vod_id: v.vodId,
           type_id: typeId,
           type_id_1: 1,
           group_id: 0,
-          vod_name: v.vodName,
+          vod_name: cleanName,
           vod_sub: '',
           vod_en: v.vodEn || '',
           vod_status: 1,
-          vod_letter: (v.vodName.charAt(0) || '').toUpperCase(),
+          vod_letter: (cleanName.charAt(0) || '').toUpperCase(),
           vod_color: '',
           vod_tag: '',
           vod_class: (v.vodClass || CONSOLIDATED_TO_CHINESE[DATABASE_TO_CONSOLIDATED[v.typeName.toLowerCase().trim()] || 'niche'] || '').split(',')[0]?.trim() || '',
@@ -277,12 +291,12 @@ export async function GET(_request: NextRequest) {
           vod_pic_thumb: '',
           vod_pic_slide: '',
           vod_pic_screenshot: '',
-          vod_actor: v.vodActor || '',
+          vod_actor: cleanActor,
           vod_director: v.vodDirector || '',
           vod_writer: '',
           vod_behind: '',
-          vod_blurb: v.vodContent || '',
-          vod_remarks: v.vodRemarks || '',
+          vod_blurb: cleanContent,
+          vod_remarks: cleanRemarks,
           vod_pubdate: '',
           vod_total: 0,
           vod_serial: '0',
@@ -331,7 +345,7 @@ export async function GET(_request: NextRequest) {
           vod_pwd_play_url: '',
           vod_pwd_down: '',
           vod_pwd_down_url: '',
-          vod_content: v.vodContent || '',
+          vod_content: cleanContent,
           vod_play_from: v.vodPlayFrom,
           vod_play_server: '',
           vod_play_note: '',
@@ -417,16 +431,22 @@ export async function GET(_request: NextRequest) {
       // Map videos with consolidated typeIds
       videos = dbVideos.map(v => {
         const typeId = getTypeIdForDatabaseCategory(v.typeName)
+        // Sanitize all text fields to remove emojis (failsafe for MACCMS latin1 encoding)
+        const cleanName = stripEmojis(v.vodName)
+        const cleanActor = stripEmojis(v.vodActor || '')
+        const cleanRemarks = stripEmojis(v.vodRemarks || '')
+        const cleanContent = stripEmojis(v.vodContent || '')
+
         return {
           vod_id: v.vodId,
           type_id: typeId,
           type_id_1: 1,
           group_id: 0,
-          vod_name: v.vodName,
+          vod_name: cleanName,
           vod_sub: '',
           vod_en: v.vodEn || '',
           vod_status: 1,
-          vod_letter: (v.vodName.charAt(0) || '').toUpperCase(),
+          vod_letter: (cleanName.charAt(0) || '').toUpperCase(),
           vod_color: '',
           vod_tag: '',
           vod_class: (v.vodClass || CONSOLIDATED_TO_CHINESE[DATABASE_TO_CONSOLIDATED[v.typeName.toLowerCase().trim()] || 'niche'] || '').split(',')[0]?.trim() || '',
@@ -434,12 +454,12 @@ export async function GET(_request: NextRequest) {
           vod_pic_thumb: '',
           vod_pic_slide: '',
           vod_pic_screenshot: '',
-          vod_actor: v.vodActor || '',
+          vod_actor: cleanActor,
           vod_director: v.vodDirector || '',
           vod_writer: '',
           vod_behind: '',
-          vod_blurb: v.vodContent || '',
-          vod_remarks: v.vodRemarks || '',
+          vod_blurb: cleanContent,
+          vod_remarks: cleanRemarks,
           vod_pubdate: '',
           vod_total: 0,
           vod_serial: '0',
@@ -488,7 +508,7 @@ export async function GET(_request: NextRequest) {
           vod_pwd_play_url: '',
           vod_pwd_down: '',
           vod_pwd_down_url: '',
-          vod_content: v.vodContent || '',
+          vod_content: cleanContent,
           vod_play_from: v.vodPlayFrom,
           vod_play_server: '',
           vod_play_note: '',
