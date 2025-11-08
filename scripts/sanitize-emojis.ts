@@ -3,7 +3,7 @@
  * Run with: npx ts-node scripts/sanitize-emojis.ts
  */
 
-import { PrismaClient } from '../src/generated/prisma'
+import { PrismaClient } from '../src/generated/prisma/index.js'
 
 const prisma = new PrismaClient()
 
