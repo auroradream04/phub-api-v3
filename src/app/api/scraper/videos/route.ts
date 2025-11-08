@@ -138,6 +138,8 @@ export async function POST(_request: NextRequest) {
       views: number
       durationSeconds: number
       cleanTitle: string
+      cleanDuration: string
+      cleanProvider: string
       publishDate: Date
       year: string
     }> = []
