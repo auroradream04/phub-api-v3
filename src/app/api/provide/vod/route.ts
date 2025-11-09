@@ -29,13 +29,14 @@ function normalizeText(text: string): string {
 }
 
 // Recursively normalize all string values in an object
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function normalizeStrings<T>(obj: T): T {
   if (typeof obj === 'string') {
     return normalizeText(obj) as T
   } else if (Array.isArray(obj)) {
     return obj.map((item) => normalizeStrings(item)) as T
   } else if (obj !== null && typeof obj === 'object') {
-    const normalized: Record<string, any> = {}
+    const normalized: Record<string, unknown> = {}
     for (const [key, value] of Object.entries(obj)) {
       normalized[key] = normalizeStrings(value)
     }
