@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react'
 import { useState, useEffect, useRef } from 'react'
-import { PlayCircle, RefreshCw, Trash2, Database, Languages, ChevronDown, ChevronUp, Grid, List as ListIcon, Eye } from 'lucide-react'
+import { PlayCircle, RefreshCw, Trash2, Database, Languages, ChevronDown, ChevronUp, Grid, List as ListIcon, Eye, Check } from 'lucide-react'
 import { CONSOLIDATED_CATEGORIES, CONSOLIDATED_TO_CHINESE, CONSOLIDATED_TYPE_IDS, getVariantsForConsolidated } from '@/lib/maccms-mappings'
 
 interface Stats {
@@ -888,21 +888,25 @@ export default function AdminDashboard() {
                 <div className="lg:col-span-2 border border-border rounded-lg bg-muted/30 flex flex-col h-full">
                   <div className="bg-muted/50 px-4 py-4 border-b border-border flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        checked={selectAllSearchVideos}
-                        onChange={(e) => {
-                          setSelectAllSearchVideos(e.target.checked)
-                          if (e.target.checked) {
+                      <button
+                        onClick={() => {
+                          setSelectAllSearchVideos(!selectAllSearchVideos)
+                          if (!selectAllSearchVideos) {
                             const allIds = new Set(globalPaginatedVideos.map(v => v.vod_id))
                             setSelectedSearchVideoIds(allIds)
                           } else {
                             setSelectedSearchVideoIds(new Set())
                           }
                         }}
-                        className="w-4 h-4 cursor-pointer"
+                        className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all cursor-pointer flex-shrink-0 ${
+                          selectAllSearchVideos
+                            ? 'bg-primary border-primary'
+                            : 'border-muted-foreground/30 hover:border-muted-foreground/60'
+                        }`}
                         title="Select all videos on this page"
-                      />
+                      >
+                        {selectAllSearchVideos && <Check className="w-3 h-3 text-primary-foreground" />}
+                      </button>
                       <h4 className="font-semibold text-foreground">
                         {globalSearchTotalCount} videos found
                         {selectedSearchVideoIds.size > 0 && <span className="text-primary ml-2">({selectedSearchVideoIds.size} selected)</span>}
@@ -920,12 +924,10 @@ export default function AdminDashboard() {
                         >
                           <div className="flex gap-2 items-start justify-between">
                             <div className="flex gap-2 flex-1 min-w-0 items-start">
-                              <input
-                                type="checkbox"
-                                checked={selectedSearchVideoIds.has(video.vod_id)}
-                                onChange={(e) => {
+                              <button
+                                onClick={() => {
                                   const newSelected = new Set(selectedSearchVideoIds)
-                                  if (e.target.checked) {
+                                  if (!newSelected.has(video.vod_id)) {
                                     newSelected.add(video.vod_id)
                                   } else {
                                     newSelected.delete(video.vod_id)
@@ -933,8 +935,14 @@ export default function AdminDashboard() {
                                   setSelectedSearchVideoIds(newSelected)
                                   setSelectAllSearchVideos(newSelected.size === globalPaginatedVideos.length)
                                 }}
-                                className="w-4 h-4 cursor-pointer mt-1 flex-shrink-0"
-                              />
+                                className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all cursor-pointer flex-shrink-0 mt-1 ${
+                                  selectedSearchVideoIds.has(video.vod_id)
+                                    ? 'bg-primary border-primary'
+                                    : 'border-muted-foreground/30 hover:border-muted-foreground/60'
+                                }`}
+                              >
+                                {selectedSearchVideoIds.has(video.vod_id) && <Check className="w-3 h-3 text-primary-foreground" />}
+                              </button>
                               {video.vod_pic && (
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img
@@ -999,9 +1007,11 @@ export default function AdminDashboard() {
                           setDeletingAllSearch(true)
                           try {
                             const ids = Array.from(selectedSearchVideoIds)
-                            for (const id of ids) {
-                              await fetch(`/api/admin/videos/${id}`, { method: 'DELETE' })
-                            }
+                            await fetch('/api/admin/videos/bulk', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ ids }),
+                            })
                             setGlobalSearchResults(prev => prev.filter(v => !selectedSearchVideoIds.has(v.vod_id)))
                             setSelectedSearchVideoIds(new Set())
                             setSelectAllSearchVideos(false)
@@ -1029,9 +1039,13 @@ export default function AdminDashboard() {
                               const data = await res.json()
                               allVideoIds.push(...(data.list || []).map((v: MaccmsVideo) => v.vod_id))
                             }
-                            // Delete all videos
-                            for (const id of allVideoIds) {
-                              await fetch(`/api/admin/videos/${id}`, { method: 'DELETE' })
+                            // Delete all videos in one batch
+                            if (allVideoIds.length > 0) {
+                              await fetch('/api/admin/videos/bulk', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ ids: allVideoIds }),
+                              })
                             }
                             setGlobalSearchResults([])
                             setGlobalSearchTotalCount(0)
