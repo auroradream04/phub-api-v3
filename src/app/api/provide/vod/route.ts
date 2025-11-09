@@ -234,9 +234,19 @@ export async function GET(_request: NextRequest) {
       return val === '' || val === null ? undefined : val
     }
 
+    // Helper to get first value if multiple params with same key (MACCMS sends ac=list&ac=videolist)
+    const getFirstParam = (key: string) => {
+      // If multiple values, take the first one
+      const allValues = searchParams.getAll(key)
+      if (allValues.length > 0 && allValues[0]) {
+        return allValues[0]
+      }
+      return searchParams.get(key) || undefined
+    }
+
     // Parse and validate query parameters
     const params = querySchema.parse({
-      ac: getParam('ac'),
+      ac: getFirstParam('ac'),
       t: getParam('t'),
       pg: getParam('pg'),
       wd: getParam('wd'),
