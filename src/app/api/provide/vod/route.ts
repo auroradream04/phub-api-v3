@@ -302,10 +302,8 @@ export async function GET(_request: NextRequest) {
           vod_pic_thumb: '',
           vod_pic_slide: '',
           vod_pic_screenshot: '',
-          // Strip actor and director to prevent MACCMS blend logic false matches
-          // These fields are stored in our database but not sent to MACCMS for collection
-          vod_actor: '',
-          vod_director: '',
+          vod_actor: cleanActor,
+          vod_director: v.vodDirector || '',
           vod_writer: '',
           vod_behind: '',
           vod_blurb: cleanContent,
@@ -467,10 +465,8 @@ export async function GET(_request: NextRequest) {
           vod_pic_thumb: '',
           vod_pic_slide: '',
           vod_pic_screenshot: '',
-          // Strip actor and director to prevent MACCMS blend logic false matches
-          // These fields are stored in our database but not sent to MACCMS for collection
-          vod_actor: '',
-          vod_director: '',
+          vod_actor: cleanActor,
+          vod_director: v.vodDirector || '',
           vod_writer: '',
           vod_behind: '',
           vod_blurb: cleanContent,
