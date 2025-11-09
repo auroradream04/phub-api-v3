@@ -129,14 +129,18 @@ export async function POST(_request: NextRequest) {
     }
 
     console.log(`[Scraper Videos] Fetching from: ${apiUrl}`)
-    const response = await fetch(apiUrl)
-    console.log(`[Scraper Videos] Got response, status: ${response.status}`)
+    const responseText = await fetch(apiUrl).then(r => r.text())
+    console.log(`[Scraper Videos] Got response, size: ${responseText.length} bytes`)
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch videos: ${response.statusText}`)
+    // Sanitize malformed JSON with invalid UTF-16 surrogate pairs before parsing
+    // Some APIs send invalid escape sequences that cause JSON parsing to fail
+    const sanitized = responseText.replace(/\\u([dD][89aAbB][0-9a-fA-F]{2})\\u([dD][c-fC-F][0-9a-fA-F]{2})/g, '?')
+    let data
+    try {
+      data = JSON.parse(sanitized)
+    } catch (parseError) {
+      throw new Error(`Failed to parse videos response: ${parseError}`)
     }
-
-    const data = await response.json()
     console.log(`[Scraper Videos] Parsed JSON, got ${data.data?.length || 0} videos`)
 
     // Handle both /api/home and /api/videos/category response formats
