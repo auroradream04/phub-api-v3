@@ -11,20 +11,32 @@ import {
 
 export const revalidate = 7200 // 2 hours
 
+// Remove unpaired UTF-16 surrogates that break PHP JSON parsing
+// API responses sometimes contain orphaned surrogates like \ud835 without matching pairs
+function removeSurrogates(text: string): string {
+  if (!text) return text
+  // Remove unpaired high surrogates (U+D800-U+DBFF)
+  // Remove unpaired low surrogates (U+DC00-U+DFFF)
+  return text.replace(/[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/g, '')
+}
+
 // Normalize Unicode text by converting mathematical alphanumeric symbols
 // and other compatibility characters to their base forms.
 // Fixes JSON parsing errors caused by weird fonts (𝖜𝖎𝖎𝖓𝖌𝖔, etc.)
 function normalizeText(text: string): string {
   if (!text) return text
 
+  // First remove unpaired surrogates that break downstream parsers
+  const cleaned = removeSurrogates(text)
+
   // Use Intl.Segmenter + manual NFKD-like replacement for Node.js environment
   // Most importantly, remove mathematical alphanumeric symbols (U+1D400-U+1D7FF)
   try {
     // Node.js native normalization (NFKD)
-    return text.normalize('NFKD')
+    return cleaned.normalize('NFKD')
   } catch {
     // Fallback: Remove mathematical alphanumeric symbols via regex
-    return text.replace(/[\u{1D400}-\u{1D7FF}]/gu, '')
+    return cleaned.replace(/[\u{1D400}-\u{1D7FF}]/gu, '')
   }
 }
 
