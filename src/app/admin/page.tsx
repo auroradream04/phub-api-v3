@@ -858,92 +858,137 @@ export default function AdminDashboard() {
 
             {/* Show search results or category browser */}
             {globalSearchResults.length > 0 ? (
-              <div className="mb-6 p-4 bg-muted/50 rounded-lg border border-border">
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-sm font-semibold text-foreground">{globalSearchTotalCount} videos found</p>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-screen">
+                {/* Left panel - Search info */}
+                <div className="lg:col-span-1 border border-border rounded-lg overflow-hidden bg-muted/30 flex flex-col">
+                  <div className="px-4 py-3 border-b border-border bg-muted/50">
+                    <p className="text-sm font-semibold text-foreground">Search Results</p>
+                    <p className="text-xs text-muted-foreground mt-1">{globalSearchTotalCount} videos found</p>
+                  </div>
+                  <div className="overflow-y-auto flex-1 p-4">
+                    <p className="text-xs text-muted-foreground">Showing results for:</p>
+                    <p className="text-sm font-medium text-foreground mt-2 break-words">{globalVideoSearchQuery}</p>
+                    <button
+                      onClick={() => {
+                        setGlobalVideoSearchQuery('')
+                        setGlobalSearchResults([])
+                        setGlobalSearchTotalCount(0)
+                      }}
+                      className="mt-4 w-full px-3 py-2 text-xs bg-muted hover:bg-muted/80 text-foreground rounded transition-colors"
+                    >
+                      Clear Search
+                    </button>
+                  </div>
                 </div>
-                <div className="max-h-96 overflow-y-auto space-y-2">
-                  {globalPaginatedVideos.map((video) => (
-                    <div key={video.vod_id} className="p-3 bg-card rounded border border-border hover:border-primary/50 transition-colors flex gap-3 items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">{video.vod_name}</p>
-                        <p className="text-xs text-muted-foreground">{video.vod_hits?.toLocaleString() || 0} views</p>
-                      </div>
-                      <div className="flex gap-1 flex-shrink-0">
-                        <a
-                          href={`/watch/${video.vod_id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-1.5 rounded hover:bg-primary/10 text-primary transition-colors"
-                          title="View video"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </a>
+
+                {/* Right panel - Videos */}
+                <div className="lg:col-span-2 border border-border rounded-lg bg-muted/30 flex flex-col h-full">
+                  <div className="bg-muted/50 px-4 py-4 border-b border-border">
+                    <h4 className="font-semibold text-foreground">{globalSearchTotalCount} videos found</h4>
+                  </div>
+                  <div className="overflow-y-auto flex-1">
+                    <div className="divide-y divide-border">
+                      {globalPaginatedVideos.map((video) => (
+                        <div key={video.vod_id} className="px-3 py-2 hover:bg-muted/50 transition-colors">
+                          <div className="flex gap-2 items-start justify-between">
+                            <div className="flex gap-2 flex-1 min-w-0">
+                              {video.vod_pic && (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={video.vod_pic}
+                                  alt={video.vod_name}
+                                  className="w-20 aspect-video rounded object-cover flex-shrink-0"
+                                />
+                              )}
+                              <div className="min-w-0 flex-1 flex flex-col justify-center">
+                                <p className="text-sm font-medium text-foreground line-clamp-1">{video.vod_name}</p>
+                                <div className="flex gap-2 text-xs text-muted-foreground">
+                                  <span>{video.vod_hits?.toLocaleString() || 0} views</span>
+                                  {video.type_name && <span>•</span>}
+                                  {video.type_name && <span>{video.type_name}</span>}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex gap-1 flex-shrink-0">
+                              <a
+                                href={`/watch/${video.vod_id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-1.5 rounded hover:bg-primary/10 text-primary transition-colors"
+                                title="View video"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </a>
+                              <button
+                                onClick={async () => {
+                                  if (confirm('Delete this video?')) {
+                                    try {
+                                      await fetch(`/api/admin/videos/${video.vod_id}`, { method: 'DELETE' })
+                                      setGlobalSearchResults(prev => prev.filter(v => v.vod_id !== video.vod_id))
+                                    } catch (error) {
+                                      console.error('Failed to delete video:', error)
+                                    }
+                                  }
+                                }}
+                                className="p-1.5 rounded hover:bg-red-500/10 text-red-600 transition-colors"
+                                title="Delete video"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  {globalTotalPages > 1 && (
+                    <div className="px-4 py-3 border-t border-border bg-muted/30 flex items-center justify-between w-full flex-shrink-0">
+                      <span className="text-xs text-muted-foreground">{globalSearchPage} / {globalTotalPages}</span>
+                      <div className="flex gap-2 items-center text-xs">
                         <button
                           onClick={async () => {
-                            if (confirm('Delete this video?')) {
-                              try {
-                                await fetch(`/api/admin/videos/${video.vod_id}`, { method: 'DELETE' })
-                                setGlobalSearchResults(prev => prev.filter(v => v.vod_id !== video.vod_id))
-                              } catch (error) {
-                                console.error('Failed to delete video:', error)
-                              }
+                            const newPage = Math.max(1, globalSearchPage - 1)
+                            setGlobalLoadingPage(true)
+                            try {
+                              const res = await fetch(`/api/admin/videos/by-category?search=${encodeURIComponent(globalVideoSearchQuery)}&page=${newPage}`)
+                              const data = await res.json()
+                              setGlobalSearchResults(data.list || [])
+                              setGlobalSearchPage(newPage)
+                            } catch (error) {
+                              console.error('Failed to fetch page:', error)
+                            } finally {
+                              setGlobalLoadingPage(false)
                             }
                           }}
-                          className="p-1.5 rounded hover:bg-red-500/10 text-red-600 transition-colors"
-                          title="Delete video"
+                          disabled={globalSearchPage === 1 || globalLoadingPage}
+                          className="px-2 py-1 text-xs rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          ← Prev
+                        </button>
+                        <button
+                          onClick={async () => {
+                            const newPage = Math.min(globalTotalPages, globalSearchPage + 1)
+                            setGlobalLoadingPage(true)
+                            try {
+                              const res = await fetch(`/api/admin/videos/by-category?search=${encodeURIComponent(globalVideoSearchQuery)}&page=${newPage}`)
+                              const data = await res.json()
+                              setGlobalSearchResults(data.list || [])
+                              setGlobalSearchPage(newPage)
+                            } catch (error) {
+                              console.error('Failed to fetch page:', error)
+                            } finally {
+                              setGlobalLoadingPage(false)
+                            }
+                          }}
+                          disabled={globalSearchPage === globalTotalPages || globalLoadingPage}
+                          className="px-2 py-1 text-xs rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          Next →
                         </button>
                       </div>
                     </div>
-                  ))}
+                  )}
                 </div>
-                {globalTotalPages > 1 && (
-                  <div className="mt-3 flex items-center justify-between">
-                    <button
-                      onClick={async () => {
-                        const newPage = Math.max(1, globalSearchPage - 1)
-                        setGlobalLoadingPage(true)
-                        try {
-                          const res = await fetch(`/api/admin/videos/by-category?search=${encodeURIComponent(globalVideoSearchQuery)}&page=${newPage}`)
-                          const data = await res.json()
-                          setGlobalSearchResults(prev => [...prev.slice(0, (newPage - 1) * videosPerPage), ...(data.list || [])])
-                          setGlobalSearchPage(newPage)
-                        } catch (error) {
-                          console.error('Failed to fetch page:', error)
-                        } finally {
-                          setGlobalLoadingPage(false)
-                        }
-                      }}
-                      disabled={globalSearchPage === 1 || globalLoadingPage}
-                      className="px-2 py-1 text-xs rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {globalLoadingPage ? '⏳' : '←'} Prev
-                    </button>
-                    <span className="text-xs text-muted-foreground">{globalSearchPage} / {globalTotalPages}</span>
-                    <button
-                      onClick={async () => {
-                        const newPage = Math.min(globalTotalPages, globalSearchPage + 1)
-                        setGlobalLoadingPage(true)
-                        try {
-                          const res = await fetch(`/api/admin/videos/by-category?search=${encodeURIComponent(globalVideoSearchQuery)}&page=${newPage}`)
-                          const data = await res.json()
-                          setGlobalSearchResults(prev => [...prev.slice(0, (newPage - 1) * videosPerPage), ...(data.list || [])])
-                          setGlobalSearchPage(newPage)
-                        } catch (error) {
-                          console.error('Failed to fetch page:', error)
-                        } finally {
-                          setGlobalLoadingPage(false)
-                        }
-                      }}
-                      disabled={globalSearchPage === globalTotalPages || globalLoadingPage}
-                      className="px-2 py-1 text-xs rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Next {globalLoadingPage ? '⏳' : '→'}
-                    </button>
-                  </div>
-                )}
               </div>
             ) : (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-screen">
