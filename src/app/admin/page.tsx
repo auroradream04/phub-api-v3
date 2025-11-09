@@ -789,56 +789,75 @@ export default function AdminDashboard() {
           <div className="bg-card border border-border rounded-xl p-6 shadow-lg mt-6">
             <h3 className="text-xl font-bold text-foreground mb-4">Category Browser</h3>
 
-            {/* Global Search */}
-            <div className="mb-6">
-              <label className="block text-sm font-semibold text-foreground mb-2">
-                Search all videos (without selecting category)
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Search video name..."
-                  value={globalVideoSearchQuery}
-                  onChange={(e) => {
-                    setGlobalVideoSearchQuery(e.target.value)
-                    setGlobalSearchPage(1)
-                  }}
-                  className="flex-1 px-4 py-2 bg-muted text-foreground rounded border border-border focus:border-primary focus:outline-none"
-                />
-                <button
-                  onClick={async () => {
-                    if (!globalVideoSearchQuery.trim()) {
-                      setGlobalSearchResults([])
-                      setGlobalSearchTotalCount(0)
-                      return
-                    }
-                    setLoadingGlobalSearch(true)
-                    try {
-                      // Fetch first page to get total count
-                      const res = await fetch(`/api/admin/videos/by-category?search=${encodeURIComponent(globalVideoSearchQuery)}&page=1`)
-                      const data = await res.json()
-
-                      setGlobalSearchResults(data.list || [])
-                      setGlobalSearchTotalCount(data.total || 0)
-                      setGlobalSearchPage(1)
-                    } catch (error) {
-                      console.error('Global search failed:', error)
-                      setGlobalSearchResults([])
-                      setGlobalSearchTotalCount(0)
-                    } finally {
-                      setLoadingGlobalSearch(false)
-                    }
-                  }}
-                  className="px-6 py-2 bg-primary text-primary-foreground rounded hover:opacity-80 transition-opacity font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={loadingGlobalSearch}
-                >
-                  {loadingGlobalSearch ? 'Searching...' : 'Search'}
-                </button>
-              </div>
+            {/* Tabs */}
+            <div className="flex gap-2 mb-4 border-b border-border">
+              <button
+                onClick={() => {setCategoryTab('database'); setSelectedCategory(null); setSelectedConsolidated(null); setCategoryVideos([]); setVideoPage(1); setVideoSearchQuery('')}}
+                className={`px-4 py-2 font-medium transition-all ${
+                  categoryTab === 'database'
+                    ? 'text-primary border-b-2 border-primary'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <ListIcon className="w-4 h-4 inline mr-2" />
+                Database ({stats.categories.length})
+              </button>
+              <button
+                onClick={() => {setCategoryTab('consolidated'); setSelectedCategory(null); setSelectedConsolidated(null); setCategoryVideos([]); setVideoPage(1); setVideoSearchQuery('')}}
+                className={`px-4 py-2 font-medium transition-all ${
+                  categoryTab === 'consolidated'
+                    ? 'text-primary border-b-2 border-primary'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Grid className="w-4 h-4 inline mr-2" />
+                Consolidated ({CONSOLIDATED_CATEGORIES.length})
+              </button>
             </div>
 
-            {/* Global Search Results */}
-            {globalSearchResults.length > 0 && (
+            {/* Global Search */}
+            <div className="mb-4 flex gap-2">
+              <input
+                type="text"
+                placeholder="Search all videos..."
+                value={globalVideoSearchQuery}
+                onChange={(e) => {
+                  setGlobalVideoSearchQuery(e.target.value)
+                  setGlobalSearchPage(1)
+                }}
+                className="flex-1 px-4 py-2 bg-muted text-foreground rounded border border-border focus:border-primary focus:outline-none text-sm"
+              />
+              <button
+                onClick={async () => {
+                  if (!globalVideoSearchQuery.trim()) {
+                    setGlobalSearchResults([])
+                    setGlobalSearchTotalCount(0)
+                    return
+                  }
+                  setLoadingGlobalSearch(true)
+                  try {
+                    const res = await fetch(`/api/admin/videos/by-category?search=${encodeURIComponent(globalVideoSearchQuery)}&page=1`)
+                    const data = await res.json()
+                    setGlobalSearchResults(data.list || [])
+                    setGlobalSearchTotalCount(data.total || 0)
+                    setGlobalSearchPage(1)
+                  } catch (error) {
+                    console.error('Global search failed:', error)
+                    setGlobalSearchResults([])
+                    setGlobalSearchTotalCount(0)
+                  } finally {
+                    setLoadingGlobalSearch(false)
+                  }
+                }}
+                className="px-6 py-2 bg-primary text-primary-foreground rounded hover:opacity-80 transition-opacity font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={loadingGlobalSearch}
+              >
+                {loadingGlobalSearch ? 'Searching...' : 'Search'}
+              </button>
+            </div>
+
+            {/* Show search results or category browser */}
+            {globalSearchResults.length > 0 ? (
               <div className="mb-6 p-4 bg-muted/50 rounded-lg border border-border">
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-sm font-semibold text-foreground">{globalSearchTotalCount} videos found</p>
@@ -926,34 +945,7 @@ export default function AdminDashboard() {
                   </div>
                 )}
               </div>
-            )}
-
-            {/* Tabs */}
-            <div className="flex gap-2 mb-4 border-b border-border">
-              <button
-                onClick={() => {setCategoryTab('database'); setSelectedCategory(null); setSelectedConsolidated(null); setCategoryVideos([]); setVideoPage(1); setVideoSearchQuery('')}}
-                className={`px-4 py-2 font-medium transition-all ${
-                  categoryTab === 'database'
-                    ? 'text-primary border-b-2 border-primary'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <ListIcon className="w-4 h-4 inline mr-2" />
-                Database ({stats.categories.length})
-              </button>
-              <button
-                onClick={() => {setCategoryTab('consolidated'); setSelectedCategory(null); setSelectedConsolidated(null); setCategoryVideos([]); setVideoPage(1); setVideoSearchQuery('')}}
-                className={`px-4 py-2 font-medium transition-all ${
-                  categoryTab === 'consolidated'
-                    ? 'text-primary border-b-2 border-primary'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Grid className="w-4 h-4 inline mr-2" />
-                Consolidated ({CONSOLIDATED_CATEGORIES.length})
-              </button>
-            </div>
-
+            ) : (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-screen">
               {/* Categories List */}
               <div className="lg:col-span-1 border border-border rounded-lg overflow-hidden bg-muted/30 flex flex-col">
@@ -1295,6 +1287,7 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </div>
+            )}
           </div>
         )}
       </div>
