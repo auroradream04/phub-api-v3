@@ -132,9 +132,13 @@ export async function POST(_request: NextRequest) {
     const responseText = await fetch(apiUrl).then(r => r.text())
     console.log(`[Scraper Videos] Got response, size: ${responseText.length} bytes`)
 
-    // Sanitize malformed JSON with invalid UTF-16 surrogate pairs before parsing
-    // Some APIs send invalid escape sequences that cause JSON parsing to fail
-    const sanitized = responseText.replace(/\\u([dD][89aAbB][0-9a-fA-F]{2})\\u([dD][c-fC-F][0-9a-fA-F]{2})/g, '?')
+    // Fix malformed JSON with unpaired UTF-16 surrogates before parsing
+    // API may send orphaned high surrogates like \ud835 without matching low surrogates
+    // Remove unpaired high surrogates: \ud800-\udbff not followed by \udc00-\udfff
+    let sanitized = responseText.replace(/\\u([dD][89aAbB][0-9a-fA-F]{2})(?!\\u[dD][c-fC-F][0-9a-fA-F]{2})/g, '?')
+    // Also remove any orphaned low surrogates: \udc00-\udfff not preceded by a high surrogate
+    sanitized = sanitized.replace(/(?<!\\u[dD][89aAbB][0-9a-fA-F]{2})\\u([dD][c-fC-F][0-9a-fA-F]{2})/g, '?')
+
     let data
     try {
       data = JSON.parse(sanitized)
