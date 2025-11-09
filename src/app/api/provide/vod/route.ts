@@ -199,8 +199,9 @@ function jsonToXml(response: MaccmsJsonResponse): string {
     xml += `      <year>${escapeXml(video.vod_year)}</year>\n`
     xml += `      <state>${escapeXml(video.vod_remarks)}</state>\n`
     xml += `      <note>${escapeXml(video.vod_remarks)}</note>\n`
-    xml += `      <actor>${wrapCDATA(video.vod_actor)}</actor>\n`
-    xml += `      <director>${wrapCDATA(video.vod_director)}</director>\n`
+    // Strip actor and director in XML to prevent MACCMS blend logic false matches
+    xml += `      <actor>${wrapCDATA('')}</actor>\n`
+    xml += `      <director>${wrapCDATA('')}</director>\n`
     xml += `      <hit>${video.vod_hits}</hit>\n`
     xml += '      <dl>\n'
     xml += `        <dd flag="${escapeXml(video.vod_play_from)}">${wrapCDATA(video.vod_play_url)}</dd>\n`
@@ -291,8 +292,10 @@ export async function GET(_request: NextRequest) {
           vod_pic_thumb: '',
           vod_pic_slide: '',
           vod_pic_screenshot: '',
-          vod_actor: cleanActor,
-          vod_director: v.vodDirector || '',
+          // Strip actor and director to prevent MACCMS blend logic false matches
+          // These fields are stored in our database but not sent to MACCMS for collection
+          vod_actor: '',
+          vod_director: '',
           vod_writer: '',
           vod_behind: '',
           vod_blurb: cleanContent,
@@ -454,8 +457,10 @@ export async function GET(_request: NextRequest) {
           vod_pic_thumb: '',
           vod_pic_slide: '',
           vod_pic_screenshot: '',
-          vod_actor: cleanActor,
-          vod_director: v.vodDirector || '',
+          // Strip actor and director to prevent MACCMS blend logic false matches
+          // These fields are stored in our database but not sent to MACCMS for collection
+          vod_actor: '',
+          vod_director: '',
           vod_writer: '',
           vod_behind: '',
           vod_blurb: cleanContent,
