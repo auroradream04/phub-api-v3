@@ -72,6 +72,9 @@ export default function AdminDashboard() {
   const [globalSearchPage, setGlobalSearchPage] = useState(1)
   const [globalSearchTotalCount, setGlobalSearchTotalCount] = useState(0)
   const [globalLoadingPage, setGlobalLoadingPage] = useState(false)
+  const [selectedSearchVideoIds, setSelectedSearchVideoIds] = useState<Set<string>>(new Set())
+  const [selectAllSearchVideos, setSelectAllSearchVideos] = useState(false)
+  const [deletingAllSearch, setDeletingAllSearch] = useState(false)
 
   // Check for saved progress on load
   useEffect(() => {
@@ -883,15 +886,55 @@ export default function AdminDashboard() {
 
                 {/* Right panel - Videos */}
                 <div className="lg:col-span-2 border border-border rounded-lg bg-muted/30 flex flex-col h-full">
-                  <div className="bg-muted/50 px-4 py-4 border-b border-border">
-                    <h4 className="font-semibold text-foreground">{globalSearchTotalCount} videos found</h4>
+                  <div className="bg-muted/50 px-4 py-4 border-b border-border flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={selectAllSearchVideos}
+                        onChange={(e) => {
+                          setSelectAllSearchVideos(e.target.checked)
+                          if (e.target.checked) {
+                            const allIds = new Set(globalPaginatedVideos.map(v => v.vod_id))
+                            setSelectedSearchVideoIds(allIds)
+                          } else {
+                            setSelectedSearchVideoIds(new Set())
+                          }
+                        }}
+                        className="w-4 h-4 cursor-pointer"
+                        title="Select all videos on this page"
+                      />
+                      <h4 className="font-semibold text-foreground">
+                        {globalSearchTotalCount} videos found
+                        {selectedSearchVideoIds.size > 0 && <span className="text-primary ml-2">({selectedSearchVideoIds.size} selected)</span>}
+                      </h4>
+                    </div>
                   </div>
                   <div className="overflow-y-auto flex-1">
                     <div className="divide-y divide-border">
                       {globalPaginatedVideos.map((video) => (
-                        <div key={video.vod_id} className="px-3 py-2 hover:bg-muted/50 transition-colors">
+                        <div
+                          key={video.vod_id}
+                          className={`px-3 py-2 hover:bg-muted/50 transition-colors ${
+                            selectedSearchVideoIds.has(video.vod_id) ? 'bg-primary/10' : ''
+                          }`}
+                        >
                           <div className="flex gap-2 items-start justify-between">
-                            <div className="flex gap-2 flex-1 min-w-0">
+                            <div className="flex gap-2 flex-1 min-w-0 items-start">
+                              <input
+                                type="checkbox"
+                                checked={selectedSearchVideoIds.has(video.vod_id)}
+                                onChange={(e) => {
+                                  const newSelected = new Set(selectedSearchVideoIds)
+                                  if (e.target.checked) {
+                                    newSelected.add(video.vod_id)
+                                  } else {
+                                    newSelected.delete(video.vod_id)
+                                  }
+                                  setSelectedSearchVideoIds(newSelected)
+                                  setSelectAllSearchVideos(newSelected.size === globalPaginatedVideos.length)
+                                }}
+                                className="w-4 h-4 cursor-pointer mt-1 flex-shrink-0"
+                              />
                               {video.vod_pic && (
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img
@@ -925,6 +968,11 @@ export default function AdminDashboard() {
                                     try {
                                       await fetch(`/api/admin/videos/${video.vod_id}`, { method: 'DELETE' })
                                       setGlobalSearchResults(prev => prev.filter(v => v.vod_id !== video.vod_id))
+                                      setSelectedSearchVideoIds(prev => {
+                                        const newSet = new Set(prev)
+                                        newSet.delete(video.vod_id)
+                                        return newSet
+                                      })
                                     } catch (error) {
                                       console.error('Failed to delete video:', error)
                                     }
@@ -941,6 +989,68 @@ export default function AdminDashboard() {
                       ))}
                     </div>
                   </div>
+
+                  {/* Bulk actions */}
+                  {selectedSearchVideoIds.size > 0 && (
+                    <div className="px-4 py-3 border-t border-border bg-muted/50 flex gap-2 flex-wrap">
+                      <button
+                        onClick={async () => {
+                          if (!confirm(`Delete ${selectedSearchVideoIds.size} selected videos?`)) return
+                          setDeletingAllSearch(true)
+                          try {
+                            const ids = Array.from(selectedSearchVideoIds)
+                            for (const id of ids) {
+                              await fetch(`/api/admin/videos/${id}`, { method: 'DELETE' })
+                            }
+                            setGlobalSearchResults(prev => prev.filter(v => !selectedSearchVideoIds.has(v.vod_id)))
+                            setSelectedSearchVideoIds(new Set())
+                            setSelectAllSearchVideos(false)
+                          } catch (error) {
+                            console.error('Failed to delete videos:', error)
+                          } finally {
+                            setDeletingAllSearch(false)
+                          }
+                        }}
+                        disabled={deletingAllSearch}
+                        className="px-3 py-2 text-xs bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 transition-colors"
+                      >
+                        {deletingAllSearch ? 'Deleting...' : `Delete Selected (${selectedSearchVideoIds.size})`}
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (!confirm(`Delete ALL ${globalSearchTotalCount} videos from this search? This action cannot be undone!`)) return
+                          setDeletingAllSearch(true)
+                          try {
+                            // Fetch all video IDs from all pages
+                            const allVideoIds: string[] = []
+                            const totalPages = Math.ceil(globalSearchTotalCount / 20)
+                            for (let page = 1; page <= totalPages; page++) {
+                              const res = await fetch(`/api/admin/videos/by-category?search=${encodeURIComponent(globalVideoSearchQuery)}&page=${page}`)
+                              const data = await res.json()
+                              allVideoIds.push(...(data.list || []).map((v: MaccmsVideo) => v.vod_id))
+                            }
+                            // Delete all videos
+                            for (const id of allVideoIds) {
+                              await fetch(`/api/admin/videos/${id}`, { method: 'DELETE' })
+                            }
+                            setGlobalSearchResults([])
+                            setGlobalSearchTotalCount(0)
+                            setSelectedSearchVideoIds(new Set())
+                            setSelectAllSearchVideos(false)
+                            setGlobalVideoSearchQuery('')
+                          } catch (error) {
+                            console.error('Failed to delete all videos:', error)
+                          } finally {
+                            setDeletingAllSearch(false)
+                          }
+                        }}
+                        disabled={deletingAllSearch}
+                        className="px-3 py-2 text-xs bg-red-700 text-white rounded hover:bg-red-800 disabled:opacity-50 transition-colors"
+                      >
+                        {deletingAllSearch ? 'Deleting All...' : `Delete All ${globalSearchTotalCount} Videos`}
+                      </button>
+                    </div>
+                  )}
                   {globalTotalPages > 1 && (
                     <div className="px-4 py-3 border-t border-border bg-muted/30 flex items-center justify-between w-full flex-shrink-0">
                       <span className="text-xs text-muted-foreground">{globalSearchPage} / {globalTotalPages}</span>
