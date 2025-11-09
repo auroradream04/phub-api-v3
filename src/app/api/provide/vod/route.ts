@@ -29,8 +29,6 @@ interface MaccmsVideo {
   vod_pic_thumb: string
   vod_pic_slide: string
   vod_pic_screenshot: string | null
-  vod_actor: string
-  vod_director: string
   vod_writer: string
   vod_behind: string
   vod_blurb: string
@@ -40,9 +38,6 @@ interface MaccmsVideo {
   vod_serial: string
   vod_tv: string
   vod_weekday: string
-  vod_area: string
-  vod_lang: string
-  vod_year: string
   vod_version: string
   vod_state: string
   vod_author: string
@@ -194,13 +189,8 @@ function jsonToXml(response: MaccmsJsonResponse): string {
     xml += `      <pic_thumb>${wrapCDATA(video.vod_pic_thumb || video.vod_pic)}</pic_thumb>\n`
     xml += `      <pic_slide>${wrapCDATA(video.vod_pic_slide || video.vod_pic)}</pic_slide>\n`
     xml += `      <pic_screenshot>${wrapCDATA(video.vod_pic_screenshot || video.vod_pic)}</pic_screenshot>\n`
-    xml += `      <lang>${escapeXml(video.vod_lang)}</lang>\n`
-    xml += `      <area>${escapeXml(video.vod_area)}</area>\n`
-    xml += `      <year>${escapeXml(video.vod_year)}</year>\n`
     xml += `      <state>${escapeXml(video.vod_remarks)}</state>\n`
     xml += `      <note>${escapeXml(video.vod_remarks)}</note>\n`
-    xml += `      <actor>${wrapCDATA(video.vod_actor)}</actor>\n`
-    xml += `      <director>${wrapCDATA(video.vod_director)}</director>\n`
     xml += `      <hit>${video.vod_hits}</hit>\n`
     xml += '      <dl>\n'
     xml += `        <dd flag="${escapeXml(video.vod_play_from)}">${wrapCDATA(video.vod_play_url)}</dd>\n`
@@ -280,7 +270,6 @@ export async function GET(_request: NextRequest) {
         const typeId = getTypeIdForDatabaseCategory(v.typeName)
         // Sanitize all text fields to remove emojis (failsafe for MACCMS latin1 encoding)
         const cleanName = stripEmojis(v.vodName)
-        const cleanActor = stripEmojis(v.vodActor || '')
         const cleanRemarks = stripEmojis(v.vodRemarks || '')
         const cleanContent = stripEmojis(v.vodContent || '')
 
@@ -301,8 +290,6 @@ export async function GET(_request: NextRequest) {
           vod_pic_thumb: '',
           vod_pic_slide: '',
           vod_pic_screenshot: '',
-          vod_actor: cleanActor,
-          vod_director: v.vodDirector || '',
           vod_writer: '',
           vod_behind: '',
           vod_blurb: cleanContent,
@@ -312,9 +299,6 @@ export async function GET(_request: NextRequest) {
           vod_serial: '0',
           vod_tv: '',
           vod_weekday: '',
-          vod_area: v.vodArea || '',
-          vod_lang: v.vodLang || '',
-          vod_year: v.vodYear || '',
           vod_version: '',
           vod_state: '',
           vod_author: '',
@@ -443,7 +427,6 @@ export async function GET(_request: NextRequest) {
         const typeId = getTypeIdForDatabaseCategory(v.typeName)
         // Sanitize all text fields to remove emojis (failsafe for MACCMS latin1 encoding)
         const cleanName = stripEmojis(v.vodName)
-        const cleanActor = stripEmojis(v.vodActor || '')
         const cleanRemarks = stripEmojis(v.vodRemarks || '')
         const cleanContent = stripEmojis(v.vodContent || '')
 
@@ -464,8 +447,6 @@ export async function GET(_request: NextRequest) {
           vod_pic_thumb: '',
           vod_pic_slide: '',
           vod_pic_screenshot: '',
-          vod_actor: cleanActor,
-          vod_director: v.vodDirector || '',
           vod_writer: '',
           vod_behind: '',
           vod_blurb: cleanContent,
@@ -475,9 +456,6 @@ export async function GET(_request: NextRequest) {
           vod_serial: '0',
           vod_tv: '',
           vod_weekday: '',
-          vod_area: v.vodArea || '',
-          vod_lang: v.vodLang || '',
-          vod_year: v.vodYear || '',
           vod_version: '',
           vod_state: '',
           vod_author: '',
