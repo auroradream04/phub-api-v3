@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Database, Grid, List } from 'lucide-react'
+import { Database, Grid, List, Trash2, CheckSquare, Square } from 'lucide-react'
 import {
   CONSOLIDATED_CATEGORIES,
   CONSOLIDATED_TO_CHINESE,
@@ -38,6 +38,10 @@ export default function CategoriesAdmin() {
   const [categoryVideos, setCategoryVideos] = useState<MaccmsVideo[]>([])
   const [loadingVideos, setLoadingVideos] = useState(false)
   const [totalVideos, setTotalVideos] = useState(0)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedVideos, setSelectedVideos] = useState<Set<string>>(new Set())
+  const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   // Fetch database categories on load
   useEffect(() => {
@@ -85,6 +89,8 @@ export default function CategoriesAdmin() {
   // Fetch videos for selected category
   const handleSelectDatabase = async (categoryName: string) => {
     setSelectedCategory(categoryName)
+    setSearchQuery('')
+    setSelectedVideos(new Set())
     setLoadingVideos(true)
     try {
       const res = await fetch(
@@ -102,6 +108,8 @@ export default function CategoriesAdmin() {
 
   const handleSelectConsolidated = async (consolidated: string, typeId: number) => {
     setSelectedCategory(`${consolidated} (${typeId})`)
+    setSearchQuery('')
+    setSelectedVideos(new Set())
     setLoadingVideos(true)
     try {
       const res = await fetch(
@@ -114,6 +122,59 @@ export default function CategoriesAdmin() {
       setCategoryVideos([])
     } finally {
       setLoadingVideos(false)
+    }
+  }
+
+  const handleVideoCheckbox = (index: number, vodId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+
+    const newSelected = new Set(selectedVideos)
+
+    // Shift+click for range selection
+    if (e.shiftKey && lastSelectedIndex !== null) {
+      const start = Math.min(lastSelectedIndex, index)
+      const end = Math.max(lastSelectedIndex, index)
+      for (let i = start; i <= end; i++) {
+        newSelected.add(categoryVideos[i]!.vod_id)
+      }
+    } else {
+      // Regular click
+      if (newSelected.has(vodId)) {
+        newSelected.delete(vodId)
+      } else {
+        newSelected.add(vodId)
+      }
+    }
+
+    setSelectedVideos(newSelected)
+    setLastSelectedIndex(index)
+  }
+
+  const handleSelectAll = () => {
+    if (selectedVideos.size === categoryVideos.length) {
+      setSelectedVideos(new Set())
+    } else {
+      setSelectedVideos(new Set(categoryVideos.map(v => v.vod_id)))
+    }
+  }
+
+  const handleDeleteSelected = async () => {
+    if (selectedVideos.size === 0) return
+    if (!confirm(`Delete ${selectedVideos.size} videos? This cannot be undone.`)) return
+
+    setDeleting(true)
+    try {
+      for (const vodId of selectedVideos) {
+        await fetch(`/api/admin/videos/${vodId}`, { method: 'DELETE' })
+      }
+      // Refresh videos
+      setCategoryVideos(categoryVideos.filter(v => !selectedVideos.has(v.vod_id)))
+      setSelectedVideos(new Set())
+    } catch (error) {
+      console.error('Failed to delete videos:', error)
+      alert('Failed to delete some videos')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -158,18 +219,31 @@ export default function CategoriesAdmin() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Categories List */}
           <div className="lg:col-span-1">
-            <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
+            <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden flex flex-col">
               <div className="bg-slate-700 px-4 py-3 border-b border-slate-600">
                 <h2 className="font-semibold text-white">
                   {activeTab === 'database' ? 'Database Categories' : 'Consolidated Categories'}
                 </h2>
               </div>
 
-              <div className="max-h-[600px] overflow-y-auto">
+              {/* Search Box */}
+              <div className="px-4 py-3 border-b border-slate-600 bg-slate-800">
+                <input
+                  type="text"
+                  placeholder="Search categories..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div className="max-h-[550px] overflow-y-auto flex-1">
                 {activeTab === 'database' ? (
                   // Database Categories
                   <div className="divide-y divide-slate-700">
-                    {databaseCategories.map((cat, idx) => (
+                    {databaseCategories
+                      .filter(cat => cat.typeName.toLowerCase().includes(searchQuery.toLowerCase()))
+                      .map((cat, idx) => (
                       <button
                         key={idx}
                         onClick={() => handleSelectDatabase(cat.typeName)}
@@ -191,7 +265,12 @@ export default function CategoriesAdmin() {
                 ) : (
                   // Consolidated Categories
                   <div className="divide-y divide-slate-700">
-                    {consolidatedCategories.map((cat, idx) => (
+                    {consolidatedCategories
+                      .filter(cat =>
+                        cat.chinese.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        cat.consolidated.toLowerCase().includes(searchQuery.toLowerCase())
+                      )
+                      .map((cat, idx) => (
                       <button
                         key={idx}
                         onClick={() => handleSelectConsolidated(cat.consolidated, cat.typeId)}
@@ -223,33 +302,87 @@ export default function CategoriesAdmin() {
 
           {/* Videos List */}
           <div className="lg:col-span-2">
-            <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
+            <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden flex flex-col">
               <div className="bg-slate-700 px-4 py-3 border-b border-slate-600">
-                <h2 className="font-semibold text-white">
-                  {selectedCategory ? `Videos: ${selectedCategory}` : 'Select a category'}
-                </h2>
-                <p className="text-xs text-slate-400 mt-1">
-                  {loadingVideos ? 'Loading...' : `${categoryVideos.length} videos`}
-                </p>
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <h2 className="font-semibold text-white">
+                      {selectedCategory ? `Videos: ${selectedCategory}` : 'Select a category'}
+                    </h2>
+                    <p className="text-xs text-slate-400 mt-1">
+                      {loadingVideos ? 'Loading...' : `${categoryVideos.length} videos${selectedVideos.size > 0 ? ` (${selectedVideos.size} selected)` : ''}`}
+                    </p>
+                  </div>
+                  {categoryVideos.length > 0 && (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleSelectAll}
+                        className="px-3 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded flex items-center gap-1"
+                      >
+                        {selectedVideos.size === categoryVideos.length ? (
+                          <>
+                            <CheckSquare className="w-4 h-4" />
+                            Deselect All
+                          </>
+                        ) : (
+                          <>
+                            <Square className="w-4 h-4" />
+                            Select All
+                          </>
+                        )}
+                      </button>
+                      {selectedVideos.size > 0 && (
+                        <button
+                          onClick={handleDeleteSelected}
+                          disabled={deleting}
+                          className="px-3 py-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded flex items-center gap-1 disabled:opacity-50"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Delete ({selectedVideos.size})
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
 
-              <div className="max-h-[600px] overflow-y-auto">
+              <div className="max-h-[550px] overflow-y-auto flex-1">
                 {loadingVideos ? (
                   <div className="p-8 text-center text-slate-400">Loading videos...</div>
                 ) : categoryVideos.length > 0 ? (
                   <div className="divide-y divide-slate-700">
                     {categoryVideos.map((video, idx) => (
-                      <div key={idx} className="px-4 py-3 hover:bg-slate-700 transition-colors">
+                      <div
+                        key={idx}
+                        className={`px-4 py-3 hover:bg-slate-700 transition-colors cursor-pointer ${
+                          selectedVideos.has(video.vod_id) ? 'bg-slate-700' : ''
+                        }`}
+                        onClick={(e) => {
+                          if (!(e.target as HTMLElement).closest('button')) {
+                            handleVideoCheckbox(idx, video.vod_id, e as unknown as React.MouseEvent)
+                          }
+                        }}
+                      >
                         <div className="flex gap-3">
+                          <button
+                            onClick={(e) => handleVideoCheckbox(idx, video.vod_id, e)}
+                            className="mt-1 flex-shrink-0"
+                          >
+                            {selectedVideos.has(video.vod_id) ? (
+                              <CheckSquare className="w-5 h-5 text-blue-400" />
+                            ) : (
+                              <Square className="w-5 h-5 text-slate-500" />
+                            )}
+                          </button>
                           {video.vod_pic && (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
                               src={video.vod_pic}
                               alt={video.vod_name}
-                              className="w-16 h-20 rounded object-cover"
+                              className="w-16 h-20 rounded object-cover flex-shrink-0"
                             />
                           )}
-                          <div className="flex-1">
+                          <div className="flex-1 min-w-0">
                             <p className="text-white font-medium text-sm line-clamp-2">
                               {video.vod_name}
                             </p>
