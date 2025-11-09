@@ -11,6 +11,39 @@ import {
 
 export const revalidate = 7200 // 2 hours
 
+// Normalize Unicode text by converting mathematical alphanumeric symbols
+// and other compatibility characters to their base forms.
+// Fixes JSON parsing errors caused by weird fonts (𝖜𝖎𝖎𝖓𝖌𝖔, etc.)
+function normalizeText(text: string): string {
+  if (!text) return text
+
+  // Use Intl.Segmenter + manual NFKD-like replacement for Node.js environment
+  // Most importantly, remove mathematical alphanumeric symbols (U+1D400-U+1D7FF)
+  try {
+    // Node.js native normalization (NFKD)
+    return text.normalize('NFKD')
+  } catch {
+    // Fallback: Remove mathematical alphanumeric symbols via regex
+    return text.replace(/[\u{1D400}-\u{1D7FF}]/gu, '')
+  }
+}
+
+// Recursively normalize all string values in an object
+function normalizeStrings<T>(obj: T): T {
+  if (typeof obj === 'string') {
+    return normalizeText(obj) as T
+  } else if (Array.isArray(obj)) {
+    return obj.map((item) => normalizeStrings(item)) as T
+  } else if (obj !== null && typeof obj === 'object') {
+    const normalized: Record<string, any> = {}
+    for (const [key, value] of Object.entries(obj)) {
+      normalized[key] = normalizeStrings(value)
+    }
+    return normalized as T
+  }
+  return obj
+}
+
 // Type definitions for Maccms response format
 interface MaccmsVideo {
   vod_id: string
@@ -545,7 +578,7 @@ export async function GET(_request: NextRequest) {
     const categories = MACCMS_CATEGORIES
 
     // Prepare response
-    const response: MaccmsJsonResponse = {
+    let response: MaccmsJsonResponse = {
       code: 1,
       msg: params.ac === 'detail' ? '数据详情' : '数据列表',
       page: params.pg,
@@ -555,6 +588,10 @@ export async function GET(_request: NextRequest) {
       list: videos,
       class: categories,
     }
+
+    // Normalize all string values to fix Unicode parsing issues
+    // This converts weird fonts (𝖜𝖆𝖘𝖍) to normal characters (wash)
+    response = normalizeStrings(response)
 
     // Return response in requested format
     const duration = Date.now() - requestStart
