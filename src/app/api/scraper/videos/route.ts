@@ -41,6 +41,36 @@ function stripEmojis(str: string): string {
     .trim()
 }
 
+// Helper to deduplicate video names by checking for existing duplicates and appending (2), (3), etc.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function deduplicateVideoName(baseName: string, tx: any): Promise<string> {
+  // Check if base name exists
+  const existingWithBaseName = await tx.video.findFirst({
+    where: { vodName: baseName },
+    select: { id: true },
+  })
+
+  if (!existingWithBaseName) {
+    // Base name is available
+    return baseName
+  }
+
+  // Find the next available suffix
+  for (let suffix = 2; suffix <= 1000; suffix++) {
+    const candidateName = `${baseName} (${suffix})`
+    const existingWithSuffix = await tx.video.findFirst({
+      where: { vodName: candidateName },
+      select: { id: true },
+    })
+    if (!existingWithSuffix) {
+      return candidateName
+    }
+  }
+
+  // Fallback: shouldn't reach here normally
+  return `${baseName} (${Math.random().toString(36).substring(7)})`
+}
+
 // parseDuration is now imported from scraper-utils
 
 export async function POST(_request: NextRequest) {
@@ -245,7 +275,10 @@ export async function POST(_request: NextRequest) {
           // Safe category merging with length validation
           const vodClass = mergeCategories(existing?.vodClass, typeName)
 
-          const vodEn = finalTitle
+          // Deduplicate video name if it already exists
+          const deduplicatedName = await deduplicateVideoName(finalTitle, tx)
+
+          const vodEn = deduplicatedName
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/^-|-$/g, '')
@@ -255,7 +288,7 @@ export async function POST(_request: NextRequest) {
           await tx.video.upsert({
             where: { vodId: item.video.id },
             update: {
-              vodName: finalTitle,
+              vodName: deduplicatedName,
               originalTitle: shouldTranslate ? item.cleanTitle : undefined,
               typeId,
               typeName,
@@ -276,7 +309,7 @@ export async function POST(_request: NextRequest) {
             },
             create: {
               vodId: item.video.id,
-              vodName: finalTitle,
+              vodName: deduplicatedName,
               originalTitle: shouldTranslate ? item.cleanTitle : undefined,
               typeId,
               typeName,
@@ -291,7 +324,7 @@ export async function POST(_request: NextRequest) {
               vodYear: item.year,
               vodActor: item.cleanProvider,
               vodDirector: '',
-              vodContent: finalTitle,
+              vodContent: deduplicatedName,
               vodPlayUrl: `HD$${baseUrl}/api/watch/${item.video.id}/stream.m3u8?q=720`,
               vodProvider: item.cleanProvider,
               views: item.views,
