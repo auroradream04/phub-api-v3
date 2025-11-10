@@ -81,7 +81,7 @@ export async function translateToZhCN(text: string): Promise<TranslationResult> 
       if (!proxyInfo) {
         console.warn('[Translation] No proxy available, translating without proxy')
         const result = await withTimeout(
-          translate(text, { to: 'zh-CN' }),
+          translate(text, { from: 'auto', to: 'zh-CN' }),
           TIMEOUT_MS,
           'Translation timeout'
         )
@@ -93,6 +93,7 @@ export async function translateToZhCN(text: string): Promise<TranslationResult> 
       // Translate with proxy and timeout
       const result = await withTimeout(
         translate(text, {
+          from: 'auto',
           to: 'zh-CN',
           fetchOptions: {
             agent: proxyInfo.agent
@@ -242,6 +243,7 @@ export async function translateBatchEfficient(titles: string[]): Promise<Transla
 
         const result = await withTimeout(
           translate(bundledText, {
+            from: 'auto',
             to: 'zh-CN',
             fetchOptions: proxyInfo ? { agent: proxyInfo.agent } : undefined
           }),
