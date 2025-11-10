@@ -9,7 +9,7 @@
  *   npx tsx scripts/reset-translation-status.ts success  // Reset only successful videos (needsTranslation=false)
  */
 
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from '../src/generated/prisma'
 
 const prisma = new PrismaClient()
 
