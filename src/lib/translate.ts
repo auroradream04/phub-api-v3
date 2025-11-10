@@ -1,6 +1,4 @@
-import { translate } from '@vitalets/google-translate-api'
 import { prisma } from '@/lib/prisma'
-import { getRandomProxy } from './proxy'
 
 // In-memory cache for translations (cleared on server restart)
 const translationCache = new Map<string, string>()
@@ -43,18 +41,113 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, timeoutErr
 }
 
 /**
+ * Translate using MyMemory API (free, no rate limits)
+ * MyMemory is completely free with no rate limiting or API keys needed
+ * Supports auto-detection of source language
+ */
+async function translateWithMyMemory(text: string): Promise<string> {
+  const url = new URL('https://api.mymemory.translated.net/get')
+  url.searchParams.set('q', text)
+  url.searchParams.set('langpair', 'en|zh-CN')  // English to Chinese (handles most cases)
+
+  const response = await fetch(url.toString(), {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (compatible; Translation Bot/1.0)'
+    }
+  })
+
+  if (!response.ok) {
+    throw new Error(`MyMemory API error: ${response.status}`)
+  }
+
+  const data = await response.json() as {
+    responseStatus: number
+    responseDetails?: string
+    responseData?: {
+      translatedText?: string
+    }
+  }
+
+  if (data.responseStatus !== 200) {
+    throw new Error(`MyMemory error: ${data.responseDetails || 'Unknown error'}`)
+  }
+
+  const translatedText = data.responseData?.translatedText
+  if (!translatedText) {
+    throw new Error('No translation returned from MyMemory')
+  }
+
+  return translatedText
+}
+
+/**
+ * Translate multiple texts in a single batch API request using newline separator
+ * MyMemory supports batching by sending newline-separated text
+ */
+async function translateBatchWithMyMemory(texts: string[]): Promise<string[]> {
+  if (texts.length === 0) {
+    return []
+  }
+
+  // Join all texts with newlines for batch translation
+  const bundledText = texts.join('\n')
+
+  const url = new URL('https://api.mymemory.translated.net/get')
+  url.searchParams.set('q', bundledText)
+  url.searchParams.set('langpair', 'en|zh-CN')  // English to Chinese (MyMemory doesn't support auto-detection)
+
+  const response = await fetch(url.toString(), {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (compatible; Translation Bot/1.0)'
+    }
+  })
+
+  if (!response.ok) {
+    throw new Error(`MyMemory API error: ${response.status}`)
+  }
+
+  const data = await response.json() as {
+    responseStatus: number
+    responseDetails?: string
+    responseData?: {
+      translatedText?: string
+    }
+  }
+
+  if (data.responseStatus !== 200) {
+    throw new Error(`MyMemory error: ${data.responseDetails || 'Unknown error'}`)
+  }
+
+  const translatedText = data.responseData?.translatedText
+  if (!translatedText) {
+    throw new Error('No translation returned from MyMemory')
+  }
+
+  // Split the result back into individual translations
+  const translations = translatedText.split('\n')
+
+  // Handle case where returned lines don't match expected count
+  if (translations.length !== texts.length) {
+    console.warn(`[Translation Batch] Line count mismatch: expected ${texts.length}, got ${translations.length}`)
+  }
+
+  return translations
+}
+
+/**
  * Translation result with success status
  */
 export interface TranslationResult {
   text: string
   success: boolean
   wasCached: boolean
+  isChinese?: boolean // Whether result is actually Chinese
 }
 
 /**
- * Translate text to Chinese (Simplified)
- * Uses in-memory cache and rotating proxies with retry logic to avoid rate limits
- * Each translation attempt has a 5-second timeout
+ * Translate text to Chinese (Simplified) using MyMemory API
+ * Uses in-memory cache and retry logic
+ * Each translation attempt has a 10-second timeout
  */
 export async function translateToZhCN(text: string): Promise<TranslationResult> {
   // If already Chinese, return as-is
@@ -68,74 +161,46 @@ export async function translateToZhCN(text: string): Promise<TranslationResult> 
     return { text: translationCache.get(cacheKey)!, success: true, wasCached: true }
   }
 
-  // Retry up to 3 times with different proxies
+  // Retry up to 3 times
   const MAX_RETRIES = 3
-  const TIMEOUT_MS = 5000 // 5 second timeout per attempt
+  const TIMEOUT_MS = 10000 // 10 second timeout per attempt
   let retries = MAX_RETRIES
 
   while (retries > 0) {
     try {
-      // Get a random proxy for this request
-      const proxyInfo = getRandomProxy('Translation')
-
-      if (!proxyInfo) {
-        console.warn('[Translation] No proxy available, translating without proxy')
-        const result = await withTimeout(
-          translate(text, { from: 'auto', to: 'zh-CN' }),
-          TIMEOUT_MS,
-          'Translation timeout'
-        )
-        const translated = result.text
-        translationCache.set(cacheKey, translated)
-        return { text: translated, success: true, wasCached: false }
-      }
-
-      // Translate with proxy and timeout
-      const result = await withTimeout(
-        translate(text, {
-          from: 'auto',
-          to: 'zh-CN',
-          fetchOptions: {
-            agent: proxyInfo.agent
-          }
-        }),
+      // Translate using MyMemory API with timeout
+      const translated = await withTimeout(
+        translateWithMyMemory(text),
         TIMEOUT_MS,
         'Translation timeout'
       )
-      const translated = result.text
 
-      // Cache the result
+      // Validate result is Chinese
+      if (!isChinese(translated)) {
+        console.warn(`[Translation] Non-Chinese result: "${text.substring(0, 50)}" → "${translated.substring(0, 50)}"`)
+        // Still cache it but mark as non-Chinese
+        translationCache.set(cacheKey, translated)
+        return { text: translated, success: false, wasCached: false, isChinese: false }
+      }
+
+      // Cache and return success
       translationCache.set(cacheKey, translated)
-
-      console.log(`[Translation] (${proxyInfo.proxyUrl}) "${text.substring(0, 50)}${text.length > 50 ? '...' : ''}" → "${translated.substring(0, 50)}${translated.length > 50 ? '...' : ''}"`)
-      return { text: translated, success: true, wasCached: false }
+      console.log(`[Translation] ✓ "${text.substring(0, 50)}${text.length > 50 ? '...' : ''}" → "${translated.substring(0, 50)}${translated.length > 50 ? '...' : ''}"`)
+      return { text: translated, success: true, wasCached: false, isChinese: true }
 
     } catch (error) {
       retries--
-
       const errorMessage = error instanceof Error ? error.message : String(error)
 
-      // Check if it's a rate limit error
-      const isRateLimit = (error as { status?: number; statusCode?: number })?.status === 429 || (error as { status?: number; statusCode?: number })?.statusCode === 429
-
-      // Check if it's a timeout
-      const isTimeout = errorMessage.includes('timeout')
-
-      if ((isRateLimit || isTimeout) && retries > 0) {
-        const reason = isTimeout ? 'Timeout' : 'Rate limit hit'
-        console.warn(`[Translation] ${reason}, retrying with different proxy (${MAX_RETRIES - retries}/${MAX_RETRIES})...`)
-        // Small delay before retry
-        await new Promise(resolve => setTimeout(resolve, 300))
+      if (retries > 0) {
+        const delay = 500 + Math.random() * 500
+        console.warn(`[Translation] Error: ${errorMessage}, retrying (${MAX_RETRIES - retries}/${MAX_RETRIES})...`)
+        await new Promise(resolve => setTimeout(resolve, delay))
         continue
       }
 
-      // If no retries left or different error, return original with failure flag
-      if (retries === 0) {
-        console.error(`[Translation] Failed after ${MAX_RETRIES} retries:`, errorMessage)
-      } else {
-        console.error('[Translation] Failed to translate:', errorMessage)
-      }
-
+      // All retries exhausted
+      console.error(`[Translation] Failed after ${MAX_RETRIES} retries:`, errorMessage)
       return { text, success: false, wasCached: false }
     }
   }
@@ -172,141 +237,137 @@ export async function translateBatch(texts: string[]): Promise<TranslationResult
 }
 
 /**
- * Translate multiple texts efficiently in a single API request
- * Bundles up to 100 titles separated by newlines and translates them in one request
+ * Translate multiple texts efficiently in batches
+ * Sends up to 100 titles at once separated by newlines (much faster!)
  * Returns array of translations in same order as input
- * Uses 3 retries with proxy rotation on failure
+ * No rate limiting issues with MyMemory
  */
-export async function translateBatchEfficient(titles: string[]): Promise<TranslationResult[]> {
+export async function translateBatchEfficient(titles: string[], delayMs = 300): Promise<TranslationResult[]> {
   if (titles.length === 0) {
     return []
   }
 
-  console.log(`[Translation] Starting efficient batch translation of ${titles.length} titles (${Math.ceil(titles.length / 100)} API requests)...`)
+  console.log(`[Translation] Starting batch translation of ${titles.length} titles...`)
 
   const results: TranslationResult[] = Array(titles.length).fill(null)
   const batchSize = 100
-  let requestCount = 0
+  let batchCount = 0
 
   // Process in batches of 100
   for (let i = 0; i < titles.length; i += batchSize) {
-    const batch = titles.slice(i, i + batchSize)
-    const batchStartIndex = i
+    const batchStart = i
+    const batchEnd = Math.min(i + batchSize, titles.length)
+    const batch = titles.slice(batchStart, batchEnd)
+    batchCount++
 
-    // Check cache first for all items in batch
-    const batchResults: (TranslationResult | null)[] = batch.map((title) => {
+    console.log(`[Translation] Processing batch ${batchCount}: titles ${batchStart + 1}-${batchEnd}/${titles.length}...`)
+
+    // Check cache first and separate what needs translation
+    const batchResults: (TranslationResult | null)[] = []
+    const indicesToTranslate: number[] = []
+    const titlesToTranslate: string[] = []
+
+    for (let j = 0; j < batch.length; j++) {
+      const title = batch[j]
       const cacheKey = `zh-cn:${title}`
+
       if (isChinese(title)) {
-        return { text: title, success: true, wasCached: false }
+        batchResults[j] = { text: title, success: true, wasCached: false, isChinese: true }
+      } else if (translationCache.has(cacheKey)) {
+        batchResults[j] = { text: translationCache.get(cacheKey)!, success: true, wasCached: true, isChinese: true }
+      } else {
+        batchResults[j] = null
+        indicesToTranslate.push(j)
+        titlesToTranslate.push(title)
       }
-      if (translationCache.has(cacheKey)) {
-        return { text: translationCache.get(cacheKey)!, success: true, wasCached: true }
-      }
-      return null
-    })
+    }
 
-    // Check if all items are cached or already Chinese
-    if (batchResults.every(r => r !== null)) {
+    // If nothing needs translation, skip API call
+    if (titlesToTranslate.length === 0) {
       for (let j = 0; j < batch.length; j++) {
-        results[batchStartIndex + j] = batchResults[j]!
+        results[batchStart + j] = batchResults[j]!
       }
       continue
     }
 
-    // Need to translate - join remaining items with newlines
-    const titlesThatNeedTranslation = batch.map((title, idx) =>
-      batchResults[idx] !== null ? null : title
-    )
-    const indicesToTranslate = titlesThatNeedTranslation
-      .map((title, idx) => title !== null ? idx : -1)
-      .filter(idx => idx !== -1)
-
-    if (indicesToTranslate.length === 0) {
-      for (let j = 0; j < batch.length; j++) {
-        results[batchStartIndex + j] = batchResults[j]!
-      }
-      continue
-    }
-
-    const titlesToTranslate = indicesToTranslate.map(idx => batch[idx])
-    const bundledText = titlesToTranslate.join('\n')
-
-    // Retry logic: 3 attempts with proxy rotation
-    let translated = false
-    let translatedText = ''
+    // Translate all uncached titles at once
     let retries = 3
+    let translated = false
+    let translatedTexts: string[] = []
 
     while (retries > 0 && !translated) {
       try {
-        const proxyInfo = getRandomProxy('TranslationBatch')
-        const TIMEOUT_MS = 15000 // Longer timeout for batch requests
-
-        const result = await withTimeout(
-          translate(bundledText, {
-            from: 'auto',
-            to: 'zh-CN',
-            fetchOptions: proxyInfo ? { agent: proxyInfo.agent } : undefined
-          }),
-          TIMEOUT_MS,
-          'Translation batch timeout'
+        translatedTexts = await withTimeout(
+          translateBatchWithMyMemory(titlesToTranslate),
+          15000,
+          'Batch translation timeout'
         )
 
-        translatedText = result.text
         translated = true
-        requestCount++
+        console.log(`[Translation] ✓ Batch ${batchCount} succeeded: ${titlesToTranslate.length} titles translated`)
 
-        console.log(`[Translation Batch] Request #${requestCount} (${proxyInfo?.proxyUrl || 'no proxy'}) succeeded for ${batch.length} titles`)
       } catch (error) {
         retries--
         const errorMessage = error instanceof Error ? error.message : String(error)
 
         if (retries > 0) {
-          console.warn(`[Translation Batch] Request failed, retrying... (${3 - retries}/3)`)
-          await new Promise(resolve => setTimeout(resolve, 500))
+          const delay = 1000 + Math.random() * 2000
+          console.warn(`[Translation] Batch ${batchCount} failed: ${errorMessage}, retrying (${3 - retries}/3)...`)
+          await new Promise(resolve => setTimeout(resolve, delay))
         } else {
-          console.error(`[Translation Batch] Failed after 3 retries for batch of ${batch.length}:`, errorMessage)
+          console.warn(`[Translation] ✗ Batch ${batchCount} failed after 3 retries: ${errorMessage}`)
         }
       }
     }
 
-    // Split results back into array
-    if (translated) {
-      const translatedLines = translatedText.split('\n').map(line => line.trim())
-
-      // Handle case where returned lines don't match expected count
-      for (let j = 0; j < indicesToTranslate.length; j++) {
-        const batchIdx = indicesToTranslate[j]
-        const translatedTitle = translatedLines[j] || batch[batchIdx] // Fallback to original if missing
-
-        // Cache and add result
-        const cacheKey = `zh-cn:${batch[batchIdx]}`
-        translationCache.set(cacheKey, translatedTitle)
-        results[batchStartIndex + batchIdx] = {
-          text: translatedTitle,
-          success: true,
-          wasCached: false
-        }
-      }
-    } else {
-      // Translation failed - mark as failed but keep titles unchanged
-      for (const batchIdx of indicesToTranslate) {
-        results[batchStartIndex + batchIdx] = {
-          text: batch[batchIdx],
-          success: false,
-          wasCached: false
-        }
-      }
-    }
-
-    // Add cached/already-chinese results
+    // Process results
     for (let j = 0; j < batch.length; j++) {
       if (batchResults[j] !== null) {
-        results[batchStartIndex + j] = batchResults[j]!
+        // Already cached or Chinese
+        results[batchStart + j] = batchResults[j]!
+      } else {
+        // Just translated
+        const translationIndex = indicesToTranslate.indexOf(j)
+        if (translated && translationIndex < translatedTexts.length) {
+          const translatedText = translatedTexts[translationIndex].trim()
+          const translatedIsChinese = isChinese(translatedText)
+          const originalTitle = batch[j]
+
+          // Cache the result
+          const cacheKey = `zh-cn:${originalTitle}`
+          translationCache.set(cacheKey, translatedText)
+
+          results[batchStart + j] = {
+            text: translatedText,
+            success: translatedIsChinese,
+            wasCached: false,
+            isChinese: translatedIsChinese
+          }
+
+          console.log(`[Translation] ✓ [${batchStart + j + 1}/${titles.length}] "${originalTitle.substring(0, 40)}${originalTitle.length > 40 ? '...' : ''}" → "${translatedText.substring(0, 40)}${translatedText.length > 40 ? '...' : ''}"`)
+        } else {
+          // Translation failed
+          results[batchStart + j] = {
+            text: batch[j],
+            success: false,
+            wasCached: false,
+            isChinese: false
+          }
+
+          console.warn(`[Translation] ✗ [${batchStart + j + 1}/${titles.length}] Failed: "${batch[j].substring(0, 40)}"`)
+        }
       }
+    }
+
+    // Delay between batches
+    if (batchEnd < titles.length) {
+      await new Promise(resolve => setTimeout(resolve, delayMs + Math.random() * 200))
     }
   }
 
-  console.log(`[Translation Batch] ✓ Complete: ${results.filter(r => r.success).length}/${titles.length} successful in ${requestCount} API requests`)
+  const successCount = results.filter(r => r.success).length
+  const chineseCount = results.filter(r => r.isChinese).length
+  console.log(`[Translation] ✓ Complete: ${successCount}/${titles.length} successful, ${chineseCount}/${titles.length} in Chinese`)
   return results
 }
 

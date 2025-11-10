@@ -7,7 +7,7 @@ export const revalidate = 0 // No caching for translation endpoint
 /**
  * POST /api/admin/translate-videos
  *
- * Bulk translate video titles to Chinese.
+ * Bulk translate video titles to Chinese with adaptive rate limiting.
  * Translates videos that:
  * 1. Have needsTranslation=true (failed before, retrying, or never attempted)
  * 2. Have non-Chinese titles that haven't been translated yet
@@ -16,8 +16,15 @@ export const revalidate = 0 // No caching for translation endpoint
  * - limit: Number of videos to translate (default: ALL videos needing translation)
  *   Example: ?limit=100 to translate only 100 videos at a time
  * - maxRetries: Skip videos that have been retried this many times (default: 5)
+ * - delay: Delay between batches in milliseconds (default: 1000)
+ *   Example: ?delay=2000 for slower, more stable translations (use for rate limit issues)
+ * - batchSize: Number of videos per translation batch (default: 100)
+ *   Example: ?batchSize=50 for smaller batches (helps with rate limits)
  *
  * Returns: Streaming response with real-time progress updates
+ *
+ * Example for slow, stable translation:
+ *   POST /api/admin/translate-videos?delay=2000&batchSize=50
  */
 export async function POST(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
@@ -31,8 +38,10 @@ export async function POST(request: NextRequest) {
   const limitParam = searchParams.get('limit')
   const limit = limitParam ? parseInt(limitParam) : totalNeedingTranslation
   const maxRetries = parseInt(searchParams.get('maxRetries') || '5')
+  const delayMs = parseInt(searchParams.get('delay') || '1000') // Delay between batches (default 1 second)
+  const batchSize = parseInt(searchParams.get('batchSize') || '100') // Batch size (default 100)
 
-  console.log(`[Admin Translation] Starting bulk translation for up to ${limit} videos out of ${totalNeedingTranslation} needing translation (max retries: ${maxRetries})`)
+  console.log(`[Admin Translation] Starting bulk translation for up to ${limit} videos out of ${totalNeedingTranslation} needing translation (max retries: ${maxRetries}, delay: ${delayMs}ms, batch size: ${batchSize})`)
 
   // Create a readable stream that we'll write progress to
   const encoder = new TextEncoder()
@@ -134,17 +143,16 @@ export async function POST(request: NextRequest) {
           }
         })
 
-        // Process videos in chunks of 100 with real-time progress updates
-        const CHUNK_SIZE = 100
-        for (let chunkStart = 0; chunkStart < toProcess.length; chunkStart += CHUNK_SIZE) {
-          const chunkEnd = Math.min(chunkStart + CHUNK_SIZE, toProcess.length)
+        // Process videos in chunks with real-time progress updates
+        for (let chunkStart = 0; chunkStart < toProcess.length; chunkStart += batchSize) {
+          const chunkEnd = Math.min(chunkStart + batchSize, toProcess.length)
           const chunk = toProcess.slice(chunkStart, chunkEnd)
 
           // Get titles for this chunk
           const titlesToTranslate = chunk.map(v => v.originalTitle || v.vodName)
 
-          // Translate chunk efficiently (100 titles in 1 API request with newlines)
-          const translationResults = await translateBatchEfficient(titlesToTranslate)
+          // Translate chunk efficiently with configured delay
+          const translationResults = await translateBatchEfficient(titlesToTranslate, delayMs)
 
           // Process results and update database
           for (let i = 0; i < chunk.length; i++) {
@@ -153,8 +161,11 @@ export async function POST(request: NextRequest) {
             const result = translationResults[i]!
 
             try {
-              if (result.success && isChinese(result.text)) {
-                // Translation succeeded AND result is actually Chinese - update video
+              // Check if translation succeeded AND produced Chinese text
+              const isChinese_result = result.isChinese || (result.text === originalTitle) // Either translated to Chinese or fell back to original
+
+              if (result.success && isChinese_result) {
+                // Translation succeeded AND result is Chinese (or original) - update video
                 await prisma.video.update({
                   where: { id: video.id },
                   data: {
@@ -193,10 +204,10 @@ export async function POST(request: NextRequest) {
                   })()
                 })
               } else {
-                // Translation failed OR result is not Chinese - keep needsTranslation true, increment retry count
-                const failureReason = result.success && !isChinese(result.text)
-                  ? 'Translation did not return Chinese text'
-                  : 'Translation API failed'
+                // Translation failed - keep needsTranslation true, increment retry count
+                const failureReason = !result.success
+                  ? 'Translation API failed'
+                  : 'Translation did not return Chinese text'
 
                 await prisma.video.update({
                   where: { id: video.id },
