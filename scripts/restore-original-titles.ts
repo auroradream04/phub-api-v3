@@ -51,6 +51,11 @@ async function main() {
   let updatedCount = 0
   for (const video of videosWithOriginal) {
     try {
+      if (!video.originalTitle) {
+        console.warn(`⚠ Skipped ${video.vodId}: originalTitle is null`)
+        continue
+      }
+
       await prisma.video.update({
         where: { id: video.id },
         data: {
