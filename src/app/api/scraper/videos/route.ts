@@ -310,9 +310,9 @@ export async function POST(_request: NextRequest) {
               vodLang: 'zh',
               vodArea: 'CN',
               vodActor: item.cleanProvider,
-              // Translation tracking - default to true (all videos need translation)
-              // Only set to false if translation succeeded during scrape
-              needsTranslation: !translationFailed,
+              // Translation tracking: only false if translation actually succeeded during scrape
+              // Otherwise true (needs translation)
+              needsTranslation: translationFailed,
               translationFailedAt: translationFailed ? new Date() : null,
               translationRetryCount: translationFailed ? 0 : undefined,
             },
@@ -338,9 +338,9 @@ export async function POST(_request: NextRequest) {
               vodProvider: item.cleanProvider,
               views: item.views,
               duration: item.durationSeconds,
-              // Translation tracking - default to true (all videos need translation)
-              // Only set to false if translation succeeded during scrape
-              needsTranslation: !translationFailed,
+              // Translation tracking: only false if translation actually succeeded during scrape
+              // Otherwise true (needs translation)
+              needsTranslation: translationFailed,
               translationFailedAt: translationFailed ? new Date() : null,
               translationRetryCount: 0,
             },
