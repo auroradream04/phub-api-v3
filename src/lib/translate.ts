@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { getRandomProxy } from '@/lib/proxy'
 
 // In-memory cache for translations (cleared on server restart)
 const translationCache = new Map<string, string>()
@@ -41,20 +42,28 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, timeoutErr
 }
 
 /**
- * Translate using MyMemory API (free, no rate limits)
+ * Translate using MyMemory API with proxy rotation
  * MyMemory is completely free with no rate limiting or API keys needed
- * Supports auto-detection of source language
+ * Uses proxy rotation to bypass IP-based rate limiting
  */
 async function translateWithMyMemory(text: string): Promise<string> {
   const url = new URL('https://api.mymemory.translated.net/get')
   url.searchParams.set('q', text)
   url.searchParams.set('langpair', 'en|zh-CN')  // English to Chinese (handles most cases)
 
-  const response = await fetch(url.toString(), {
+  // Try to use a random proxy to avoid rate limiting
+  const proxyInfo = getRandomProxy('translate')
+  const fetchOptions: RequestInit = {
     headers: {
       'User-Agent': 'Mozilla/5.0 (compatible; Translation Bot/1.0)'
     }
-  })
+  }
+
+  if (proxyInfo) {
+    (fetchOptions as any).agent = proxyInfo.agent
+  }
+
+  const response = await fetch(url.toString(), fetchOptions)
 
   if (!response.ok) {
     throw new Error(`MyMemory API error: ${response.status}`)
@@ -96,11 +105,20 @@ async function translateBatchWithMyMemory(texts: string[]): Promise<string[]> {
   url.searchParams.set('q', bundledText)
   url.searchParams.set('langpair', 'en|zh-CN')  // English to Chinese (MyMemory doesn't support auto-detection)
 
-  const response = await fetch(url.toString(), {
+  // Try to use a random proxy to avoid rate limiting
+  const proxyInfo = getRandomProxy('translate')
+  const fetchOptions: RequestInit = {
     headers: {
       'User-Agent': 'Mozilla/5.0 (compatible; Translation Bot/1.0)'
     }
-  })
+  }
+
+  if (proxyInfo) {
+    (fetchOptions as any).agent = proxyInfo.agent
+    console.log(`[Translation] Using proxy: ${proxyInfo.proxyUrl}`)
+  }
+
+  const response = await fetch(url.toString(), fetchOptions)
 
   if (!response.ok) {
     throw new Error(`MyMemory API error: ${response.status}`)
@@ -237,10 +255,10 @@ export async function translateBatch(texts: string[]): Promise<TranslationResult
 }
 
 /**
- * Translate multiple texts efficiently in batches
+ * Translate multiple texts efficiently in batches with proxy rotation
  * Sends up to 10 titles at once separated by newlines (much faster!)
  * Returns array of translations in same order as input
- * No rate limiting issues with MyMemory
+ * Uses proxy rotation to bypass rate limiting
  * (Batch size limited to 10 to stay within MyMemory's 500 char query limit)
  */
 export async function translateBatchEfficient(titles: string[], delayMs = 300): Promise<TranslationResult[]> {
