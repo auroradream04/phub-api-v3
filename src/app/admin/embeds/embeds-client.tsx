@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { encryptEmbedId } from '@/lib/embed-encryption'
 import { Copy, Eye, Trash2, Edit, Play } from 'lucide-react'
+import { BulkVideoExtractor } from '@/components/admin/bulk-video-extractor'
 
 interface VideoEmbed {
   id: string
@@ -30,6 +31,16 @@ interface SearchVideo {
   preview: string
   previewVideo?: string
   url: string
+}
+
+interface ExtractedVideo {
+  inputLink: string
+  viewkey: string
+  title: string
+  preview: string
+  previewVideo?: string
+  videoId: string
+  error?: string
 }
 
 interface EmbedResponse {
@@ -158,6 +169,30 @@ export default function EmbedsClient() {
       displayName: '',
       previewSourceUrl: video.videoId, // Auto-set to video ID for auto-download
       m3u8Url: '',
+    })
+  }
+
+  function handleSelectBulkVideo(video: ExtractedVideo) {
+    // Set form data from extracted video
+    setFormData({
+      videoId: video.videoId,
+      title: video.title,
+      redirectUrl: '',
+      displayName: '',
+      previewSourceUrl: video.videoId, // Auto-set to video ID for auto-download
+      m3u8Url: video.inputLink,
+    })
+    // Show the create modal and scroll to form fields
+    setShowCreateModal(true)
+    setManualVideoInput(video.inputLink)
+    // Simulate selecting to populate form
+    setSelectedVideo({
+      id: video.videoId,
+      videoId: video.videoId,
+      title: video.title,
+      preview: video.preview,
+      previewVideo: video.previewVideo,
+      url: video.inputLink,
     })
   }
 
@@ -319,6 +354,9 @@ export default function EmbedsClient() {
           Create Embed
         </button>
       </div>
+
+      {/* Bulk Video Extractor */}
+      <BulkVideoExtractor onSelectVideo={handleSelectBulkVideo} />
 
       {/* Search */}
       <div>
