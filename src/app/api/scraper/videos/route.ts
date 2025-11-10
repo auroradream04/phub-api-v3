@@ -310,10 +310,11 @@ export async function POST(_request: NextRequest) {
               vodLang: 'zh',
               vodArea: 'CN',
               vodActor: item.cleanProvider,
-              // Translation tracking
-              needsTranslation: translationFailed,
+              // Translation tracking - default to true (all videos need translation)
+              // Only set to false if translation succeeded during scrape
+              needsTranslation: !translationFailed,
               translationFailedAt: translationFailed ? new Date() : null,
-              translationRetryCount: translationFailed ? 0 : undefined, // Reset on new failure
+              translationRetryCount: translationFailed ? 0 : undefined,
             },
             create: {
               vodId: item.video.id,
@@ -337,8 +338,9 @@ export async function POST(_request: NextRequest) {
               vodProvider: item.cleanProvider,
               views: item.views,
               duration: item.durationSeconds,
-              // Translation tracking
-              needsTranslation: translationFailed,
+              // Translation tracking - default to true (all videos need translation)
+              // Only set to false if translation succeeded during scrape
+              needsTranslation: !translationFailed,
               translationFailedAt: translationFailed ? new Date() : null,
               translationRetryCount: 0,
             },

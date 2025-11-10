@@ -41,7 +41,7 @@ function normalizeText(text: string): string {
 }
 
 // Recursively normalize all string values in an object
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 function normalizeStrings<T>(obj: T): T {
   if (typeof obj === 'string') {
     return normalizeText(obj) as T

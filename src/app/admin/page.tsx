@@ -15,6 +15,44 @@ interface RetryStats {
   byRetryCount: Array<{ retries: number; count: number }>
 }
 
+interface TranslationStats {
+  totalNonChineseTitles: number
+  needsTranslation: number
+  neverAttempted: number
+  totalVideos: number
+  failedByRetry: Array<{ retries: number; count: number }>
+}
+
+interface TranslationProgress {
+  processed: number
+  total: number
+  completed: boolean
+  current?: {
+    id: string
+    vodId: string
+    originalTitle: string
+    translated: string | null
+    success: boolean
+    message: string
+    retryCount?: number
+  }
+  summary?: {
+    totalProcessed: number
+    successCount: number
+    failedCount: number
+    message: string
+  }
+  stats?: {
+    elapsedSeconds: number
+    videosPerMinute: number
+    estimatedMinutesRemaining: number
+    successCount: number
+    failCount: number
+  }
+  error?: boolean
+  message?: string
+}
+
 interface ScraperProgress {
   checkpointId: string
   pagesPerCategory: number
@@ -76,6 +114,11 @@ export default function AdminDashboard() {
   const [selectAllSearchVideos, setSelectAllSearchVideos] = useState(false)
   const [deletingAllSearch, setDeletingAllSearch] = useState(false)
 
+  // Translation states
+  const [translationStats, setTranslationStats] = useState<TranslationStats | null>(null)
+  const [translating, setTranslating] = useState(false)
+  const [translationProgress, setTranslationProgress] = useState<TranslationProgress | null>(null)
+
   // Check for saved progress on load
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY)
@@ -106,6 +149,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     fetchStats()
     fetchRetryStats()
+    fetchTranslationStats()
   }, [])
 
   const fetchStats = async () => {
@@ -125,6 +169,75 @@ export default function AdminDashboard() {
       if (data.success) setRetryStats(data)
     } catch (error) {
       console.error('Failed to fetch retry stats:', error)
+    }
+  }
+
+  const fetchTranslationStats = async () => {
+    try {
+      const res = await fetch('/api/admin/translate-videos')
+      const data = await res.json()
+      if (data.success) setTranslationStats(data.stats)
+    } catch (error) {
+      console.error('Failed to fetch translation stats:', error)
+    }
+  }
+
+  const startTranslation = async () => {
+    if (!translationStats || translationStats.totalNonChineseTitles === 0) {
+      setMessage('No videos need translation')
+      return
+    }
+
+    setTranslating(true)
+    setTranslationProgress({ processed: 0, total: 0, completed: false })
+    setMessage('Starting translation...')
+
+    try {
+      const response = await fetch('/api/admin/translate-videos', {
+        method: 'POST'
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+
+      // Handle streaming response
+      const reader = response.body?.getReader()
+      if (!reader) throw new Error('No response body')
+
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || '' // Keep incomplete line in buffer
+
+        for (const line of lines) {
+          if (!line.trim()) continue
+          try {
+            const progress = JSON.parse(line) as TranslationProgress
+            setTranslationProgress(progress)
+
+            if (progress.completed) {
+              await fetchTranslationStats()
+              await fetchRetryStats()
+              await fetchStats()
+            }
+          } catch (error) {
+            console.error('Failed to parse progress:', error)
+          }
+        }
+      }
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error'
+      setMessage(`❌ Translation failed: ${errorMsg}`)
+      setTranslationProgress({ processed: 0, total: 0, completed: true, error: true, message: errorMsg })
+    } finally {
+      setTranslating(false)
     }
   }
 
@@ -659,25 +772,35 @@ export default function AdminDashboard() {
           {/* Secondary Actions */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 pt-6 border-t border-border">
             <button
+              onClick={startTranslation}
+              disabled={!translationStats || translationStats.totalNonChineseTitles === 0 || translating}
+              className="px-4 py-3 bg-violet-600 text-white rounded-lg hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium flex items-center justify-center gap-2"
+            >
+              {translating ? (
+                <>
+                  <RefreshCw className="w-5 h-5 animate-spin" />
+                  Translating...
+                </>
+              ) : (
+                <>
+                  <Languages className="w-5 h-5" />
+                  Translate Videos ({translationStats?.totalNonChineseTitles || 0})
+                </>
+              )}
+            </button>
+
+            <button
               onClick={retryTranslations}
               disabled={!retryStats || retryStats.total === 0}
-              className="px-4 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium flex items-center justify-center gap-2"
+              className="px-4 py-3 bg-violet-600 text-white rounded-lg hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium flex items-center justify-center gap-2"
             >
               <Languages className="w-5 h-5" />
               Retry Translations ({retryStats?.total || 0})
             </button>
 
             <button
-              onClick={cleanupUnknown}
-              className="px-4 py-3 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-all font-medium flex items-center justify-center gap-2"
-            >
-              <Database className="w-5 h-5" />
-              Clean Unknown
-            </button>
-
-            <button
               onClick={clearCache}
-              className="px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all font-medium flex items-center justify-center gap-2"
+              className="px-4 py-3 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-all font-medium flex items-center justify-center gap-2"
             >
               <RefreshCw className="w-5 h-5" />
               Clear Cache
@@ -771,6 +894,159 @@ export default function AdminDashboard() {
               <p>Started: {new Date(currentProgress.startedAt).toLocaleString()}</p>
               <p className="mt-1">Pages per category: {currentProgress.pagesPerCategory}</p>
             </div>
+          </div>
+        )}
+
+        {/* Translation Progress Display */}
+        {translationProgress && translating && (
+          <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20 rounded-xl p-6 shadow-lg mt-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-foreground">Translation in Progress</h3>
+              <div className="flex items-center gap-2">
+                <RefreshCw className="w-5 h-5 animate-spin text-green-600" />
+                <span className="text-sm text-muted-foreground">Live</span>
+              </div>
+            </div>
+
+            {/* Progress bar */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-medium text-foreground">
+                  {translationProgress.processed}/{translationProgress.total} videos
+                </p>
+                <p className="text-sm font-medium text-green-600">
+                  {translationProgress.total > 0
+                    ? `${Math.round((translationProgress.processed / translationProgress.total) * 100)}%`
+                    : '0%'}
+                </p>
+              </div>
+              <div className="bg-muted rounded-full h-2 overflow-hidden">
+                <div
+                  className="bg-gradient-to-r from-green-500 to-emerald-500 h-full transition-all duration-300"
+                  style={{
+                    width: translationProgress.total > 0
+                      ? `${(translationProgress.processed / translationProgress.total) * 100}%`
+                      : '0%'
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Statistics */}
+            {translationProgress.stats && (
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
+                <div className="bg-card/50 rounded-lg p-3">
+                  <p className="text-sm text-muted-foreground mb-1">Elapsed</p>
+                  <p className="text-xl font-bold text-foreground">
+                    {Math.floor(translationProgress.stats.elapsedSeconds / 60)}m {translationProgress.stats.elapsedSeconds % 60}s
+                  </p>
+                </div>
+                <div className="bg-card/50 rounded-lg p-3">
+                  <p className="text-sm text-muted-foreground mb-1">Speed</p>
+                  <p className="text-xl font-bold text-green-600">
+                    {translationProgress.stats.videosPerMinute} /min
+                  </p>
+                </div>
+                <div className="bg-card/50 rounded-lg p-3">
+                  <p className="text-sm text-muted-foreground mb-1">ETA</p>
+                  <p className="text-xl font-bold text-blue-600">
+                    {translationProgress.stats.estimatedMinutesRemaining}m
+                  </p>
+                </div>
+                <div className="bg-card/50 rounded-lg p-3">
+                  <p className="text-sm text-muted-foreground mb-1">Success</p>
+                  <p className="text-xl font-bold text-green-600">
+                    {translationProgress.stats.successCount}
+                  </p>
+                </div>
+                <div className="bg-card/50 rounded-lg p-3">
+                  <p className="text-sm text-muted-foreground mb-1">Failed</p>
+                  <p className="text-xl font-bold text-red-600">
+                    {translationProgress.stats.failCount}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Current video being translated */}
+            {translationProgress.current && (
+              <div className={`bg-card/50 rounded-lg p-4 mb-4 border ${
+                translationProgress.current.success
+                  ? 'border-green-500/30'
+                  : 'border-red-500/30'
+              }`}>
+                <div className="flex items-start gap-3">
+                  <div className={`p-2 rounded-lg ${
+                    translationProgress.current.success
+                      ? 'bg-green-500/20'
+                      : 'bg-red-500/20'
+                  }`}>
+                    {translationProgress.current.success ? (
+                      <Check className="w-5 h-5 text-green-600" />
+                    ) : (
+                      <span className="text-red-600 text-lg">✕</span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-foreground mb-1">
+                      {translationProgress.current.message}
+                    </p>
+                    {translationProgress.current.translated && (
+                      <p className="text-xs text-muted-foreground line-clamp-2">
+                        → {translationProgress.current.translated}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Translation Complete Display */}
+        {translationProgress && translationProgress.completed && (
+          <div className={`rounded-xl p-6 shadow-lg mt-6 ${
+            translationProgress.error
+              ? 'bg-red-500/10 border border-red-500/20'
+              : 'bg-green-500/10 border border-green-500/20'
+          }`}>
+            <div className="flex items-center gap-3 mb-4">
+              {translationProgress.error ? (
+                <span className="text-2xl">❌</span>
+              ) : (
+                <Check className="w-6 h-6 text-green-600" />
+              )}
+              <h3 className="text-lg font-bold text-foreground">
+                {translationProgress.error ? 'Translation Error' : 'Translation Complete'}
+              </h3>
+            </div>
+
+            {translationProgress.summary && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-card/50 rounded-lg p-3">
+                  <p className="text-sm text-muted-foreground mb-1">Processed</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {translationProgress.summary.totalProcessed}
+                  </p>
+                </div>
+                <div className="bg-card/50 rounded-lg p-3">
+                  <p className="text-sm text-muted-foreground mb-1">Successful</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {translationProgress.summary.successCount}
+                  </p>
+                </div>
+                <div className="bg-card/50 rounded-lg p-3">
+                  <p className="text-sm text-muted-foreground mb-1">Failed</p>
+                  <p className="text-2xl font-bold text-red-600">
+                    {translationProgress.summary.failedCount}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {translationProgress.message && (
+              <p className="text-sm text-muted-foreground mt-4">{translationProgress.message}</p>
+            )}
           </div>
         )}
 
