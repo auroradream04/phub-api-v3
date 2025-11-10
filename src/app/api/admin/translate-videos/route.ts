@@ -70,9 +70,19 @@ export async function POST(request: NextRequest) {
           }
         })
 
-        // Separate videos: already Chinese vs need translation
-        const alreadyChinese = videosToTranslate.filter(v => isChinese(v.vodName))
-        const toProcess = videosToTranslate.filter(v => !isChinese(v.vodName))
+        // Verify each video: check if vodName is already Chinese using isChinese()
+        // If it is, mark it as done immediately
+        const alreadyChinese: typeof videosToTranslate = []
+        const toProcess: typeof videosToTranslate = []
+
+        for (const video of videosToTranslate) {
+          if (isChinese(video.vodName)) {
+            alreadyChinese.push(video)
+            console.log(`[Admin Translation] Already verified Chinese: ${video.vodId} - "${video.vodName.substring(0, 50)}"`)
+          } else {
+            toProcess.push(video)
+          }
+        }
 
         // Mark already-Chinese videos as done
         for (const video of alreadyChinese) {
@@ -143,8 +153,8 @@ export async function POST(request: NextRequest) {
             const result = translationResults[i]!
 
             try {
-              if (result.success) {
-                // Translation succeeded - update video
+              if (result.success && isChinese(result.text)) {
+                // Translation succeeded AND result is actually Chinese - update video
                 await prisma.video.update({
                   where: { id: video.id },
                   data: {
@@ -183,7 +193,11 @@ export async function POST(request: NextRequest) {
                   })()
                 })
               } else {
-                // Translation failed - keep needsTranslation true, increment retry count
+                // Translation failed OR result is not Chinese - keep needsTranslation true, increment retry count
+                const failureReason = result.success && !isChinese(result.text)
+                  ? 'Translation did not return Chinese text'
+                  : 'Translation API failed'
+
                 await prisma.video.update({
                   where: { id: video.id },
                   data: {
@@ -197,7 +211,7 @@ export async function POST(request: NextRequest) {
                 })
 
                 failCount++
-                console.log(`[Admin Translation] ✗ Failed [${alreadyChinese.length + successCount + failCount}/${toProcess.length + alreadyChinese.length}]: ${video.vodId} (total failed: ${video.translationRetryCount + 1})`)
+                console.log(`[Admin Translation] ✗ Failed [${alreadyChinese.length + successCount + failCount}/${toProcess.length + alreadyChinese.length}]: ${video.vodId} (${failureReason}, total failed: ${video.translationRetryCount + 1})`)
 
                 sendProgress({
                   processed: alreadyChinese.length + successCount + failCount,
@@ -209,7 +223,9 @@ export async function POST(request: NextRequest) {
                     originalTitle: originalTitle,
                     translated: null,
                     success: false,
-                    message: `Failed to translate "${originalTitle.substring(0, 40)}..."`,
+                    message: result.success && !isChinese(result.text)
+                      ? `Translation did not return Chinese: "${result.text.substring(0, 40)}..."`
+                      : `Failed to translate "${originalTitle.substring(0, 40)}..."`,
                     retryCount: video.translationRetryCount + 1
                   },
                   stats: (() => {
