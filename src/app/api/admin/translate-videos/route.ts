@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
   const limitParam = searchParams.get('limit')
   const limit = limitParam ? parseInt(limitParam) : totalNeedingTranslation
   const maxRetries = parseInt(searchParams.get('maxRetries') || '5')
-  const delayMs = parseInt(searchParams.get('delay') || '1000') // Delay between batches (default 1 second)
+  const delayMs = parseInt(searchParams.get('delay') || '2000') // Delay between batches (default 2 seconds to avoid rate limiting)
   const batchSize = parseInt(searchParams.get('batchSize') || '10') // Batch size (default 10, limited by MyMemory's 500 char query limit)
 
   console.log(`[Admin Translation] Starting bulk translation for up to ${limit} videos out of ${totalNeedingTranslation} needing translation (max retries: ${maxRetries}, delay: ${delayMs}ms, batch size: ${batchSize})`)

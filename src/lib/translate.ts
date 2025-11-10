@@ -273,6 +273,7 @@ export async function translateBatchEfficient(titles: string[], delayMs = 300): 
       const cacheKey = `zh-cn:${title}`
 
       if (isChinese(title)) {
+        console.log(`[Translation] Skipping already Chinese: "${title.substring(0, 40)}${title.length > 40 ? '...' : ''}"`)
         batchResults[j] = { text: title, success: true, wasCached: false, isChinese: true }
       } else if (translationCache.has(cacheKey)) {
         batchResults[j] = { text: translationCache.get(cacheKey)!, success: true, wasCached: true, isChinese: true }
@@ -285,11 +286,14 @@ export async function translateBatchEfficient(titles: string[], delayMs = 300): 
 
     // If nothing needs translation, skip API call
     if (titlesToTranslate.length === 0) {
+      console.log(`[Translation] Batch ${batchCount}: All titles already cached or Chinese, skipping API call`)
       for (let j = 0; j < batch.length; j++) {
         results[batchStart + j] = batchResults[j]!
       }
       continue
     }
+
+    console.log(`[Translation] Batch ${batchCount}: Need to translate ${titlesToTranslate.length}/${batch.length} titles`)
 
     // Translate all uncached titles at once
     let retries = 3
@@ -310,10 +314,14 @@ export async function translateBatchEfficient(titles: string[], delayMs = 300): 
       } catch (error) {
         retries--
         const errorMessage = error instanceof Error ? error.message : String(error)
+        const is429 = errorMessage.includes('429')
 
         if (retries > 0) {
-          const delay = 1000 + Math.random() * 2000
-          console.warn(`[Translation] Batch ${batchCount} failed: ${errorMessage}, retrying (${3 - retries}/3)...`)
+          // Use exponential backoff: 429 errors get longer waits
+          const baseDelay = is429 ? 3000 : 1000
+          const exponentialMultiplier = Math.pow(2, 3 - retries) // 1x, 2x, 4x
+          const delay = baseDelay * exponentialMultiplier + Math.random() * 1000
+          console.warn(`[Translation] Batch ${batchCount} failed${is429 ? ' (Rate limited 429)' : ''}: ${errorMessage}, retrying in ${Math.round(delay)}ms (${3 - retries}/3)...`)
           await new Promise(resolve => setTimeout(resolve, delay))
         } else {
           console.warn(`[Translation] ✗ Batch ${batchCount} failed after 3 retries: ${errorMessage}`)
@@ -332,6 +340,7 @@ export async function translateBatchEfficient(titles: string[], delayMs = 300): 
         if (translated && translationIndex < translatedTexts.length) {
           const translatedText = translatedTexts[translationIndex].trim()
           const translatedIsChinese = isChinese(translatedText)
+          console.log(`[Translation] Result for "${batch[j].substring(0, 30)}...": "${translatedText.substring(0, 30)}..." (isChinese: ${translatedIsChinese})`)
           const originalTitle = batch[j]
 
           // Cache the result
