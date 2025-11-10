@@ -102,12 +102,25 @@ export function BulkVideoExtractor({ onSelectVideo }: BulkExtractorProps) {
   }
 
   function handleDownloadUrls() {
-    const urls = extractedVideos
-      .filter(v => v.previewVideo && !v.error)
-      .map(v => v.previewVideo)
-      .join('\n')
+    let content = ''
+
+    // Add successful URLs
+    const successfulUrls = extractedVideos.filter(v => v.previewVideo && !v.error)
+    if (successfulUrls.length > 0) {
+      content += '# Successfully Extracted Preview URLs\n'
+      content += successfulUrls.map(v => v.previewVideo).join('\n')
+      content += '\n\n'
+    }
+
+    // Add failed videos
+    const failedVideos = extractedVideos.filter(v => !v.previewVideo || v.error)
+    if (failedVideos.length > 0) {
+      content += '# Videos Without Preview URLs (Manual Review Needed)\n'
+      content += failedVideos.map(v => `${v.inputLink} - ${v.error || 'No preview found'}`).join('\n')
+    }
+
     const element = document.createElement('a')
-    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(urls))
+    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(content))
     element.setAttribute('download', 'preview-urls.txt')
     element.style.display = 'none'
     document.body.appendChild(element)
@@ -219,7 +232,7 @@ export function BulkVideoExtractor({ onSelectVideo }: BulkExtractorProps) {
                       : 'border-transparent text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  Preview URLs ({extractedVideos.filter(v => v.previewVideo && !v.error).length})
+                  All URLs ({extractedVideos.length})
                 </button>
               </div>
 
@@ -345,13 +358,33 @@ export function BulkVideoExtractor({ onSelectVideo }: BulkExtractorProps) {
                     </button>
                   </div>
                   <div className="bg-muted/30 rounded-lg p-4 font-mono text-xs max-h-96 overflow-y-auto text-muted-foreground space-y-1">
-                    {extractedVideos
-                      .filter(v => v.previewVideo && !v.error)
-                      .map((video, idx) => (
-                        <div key={idx} className="hover:text-foreground transition-colors">
-                          {video.previewVideo}
-                        </div>
-                      ))}
+                    {/* Successful URLs */}
+                    {extractedVideos.filter(v => v.previewVideo && !v.error).length > 0 && (
+                      <>
+                        <div className="text-green-500 font-semibold mb-2">✓ Successfully Extracted ({extractedVideos.filter(v => v.previewVideo && !v.error).length})</div>
+                        {extractedVideos
+                          .filter(v => v.previewVideo && !v.error)
+                          .map((video, idx) => (
+                            <div key={idx} className="hover:text-foreground transition-colors">
+                              {video.previewVideo}
+                            </div>
+                          ))}
+                      </>
+                    )}
+
+                    {/* Failed URLs */}
+                    {extractedVideos.filter(v => !v.previewVideo || v.error).length > 0 && (
+                      <>
+                        <div className="text-destructive font-semibold mt-4 mb-2">✗ Failed ({extractedVideos.filter(v => !v.previewVideo || v.error).length})</div>
+                        {extractedVideos
+                          .filter(v => !v.previewVideo || v.error)
+                          .map((video, idx) => (
+                            <div key={idx} className="text-destructive/70 hover:text-destructive transition-colors">
+                              {video.inputLink} - {video.error || 'No preview found'}
+                            </div>
+                          ))}
+                      </>
+                    )}
                   </div>
                 </div>
               )}

@@ -47,12 +47,14 @@ export async function POST(req: NextRequest) {
 
     // The library has hardcoded BASE_URL in the Route, so we need to patch it
     // by intercepting the request and replacing cn.pornhub.com with www.pornhub.com
-    const originalRequest = pornhubEn.engine.request.get.bind(pornhubEn.engine.request)
-    pornhubEn.engine.request.get = async (url: string, ...args: any[]) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const originalRequest = (pornhubEn.engine.request.get as any).bind(pornhubEn.engine.request)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (pornhubEn.engine.request as any).get = async (url: string): Promise<any> => {
       // Replace cn.pornhub.com with www.pornhub.com for searches
       const enUrl = url.replace(/cn\.pornhub\.com/g, 'www.pornhub.com')
       console.log(`Fetching from: ${enUrl}`)
-      return originalRequest(enUrl, ...args)
+      return originalRequest(enUrl)
     }
 
     const extractedVideos: ExtractedVideo[] = []
@@ -101,7 +103,7 @@ export async function POST(req: NextRequest) {
           const $ = load(html)
 
           // Extract English title from the page
-          const videoTitle = $('h1.title span').text().trim() ||
+          let videoTitle = $('h1.title span').text().trim() ||
                             $('h1 span').text().trim() ||
                             $('[data-video-title]').attr('data-video-title') ||
                             ''
@@ -118,32 +120,102 @@ export async function POST(req: NextRequest) {
             }
           }
 
+          // Clean up the title: remove everything after " - " (usually channel/creator name)
+          // This improves search accuracy
+          videoTitle = videoTitle.split(' - ')[0].trim()
+
           console.log(`✓ Extracted English title: ${videoTitle}`)
 
           // Now fetch metadata (preview image) using pornhubEn
           const video = await pornhubEn.video(viewkey)
           const videoPreview = video?.preview || ''
 
+          // Use the extracted English title, NOT the video.title which is localized
+          const englishTitle = videoTitle
+
           // Search for the video by title to get previewVideo (optional)
+          // Use the English title extracted from the page, not the localized one from video.title
           let previewVideo: string | undefined = undefined
           try {
-            const searchResults = await pornhubEn.searchVideo(video.title, { page: 1 })
+            console.log(`Searching for preview with English title: ${englishTitle}`)
+            const searchResults = await pornhubEn.searchVideo(englishTitle, { page: 1 })
             const matchedVideo = searchResults.data.find((v) => v.id === viewkey)
             if (matchedVideo?.previewVideo) {
               previewVideo = matchedVideo.previewVideo
               console.log(`✓ Found preview video URL: ${previewVideo}`)
             } else {
-              console.log(`⚠ No preview video found in search results for ${viewkey}`)
+              console.log(`⚠ No preview video found in search results for ${viewkey}, trying uploader fallback...`)
+
+              // Fallback: Try to find the video on the uploader's page
+              try {
+                // Extract uploader URL from the page
+                let uploaderUrl = $('a[href*="/model/"], a[href*="/channels/"], a[href*="/users/"]').first().attr('href') || ''
+
+                if (!uploaderUrl) {
+                  throw new Error('Could not find uploader link')
+                }
+
+                // Convert to full URL if relative
+                if (uploaderUrl.startsWith('/')) {
+                  uploaderUrl = 'https://www.pornhub.com' + uploaderUrl
+                }
+
+                // Normalize the uploader URL
+                // Convert /users/* to /channels/*
+                uploaderUrl = uploaderUrl.replace('/users/', '/channels/')
+
+                // Add /videos endpoint if not present
+                if (!uploaderUrl.includes('/videos')) {
+                  uploaderUrl += '/videos'
+                }
+
+                console.log(`Searching uploader page: ${uploaderUrl}`)
+
+                // Fetch uploader's videos page
+                const uploaderResponse = await fetch(uploaderUrl, {
+                  headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                  }
+                })
+
+                if (uploaderResponse.ok) {
+                  const uploaderHtml = await uploaderResponse.text()
+                  const $uploader = load(uploaderHtml)
+
+                  // Find the video in uploader's list
+                  const uploaderVideos = $uploader('li.videoblock')
+                  let found = false
+
+                  uploaderVideos.each((_index, el) => {
+                    const videoLink = $uploader(el).find('a').attr('href') || ''
+                    if (videoLink.includes(viewkey)) {
+                      // Found it! Extract preview video
+                      const videoElement = $uploader(el).find('video source').attr('src')
+                      if (videoElement) {
+                        previewVideo = videoElement
+                        found = true
+                        console.log(`✓ Found video on uploader page: ${previewVideo}`)
+                      }
+                    }
+                  })
+
+                  if (!found) {
+                    console.log(`⚠ Video not found on uploader page either`)
+                  }
+                }
+              } catch (uploaderErr) {
+                console.log(`Uploader fallback failed: ${uploaderErr instanceof Error ? uploaderErr.message : 'Unknown error'}`)
+              }
             }
           } catch (searchErr) {
-            console.log(`Search failed for ${viewkey}, continuing without preview video: ${searchErr instanceof Error ? searchErr.message : 'Unknown error'}`)
+            console.log(`Search failed for ${viewkey}: ${searchErr instanceof Error ? searchErr.message : 'Unknown error'}`)
           }
 
-          console.log(`✓ Successfully extracted: ${videoTitle}`)
+          console.log(`✓ Successfully extracted: ${englishTitle}`)
           return {
             inputLink: link,
             viewkey,
-            title: videoTitle,
+            title: englishTitle,
             preview: videoPreview,
             previewVideo,
             videoId: viewkey,

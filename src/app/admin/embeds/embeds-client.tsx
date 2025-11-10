@@ -669,7 +669,8 @@ export default function EmbedsClient() {
                                 manualTimeoutRef.current = setTimeout(async () => {
                                   try {
                                     const params = new URLSearchParams({ q: link })
-                                    const res = await fetch('/api/admin/embeds/fetch-video?' + params.toString())
+                                    // Use the new English title endpoint for better search results
+                                    const res = await fetch('/api/admin/embeds/fetch-video-english?' + params.toString())
                                     if (!res.ok) {
                                       setFetchingManualVideo(false)
                                       return
@@ -741,6 +742,64 @@ export default function EmbedsClient() {
                       </div>
                     </div>
                   )}
+                </div>
+
+                {/* Divider */}
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 border-t border-border"></div>
+                  <span className="text-xs text-muted-foreground">OR</span>
+                  <div className="flex-1 border-t border-border"></div>
+                </div>
+
+                {/* Option 3: Enter PornHub Link */}
+                <div>
+                  <label className="block text-sm font-semibold text-foreground mb-2">Option 3: Enter PornHub Link</label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="e.g., https://www.pornhub.com/view_video.php?viewkey=ph123456"
+                      className="w-full px-4 py-2.5 border border-border/50 bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/50"
+                      onChange={(e) => {
+                        const link = e.target.value.trim()
+                        if (link.includes('pornhub.com')) {
+                          setManualVideoInput(link)
+                          setFormData({ ...formData, m3u8Url: link })
+
+                          if (manualTimeoutRef.current) {
+                            clearTimeout(manualTimeoutRef.current)
+                          }
+                          setFetchingManualVideo(true)
+                          manualTimeoutRef.current = setTimeout(async () => {
+                            try {
+                              const params = new URLSearchParams({ q: link })
+                              const res = await fetch('/api/admin/embeds/fetch-video-english?' + params.toString())
+                              if (!res.ok) {
+                                setFetchingManualVideo(false)
+                                return
+                              }
+                              const video: SearchVideo = await res.json()
+                              setFormData(prev => ({
+                                ...prev,
+                                title: video.title,
+                                videoId: video.videoId,
+                                previewSourceUrl: video.previewVideo || link,
+                                m3u8Url: link,
+                              }))
+                              setFetchingManualVideo(false)
+                            } catch {
+                              setFetchingManualVideo(false)
+                            }
+                          }, 1000)
+                        }
+                      }}
+                    />
+                    {fetchingManualVideo && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></div>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1.5">Paste a PornHub link - we&apos;ll auto-extract the English title, preview, and .webm URL</p>
                 </div>
               </div>
 
