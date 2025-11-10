@@ -238,10 +238,10 @@ export async function translateBatch(texts: string[]): Promise<TranslationResult
 
 /**
  * Translate multiple texts efficiently in batches
- * Sends up to 30 titles at once separated by newlines (much faster!)
+ * Sends up to 10 titles at once separated by newlines (much faster!)
  * Returns array of translations in same order as input
  * No rate limiting issues with MyMemory
- * (Batch size limited to 30 to avoid HTTP 414 URI Too Long errors)
+ * (Batch size limited to 10 to stay within MyMemory's 500 char query limit)
  */
 export async function translateBatchEfficient(titles: string[], delayMs = 300): Promise<TranslationResult[]> {
   if (titles.length === 0) {
@@ -251,10 +251,10 @@ export async function translateBatchEfficient(titles: string[], delayMs = 300): 
   console.log(`[Translation] Starting batch translation of ${titles.length} titles...`)
 
   const results: TranslationResult[] = Array(titles.length).fill(null)
-  const batchSize = 30  // Reduced from 100 to avoid HTTP 414 (URI Too Long) errors with MyMemory API
+  const batchSize = 10  // Limited to 10 titles per request to stay within MyMemory's 500 char query limit
   let batchCount = 0
 
-  // Process in batches of 30
+  // Process in batches of 10
   for (let i = 0; i < titles.length; i += batchSize) {
     const batchStart = i
     const batchEnd = Math.min(i + batchSize, titles.length)

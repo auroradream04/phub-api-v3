@@ -17,9 +17,9 @@ export const revalidate = 0 // No caching for translation endpoint
  *   Example: ?limit=100 to translate only 100 videos at a time
  * - maxRetries: Skip videos that have been retried this many times (default: 5)
  * - delay: Delay between batches in milliseconds (default: 1000)
- *   Example: ?delay=2000 for slower, more stable translations (use for rate limit issues)
- * - batchSize: Number of videos per translation batch (default: 100)
- *   Example: ?batchSize=50 for smaller batches (helps with rate limits)
+ *   Example: ?delay=2000 for slower, more stable translations
+ * - batchSize: Number of videos per translation batch (default: 10)
+ *   Example: ?batchSize=5 for slower processing with smaller batches
  *
  * Returns: Streaming response with real-time progress updates
  *
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
   const limit = limitParam ? parseInt(limitParam) : totalNeedingTranslation
   const maxRetries = parseInt(searchParams.get('maxRetries') || '5')
   const delayMs = parseInt(searchParams.get('delay') || '1000') // Delay between batches (default 1 second)
-  const batchSize = parseInt(searchParams.get('batchSize') || '100') // Batch size (default 100)
+  const batchSize = parseInt(searchParams.get('batchSize') || '10') // Batch size (default 10, limited by MyMemory's 500 char query limit)
 
   console.log(`[Admin Translation] Starting bulk translation for up to ${limit} videos out of ${totalNeedingTranslation} needing translation (max retries: ${maxRetries}, delay: ${delayMs}ms, batch size: ${batchSize})`)
 
