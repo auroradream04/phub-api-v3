@@ -211,18 +211,13 @@ export interface TranslationResult {
  * Each translation attempt has a 10-second timeout
  */
 export async function translateToZhCN(text: string): Promise<TranslationResult> {
-  // If already Chinese (>50%), return as-is
+  // If already >30% Chinese, return as-is (already good enough)
   if (isChinese(text)) {
     return { text, success: true, wasCached: false }
   }
 
-  // If contains ANY Chinese characters (mixed language), return as-is
-  // Mixed language like "Avi Love 同时想要 2 个男人" will break LibreTranslate
-  const hasChineseChars = /[\u4e00-\u9fa5]/.test(text)
-  if (hasChineseChars) {
-    console.log(`[Translation] Skipping mixed language: "${text.substring(0, 50)}"`)
-    return { text, success: true, wasCached: false }
-  }
+  // Everything else (including mixed language with <30% Chinese) gets translation attempt
+  // Garbage detection will catch any bad outputs and return original as success
 
   // Check cache first
   const cacheKey = `zh-cn:${text}`
