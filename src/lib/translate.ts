@@ -217,13 +217,23 @@ async function translateBatchWithLibreTranslate(texts: string[]): Promise<string
 }
 
 /**
- * Translation result with success status
+ * Translation result with success status and detailed analytics
  */
+export type TranslationResultType =
+  | 'garbage_detected'      // Translation was garbage, using original
+  | 'already_chinese'       // Text was already >30% Chinese
+  | 'newly_translated'      // Successfully translated to Chinese
+  | 'non_chinese_output'    // Translation succeeded but not Chinese
+  | 'api_error'             // API call failed
+  | 'cache_hit'             // From in-memory cache
+  | 'mixed_language'        // Contains <30% Chinese, attempting translation
+
 export interface TranslationResult {
   text: string
   success: boolean
   wasCached: boolean
-  isChinese?: boolean // Whether result is actually Chinese
+  isChinese?: boolean       // Whether result is actually Chinese
+  resultType?: TranslationResultType // Detailed result categorization
 }
 
 /**
@@ -234,7 +244,7 @@ export interface TranslationResult {
 export async function translateToZhCN(text: string): Promise<TranslationResult> {
   // If already >30% Chinese, return as-is (already good enough)
   if (isChinese(text)) {
-    return { text, success: true, wasCached: false }
+    return { text, success: true, wasCached: false, isChinese: true, resultType: 'already_chinese' }
   }
 
   // Everything else (including mixed language with <30% Chinese) gets translation attempt
@@ -243,7 +253,7 @@ export async function translateToZhCN(text: string): Promise<TranslationResult> 
   // Check cache first
   const cacheKey = `zh-cn:${text}`
   if (translationCache.has(cacheKey)) {
-    return { text: translationCache.get(cacheKey)!, success: true, wasCached: true }
+    return { text: translationCache.get(cacheKey)!, success: true, wasCached: true, isChinese: true, resultType: 'cache_hit' }
   }
 
   // Retry up to 3 times
@@ -264,7 +274,7 @@ export async function translateToZhCN(text: string): Promise<TranslationResult> 
       if (isGarbageTranslation(translated, text.length)) {
         console.warn(`[Translation] Garbage detected, accepting original: "${text.substring(0, 50)}"`)
         // Mark as success but return original text - don't retry this again
-        return { text, success: true, wasCached: false, isChinese: false }
+        return { text, success: true, wasCached: false, isChinese: false, resultType: 'garbage_detected' }
       }
 
       // Validate result is Chinese
@@ -272,13 +282,13 @@ export async function translateToZhCN(text: string): Promise<TranslationResult> 
         console.warn(`[Translation] Non-Chinese result: "${text.substring(0, 50)}" → "${translated.substring(0, 50)}"`)
         // Still cache it but mark as non-Chinese
         translationCache.set(cacheKey, translated)
-        return { text: translated, success: false, wasCached: false, isChinese: false }
+        return { text: translated, success: false, wasCached: false, isChinese: false, resultType: 'non_chinese_output' }
       }
 
       // Cache and return success
       translationCache.set(cacheKey, translated)
       console.log(`[Translation] ✓ "${text.substring(0, 50)}${text.length > 50 ? '...' : ''}" → "${translated.substring(0, 50)}${translated.length > 50 ? '...' : ''}"`)
-      return { text: translated, success: true, wasCached: false, isChinese: true }
+      return { text: translated, success: true, wasCached: false, isChinese: true, resultType: 'newly_translated' }
 
     } catch (error) {
       retries--
@@ -293,12 +303,12 @@ export async function translateToZhCN(text: string): Promise<TranslationResult> 
 
       // All retries exhausted
       console.error(`[Translation] Failed after ${MAX_RETRIES} retries:`, errorMessage)
-      return { text, success: false, wasCached: false }
+      return { text, success: false, wasCached: false, resultType: 'api_error' }
     }
   }
 
   // Fallback (should never reach here)
-  return { text, success: false, wasCached: false }
+  return { text, success: false, wasCached: false, resultType: 'api_error' }
 }
 
 /**

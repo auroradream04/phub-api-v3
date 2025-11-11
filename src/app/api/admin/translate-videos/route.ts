@@ -129,6 +129,16 @@ export async function POST(request: NextRequest) {
         let failCount = 0
         const startTime = Date.now()
 
+        // Detailed analytics tracking
+        const analytics = {
+          already_chinese: alreadyChinese.length,
+          newly_translated: 0,
+          garbage_detected: 0,
+          cache_hit: 0,
+          non_chinese_output: 0,
+          api_error: 0
+        }
+
         console.log(`[Admin Translation] Found ${toProcess.length} videos to translate, ${alreadyChinese.length} already Chinese`)
         sendProgress({
           processed: alreadyChinese.length,
@@ -141,7 +151,8 @@ export async function POST(request: NextRequest) {
             estimatedMinutesRemaining: toProcess.length > 0 ? Math.ceil(toProcess.length / 300) : 0,
             successCount: 0,
             failCount: 0
-          }
+          },
+          analytics
         })
 
         // Process videos in chunks with real-time progress updates
@@ -180,8 +191,13 @@ export async function POST(request: NextRequest) {
                   }
                 })
 
+                // Track analytics
+                if (result.resultType && result.resultType in analytics) {
+                  analytics[result.resultType as keyof typeof analytics]++
+                }
+
                 successCount++
-                console.log(`[Admin Translation] ✓ Success [${alreadyChinese.length + successCount + failCount}/${toProcess.length + alreadyChinese.length}]: ${video.vodId}`)
+                console.log(`[Admin Translation] ✓ Success [${alreadyChinese.length + successCount + failCount}/${toProcess.length + alreadyChinese.length}]: ${video.vodId} (${result.resultType})`)
 
                 sendProgress({
                   processed: alreadyChinese.length + successCount + failCount,
@@ -193,7 +209,8 @@ export async function POST(request: NextRequest) {
                     originalTitle: originalTitle,
                     translated: result.text,
                     success: true,
-                    message: `"${originalTitle.substring(0, 40)}..." → "${result.text.substring(0, 40)}..."`
+                    message: `"${originalTitle.substring(0, 40)}..." → "${result.text.substring(0, 40)}..."`,
+                    type: result.resultType
                   },
                   stats: (() => {
                     const elapsedMs = Date.now() - startTime
@@ -204,7 +221,8 @@ export async function POST(request: NextRequest) {
                     const estimatedMinutes = videosPerMin > 0 ? Math.ceil(remaining / videosPerMin) : 0
                     const calculatedFailCount = processed - successCount
                     return { elapsedSeconds: elapsedSecs, videosPerMinute: videosPerMin, estimatedMinutesRemaining: Math.max(0, estimatedMinutes), successCount, failCount: calculatedFailCount }
-                  })()
+                  })(),
+                  analytics
                 })
               } else {
                 // Translation failed - keep needsTranslation true, increment retry count
@@ -224,8 +242,13 @@ export async function POST(request: NextRequest) {
                   }
                 })
 
+                // Track analytics for failures
+                if (result.resultType && result.resultType in analytics) {
+                  analytics[result.resultType as keyof typeof analytics]++
+                }
+
                 failCount++
-                console.log(`[Admin Translation] ✗ Failed [${alreadyChinese.length + successCount + failCount}/${toProcess.length + alreadyChinese.length}]: ${video.vodId} (${failureReason}, total failed: ${video.translationRetryCount + 1})`)
+                console.log(`[Admin Translation] ✗ Failed [${alreadyChinese.length + successCount + failCount}/${toProcess.length + alreadyChinese.length}]: ${video.vodId} (${failureReason}, total failed: ${video.translationRetryCount + 1}, type: ${result.resultType})`)
 
                 sendProgress({
                   processed: alreadyChinese.length + successCount + failCount,
@@ -240,7 +263,8 @@ export async function POST(request: NextRequest) {
                     message: result.success && !isChinese(result.text)
                       ? `Translation did not return Chinese: "${result.text.substring(0, 40)}..."`
                       : `Failed to translate "${originalTitle.substring(0, 40)}..."`,
-                    retryCount: video.translationRetryCount + 1
+                    retryCount: video.translationRetryCount + 1,
+                    type: result.resultType
                   },
                   stats: (() => {
                     const elapsedMs = Date.now() - startTime
@@ -251,13 +275,17 @@ export async function POST(request: NextRequest) {
                     const estimatedMinutes = videosPerMin > 0 ? Math.ceil(remaining / videosPerMin) : 0
                     const calculatedFailCount = processed - successCount
                     return { elapsedSeconds: elapsedSecs, videosPerMinute: videosPerMin, estimatedMinutesRemaining: Math.max(0, estimatedMinutes), successCount, failCount: calculatedFailCount }
-                  })()
+                  })(),
+                  analytics
                 })
               }
             } catch (error) {
               failCount++
               const errorMsg = error instanceof Error ? error.message : 'Unknown error'
               console.error(`[Admin Translation] Database error for ${video.vodId}:`, error)
+
+              // Track as api_error for database failures too
+              analytics.api_error++
 
               sendProgress({
                 processed: alreadyChinese.length + successCount + failCount,
@@ -269,7 +297,8 @@ export async function POST(request: NextRequest) {
                   originalTitle: originalTitle,
                   translated: null,
                   success: false,
-                  message: `Error: ${errorMsg}`
+                  message: `Error: ${errorMsg}`,
+                  type: 'api_error'
                 },
                 stats: (() => {
                   const elapsedMs = Date.now() - startTime
@@ -279,7 +308,8 @@ export async function POST(request: NextRequest) {
                   const videosPerMin = processed > 0 ? Math.round((processed * 60000) / elapsedMs) : 0
                   const estimatedMinutes = videosPerMin > 0 ? Math.ceil((remaining * 60) / videosPerMin) : 0
                   return { elapsedSeconds: elapsedSecs, videosPerMinute: videosPerMin, estimatedMinutesRemaining: Math.max(0, estimatedMinutes) }
-                })()
+                })(),
+                analytics
               })
             }
           }
@@ -292,7 +322,9 @@ export async function POST(request: NextRequest) {
 
         // Send final summary
         const totalProcessed = toProcess.length + alreadyChinese.length
-        console.log(`[Admin Translation] Complete: ${successCount} total successes (${alreadyChinese.length} already Chinese + ${successCount - alreadyChinese.length} translated), ${failCount} failed`)
+        const newlyTranslated = successCount - alreadyChinese.length
+        console.log(`[Admin Translation] Complete: ${successCount} total successes (${alreadyChinese.length} already Chinese + ${newlyTranslated} translated), ${failCount} failed`)
+        console.log(`[Admin Translation] Analytics: ${JSON.stringify(analytics)}`)
         sendProgress({
           processed: totalProcessed,
           total: totalProcessed,
@@ -301,8 +333,9 @@ export async function POST(request: NextRequest) {
             totalProcessed,
             successCount,
             failedCount: failCount,
-            message: `Translation complete: ${successCount} total done (${alreadyChinese.length} already Chinese, ${successCount - alreadyChinese.length} newly translated), ${failCount} failed`
-          }
+            message: `Translation complete: ${successCount} total done (${alreadyChinese.length} already Chinese, ${newlyTranslated} newly translated), ${failCount} failed`
+          },
+          analytics
         })
 
         controller.close()
