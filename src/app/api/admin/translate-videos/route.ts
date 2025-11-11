@@ -14,17 +14,18 @@ export const revalidate = 0 // No caching for translation endpoint
  *
  * Query params:
  * - limit: Number of videos to translate (default: ALL videos needing translation)
- *   Example: ?limit=100 to translate only 100 videos at a time
+ *   Example: ?limit=500 to translate only 500 videos at a time
  * - maxRetries: Skip videos that have been retried this many times (default: 5)
  * - delay: Delay between batches in milliseconds (default: 300)
  *   Example: ?delay=1000 for slower, more stable translations
- * - batchSize: Number of videos per translation batch (default: 30)
- *   Example: ?batchSize=50 for larger batches (LibreTranslate can handle big batches)
+ * - batchSize: Number of videos per translation batch (default: 100)
+ *   Example: ?batchSize=200 for even faster (LibreTranslate has no character limit!)
  *
  * Returns: Streaming response with real-time progress updates
  *
- * Example for fast translation with LibreTranslate:
- *   POST /api/admin/translate-videos?delay=300&batchSize=50
+ * Example for fastest translation:
+ *   POST /api/admin/translate-videos?delay=200&batchSize=200
+ *   (69,254 videos in ~80 API calls!)
  */
 export async function POST(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
@@ -38,8 +39,8 @@ export async function POST(request: NextRequest) {
   const limitParam = searchParams.get('limit')
   const limit = limitParam ? parseInt(limitParam) : totalNeedingTranslation
   const maxRetries = parseInt(searchParams.get('maxRetries') || '5')
-  const delayMs = parseInt(searchParams.get('delay') || '300') // Delay between batches (default 300ms with LibreTranslate)
-  const batchSize = parseInt(searchParams.get('batchSize') || '30') // Batch size (default 30, increased from 10 since LibreTranslate uses POST)
+  const delayMs = parseInt(searchParams.get('delay') || '200') // Delay between batches (default 200ms, can be faster with large batches)
+  const batchSize = parseInt(searchParams.get('batchSize') || '100') // Batch size (default 100, LibreTranslate has no character limit!)
 
   console.log(`[Admin Translation] Starting bulk translation for up to ${limit} videos out of ${totalNeedingTranslation} needing translation (max retries: ${maxRetries}, delay: ${delayMs}ms, batch size: ${batchSize})`)
 

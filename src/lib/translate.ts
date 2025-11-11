@@ -267,10 +267,10 @@ export async function translateBatch(texts: string[]): Promise<TranslationResult
 
 /**
  * Translate multiple texts efficiently in batches with proxy rotation
- * Sends up to 30 titles at once as a JSON array (much faster!)
+ * Sends up to 100 titles at once (no character limit on self-hosted LibreTranslate!)
  * Returns array of translations in same order as input
  * Uses proxy rotation to distribute requests
- * (Batch size can be larger since LibreTranslate uses POST with no URL length limits)
+ * (LibreTranslate charLimit: -1 = unlimited, so we can batch aggressively)
  */
 export async function translateBatchEfficient(titles: string[], delayMs = 300): Promise<TranslationResult[]> {
   if (titles.length === 0) {
@@ -280,10 +280,10 @@ export async function translateBatchEfficient(titles: string[], delayMs = 300): 
   console.log(`[Translation] Starting batch translation of ${titles.length} titles...`)
 
   const results: TranslationResult[] = Array(titles.length).fill(null)
-  const batchSize = 30  // Increased from 10 to 30 since LibreTranslate uses POST (no URL length limits)
+  const batchSize = 100  // Increased to 100 since LibreTranslate has no character limit (-1)
   let batchCount = 0
 
-  // Process in batches of 30
+  // Process in batches of 100
   for (let i = 0; i < titles.length; i += batchSize) {
     const batchStart = i
     const batchEnd = Math.min(i + batchSize, titles.length)
