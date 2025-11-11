@@ -37,9 +37,9 @@ export function isChinese(text: string): boolean {
 
 /**
  * Detect if translation is garbage (repeating character patterns)
- * LibreTranslate produces garbage like "二 二 二 二..." or "相相相相相..."
+ * LibreTranslate produces garbage like "二 二 二 二...", "相相相相相...", or "机相机相机相..."
  */
-export function isGarbageTranslation(text: string): boolean {
+export function isGarbageTranslation(text: string, originalLength: number = 0): boolean {
   // Check for repeating character patterns (5+ same char in a row)
   // e.g., "二二二二二" or "相相相相相"
   const repeatingPattern = /(.)\1{4,}/g
@@ -54,10 +54,31 @@ export function isGarbageTranslation(text: string): boolean {
     }
   }
 
+  // Check for repeating 2+ character sequences like "机相机相机相..."
+  // Match any 2+ char sequence that repeats 3+ times
+  const multiCharPattern = /(.{2,}?)\1{2,}/g
+  const multiCharMatches = text.match(multiCharPattern)
+  if (multiCharMatches) {
+    const repeatedContent = multiCharMatches.reduce((sum, m) => sum + m.length, 0)
+    const ratio = repeatedContent / text.length
+    // If more than 20% of content is repeating sequences, it's garbage
+    if (ratio > 0.2) {
+      console.warn(`[Translation] Garbage detected: ${ratio.toFixed(1)}% repeating multi-char sequences`)
+      return true
+    }
+  }
+
   // Check for spaced repeating patterns like "二 二 二 二"
   const spacedRepeating = /(\S+)(\s+\1){4,}/
   if (spacedRepeating.test(text)) {
     console.warn('[Translation] Garbage detected: spaced repeating pattern')
+    return true
+  }
+
+  // Check for suspiciously long translations (3x+ the original)
+  // Translation should not balloon in size dramatically
+  if (originalLength > 0 && text.length > originalLength * 3) {
+    console.warn(`[Translation] Garbage detected: translation ballooned (${originalLength} chars → ${text.length} chars, ${(text.length / originalLength).toFixed(1)}x longer)`)
     return true
   }
 
@@ -239,8 +260,8 @@ export async function translateToZhCN(text: string): Promise<TranslationResult> 
         'Translation timeout'
       )
 
-      // Check for garbage translation first
-      if (isGarbageTranslation(translated)) {
+      // Check for garbage translation first (pass original length for ratio check)
+      if (isGarbageTranslation(translated, text.length)) {
         console.warn(`[Translation] Garbage detected, accepting original: "${text.substring(0, 50)}"`)
         // Mark as success but return original text - don't retry this again
         return { text, success: true, wasCached: false, isChinese: false }
