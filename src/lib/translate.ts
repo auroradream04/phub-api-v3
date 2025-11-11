@@ -97,8 +97,8 @@ async function translateWithLibreTranslate(text: string): Promise<string> {
 }
 
 /**
- * Translate multiple texts in a single batch API request using LibreTranslate array support
- * LibreTranslate natively supports batching with arrays (no newline separator needed)
+ * Translate multiple texts in a single batch API request using LibreTranslate
+ * LibreTranslate supports batching by sending newline-separated text
  */
 async function translateBatchWithLibreTranslate(texts: string[]): Promise<string[]> {
   if (texts.length === 0) {
@@ -107,9 +107,10 @@ async function translateBatchWithLibreTranslate(texts: string[]): Promise<string
 
   const formData = new URLSearchParams()
 
-  // LibreTranslate API accepts either single string or array of strings
-  // Send as JSON array in form data
-  formData.append('q', JSON.stringify(texts))
+  // LibreTranslate API supports newline-separated batch translation
+  // Send all texts joined by newlines, then split the result
+  const bundledText = texts.join('\n')
+  formData.append('q', bundledText)
   formData.append('source', 'auto')  // Auto-detect source language
   formData.append('target', 'zh')    // Chinese (simplified)
   if (LIBRETRANSLATE_API_KEY) {
@@ -138,7 +139,7 @@ async function translateBatchWithLibreTranslate(texts: string[]): Promise<string
   }
 
   const data = await response.json() as {
-    translatedText?: string | string[]
+    translatedText?: string
     error?: string
   }
 
@@ -151,10 +152,8 @@ async function translateBatchWithLibreTranslate(texts: string[]): Promise<string
     throw new Error('No translation returned from LibreTranslate')
   }
 
-  // Handle both string and array responses
-  const translations = Array.isArray(translatedText)
-    ? translatedText
-    : [translatedText]
+  // Split the result back into individual translations (newline-separated)
+  const translations = translatedText.split('\n')
 
   // Handle case where returned lines don't match expected count
   if (translations.length !== texts.length) {

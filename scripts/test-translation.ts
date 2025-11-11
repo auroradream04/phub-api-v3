@@ -1,6 +1,6 @@
 #!/usr/bin/env tsx
 /**
- * Script to test Google Translate API with various English titles
+ * Script to test LibreTranslate API with 50 video titles
  *
  * Usage:
  *   npx tsx scripts/test-translation.ts
@@ -9,20 +9,64 @@
 import { translateBatchEfficient, isChinese } from '../src/lib/translate'
 
 const testTitles = [
+  // Batch 1
   'Hot Blonde Teen Fucked Hard',
   'Asian Sluts Nicole Doshi & Kazumi Got Alex Jones BBC All Wet',
-  'Beautiful Asian Baby Learning During Study - Nicole Doshi',
+  'Beautiful Asian Baby Learning During Study',
   'Tiny Asian Best Friend Tries Big White Cock',
   'Perfect Body Asian Roommate During Room Sharing',
+  // Batch 2
   'Pinay Student Getting Fucked by Classmates',
   'Passionate Couple Making Love in the Bedroom',
   'Professional Yoga Instructor Teaching Advanced Poses',
   'Coffee Shop Romance Late Night Conversation',
-  'Adventure Travel Vlog Southeast Asia Backpacking'
+  'Adventure Travel Vlog Southeast Asia Backpacking',
+  // Batch 3
+  'Gorgeous Teen Takes Massive BBC Deep Throat',
+  'Curvy Latina Loves That Creamy Filling',
+  'Hot Milf Seduces Young Guy in the Kitchen',
+  'College Girls First Time With Toys',
+  'Busty Blonde Gets Double Penetrated',
+  // Batch 4
+  'Indian Housewife Homemade Bedroom Video',
+  'Thai Girl Loves Hard Cock in Bar',
+  'Japanese Uncensored Amateur Wife Video',
+  'Korean Beauty Gets Filled at Night',
+  'Filipino Maid Caught by Boss',
+  // Batch 5
+  'Ebony Beauty Shakes That Big Ass',
+  'Redhead Gets Fucked Against the Wall',
+  'Teen Sucks Huge Meat in Shower Scene',
+  'Busty Webcam Girl Shows Everything',
+  'Party Girl Gets Tag Teamed',
+  // Batch 6
+  'Homemade Video of Wife and Friend',
+  'Cute Girl First Time Porn Shoot',
+  'Muscular Guy Dominates Skinny Girl',
+  'Anal Loving Slut Takes It All',
+  'Orgy with Friends in the Apartment',
+  // Batch 7
+  'Petite Teen Gets Destroyed by Big Dick',
+  'Mature Woman Loves Younger Cock',
+  'Cheating Wife Fucks Stranger in Car',
+  'Horny Couple Makes Love Outdoors',
+  'Office Worker Fucks Boss for Promotion',
+  // Batch 8
+  'Beach Sex with Hot Stranger',
+  'MILF Teaches Young Girl',
+  'Stepsister Seduction in Bedroom',
+  'Lesbian Friends Eating Each Other',
+  'Black Girl Gets White Cock',
+  // Batch 9
+  'Hot Shower Sex with Girlfriend',
+  'Wet Pussy Gets Filled Deep',
+  'BBW Loves Taking It',
+  'Teen Gets Orgasm from Pussy Licking',
+  'Drunk Girl at Party Gets Used'
 ]
 
 async function main() {
-  console.log('[Test Translation] Testing Google Translate API with', testTitles.length, 'titles')
+  console.log('[Test Translation] Testing LibreTranslate API with', testTitles.length, 'titles')
   console.log('═'.repeat(80))
 
   try {
