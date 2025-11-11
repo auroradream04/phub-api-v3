@@ -7,7 +7,7 @@ export const revalidate = 0 // No caching for translation endpoint
 /**
  * POST /api/admin/translate-videos
  *
- * Bulk translate video titles to Chinese with adaptive rate limiting.
+ * Bulk translate video titles to Chinese using LibreTranslate.
  * Translates videos that:
  * 1. Have needsTranslation=true (failed before, retrying, or never attempted)
  * 2. Have non-Chinese titles that haven't been translated yet
@@ -16,15 +16,15 @@ export const revalidate = 0 // No caching for translation endpoint
  * - limit: Number of videos to translate (default: ALL videos needing translation)
  *   Example: ?limit=100 to translate only 100 videos at a time
  * - maxRetries: Skip videos that have been retried this many times (default: 5)
- * - delay: Delay between batches in milliseconds (default: 1000)
- *   Example: ?delay=2000 for slower, more stable translations
- * - batchSize: Number of videos per translation batch (default: 10)
- *   Example: ?batchSize=5 for slower processing with smaller batches
+ * - delay: Delay between batches in milliseconds (default: 300)
+ *   Example: ?delay=1000 for slower, more stable translations
+ * - batchSize: Number of videos per translation batch (default: 30)
+ *   Example: ?batchSize=50 for larger batches (LibreTranslate can handle big batches)
  *
  * Returns: Streaming response with real-time progress updates
  *
- * Example for slow, stable translation:
- *   POST /api/admin/translate-videos?delay=2000&batchSize=50
+ * Example for fast translation with LibreTranslate:
+ *   POST /api/admin/translate-videos?delay=300&batchSize=50
  */
 export async function POST(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
@@ -38,8 +38,8 @@ export async function POST(request: NextRequest) {
   const limitParam = searchParams.get('limit')
   const limit = limitParam ? parseInt(limitParam) : totalNeedingTranslation
   const maxRetries = parseInt(searchParams.get('maxRetries') || '5')
-  const delayMs = parseInt(searchParams.get('delay') || '500') // Delay between batches (default 500ms, reduced with proxy rotation)
-  const batchSize = parseInt(searchParams.get('batchSize') || '10') // Batch size (default 10, limited by MyMemory's 500 char query limit)
+  const delayMs = parseInt(searchParams.get('delay') || '300') // Delay between batches (default 300ms with LibreTranslate)
+  const batchSize = parseInt(searchParams.get('batchSize') || '30') // Batch size (default 30, increased from 10 since LibreTranslate uses POST)
 
   console.log(`[Admin Translation] Starting bulk translation for up to ${limit} videos out of ${totalNeedingTranslation} needing translation (max retries: ${maxRetries}, delay: ${delayMs}ms, batch size: ${batchSize})`)
 

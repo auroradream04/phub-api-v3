@@ -1,6 +1,9 @@
 import { prisma } from '@/lib/prisma'
 import { getRandomProxy } from '@/lib/proxy'
 
+// LibreTranslate API endpoint
+const LIBRETRANSLATE_URL = process.env.LIBRETRANSLATE_URL || 'https://translate.alvinchang.dev'
+
 // In-memory cache for translations (cleared on server restart)
 const translationCache = new Map<string, string>()
 
@@ -42,107 +45,109 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, timeoutErr
 }
 
 /**
- * Translate using MyMemory API with proxy rotation
- * MyMemory is completely free with no rate limiting or API keys needed
- * Uses proxy rotation to bypass IP-based rate limiting
+ * Translate using LibreTranslate API with proxy rotation
+ * LibreTranslate is open-source and self-hosted with no rate limiting
+ * Supports auto-detection of source language
  */
-async function translateWithMyMemory(text: string): Promise<string> {
-  const url = new URL('https://api.mymemory.translated.net/get')
-  url.searchParams.set('q', text)
-  url.searchParams.set('langpair', 'en|zh-CN')  // English to Chinese (handles most cases)
+async function translateWithLibreTranslate(text: string): Promise<string> {
+  const formData = new URLSearchParams()
+  formData.append('q', text)
+  formData.append('source', 'auto')  // Auto-detect source language
+  formData.append('target', 'zh')    // Chinese (simplified)
 
-  // Try to use a random proxy to avoid rate limiting
+  // Try to use a random proxy to distribute requests
   const proxyInfo = getRandomProxy('translate')
-  const fetchOptions: RequestInit = {
+  const fetchOptions: RequestInit & { agent?: unknown } = {
+    method: 'POST',
     headers: {
       'User-Agent': 'Mozilla/5.0 (compatible; Translation Bot/1.0)'
-    }
+    },
+    body: formData
   }
 
   if (proxyInfo) {
-    (fetchOptions as any).agent = proxyInfo.agent
+    fetchOptions.agent = proxyInfo.agent
   }
 
-  const response = await fetch(url.toString(), fetchOptions)
+  const response = await fetch(`${LIBRETRANSLATE_URL}/translate`, fetchOptions)
 
   if (!response.ok) {
-    throw new Error(`MyMemory API error: ${response.status}`)
+    throw new Error(`LibreTranslate API error: ${response.status}`)
   }
 
   const data = await response.json() as {
-    responseStatus: number
-    responseDetails?: string
-    responseData?: {
-      translatedText?: string
-    }
+    translatedText?: string
+    error?: string
   }
 
-  if (data.responseStatus !== 200) {
-    throw new Error(`MyMemory error: ${data.responseDetails || 'Unknown error'}`)
+  if (data.error) {
+    throw new Error(`LibreTranslate error: ${data.error}`)
   }
 
-  const translatedText = data.responseData?.translatedText
+  const translatedText = data.translatedText
   if (!translatedText) {
-    throw new Error('No translation returned from MyMemory')
+    throw new Error('No translation returned from LibreTranslate')
   }
 
   return translatedText
 }
 
 /**
- * Translate multiple texts in a single batch API request using newline separator
- * MyMemory supports batching by sending newline-separated text
+ * Translate multiple texts in a single batch API request using LibreTranslate array support
+ * LibreTranslate natively supports batching with arrays (no newline separator needed)
  */
-async function translateBatchWithMyMemory(texts: string[]): Promise<string[]> {
+async function translateBatchWithLibreTranslate(texts: string[]): Promise<string[]> {
   if (texts.length === 0) {
     return []
   }
 
-  // Join all texts with newlines for batch translation
-  const bundledText = texts.join('\n')
+  const formData = new URLSearchParams()
 
-  const url = new URL('https://api.mymemory.translated.net/get')
-  url.searchParams.set('q', bundledText)
-  url.searchParams.set('langpair', 'en|zh-CN')  // English to Chinese (MyMemory doesn't support auto-detection)
+  // LibreTranslate API accepts either single string or array of strings
+  // Send as JSON array in form data
+  formData.append('q', JSON.stringify(texts))
+  formData.append('source', 'auto')  // Auto-detect source language
+  formData.append('target', 'zh')    // Chinese (simplified)
 
-  // Try to use a random proxy to avoid rate limiting
+  // Try to use a random proxy to distribute requests
   const proxyInfo = getRandomProxy('translate')
-  const fetchOptions: RequestInit = {
+  const fetchOptions: RequestInit & { agent?: unknown } = {
+    method: 'POST',
     headers: {
       'User-Agent': 'Mozilla/5.0 (compatible; Translation Bot/1.0)'
-    }
+    },
+    body: formData
   }
 
   if (proxyInfo) {
-    (fetchOptions as any).agent = proxyInfo.agent
+    fetchOptions.agent = proxyInfo.agent
     console.log(`[Translation] Using proxy: ${proxyInfo.proxyUrl}`)
   }
 
-  const response = await fetch(url.toString(), fetchOptions)
+  const response = await fetch(`${LIBRETRANSLATE_URL}/translate`, fetchOptions)
 
   if (!response.ok) {
-    throw new Error(`MyMemory API error: ${response.status}`)
+    throw new Error(`LibreTranslate API error: ${response.status}`)
   }
 
   const data = await response.json() as {
-    responseStatus: number
-    responseDetails?: string
-    responseData?: {
-      translatedText?: string
-    }
+    translatedText?: string | string[]
+    error?: string
   }
 
-  if (data.responseStatus !== 200) {
-    throw new Error(`MyMemory error: ${data.responseDetails || 'Unknown error'}`)
+  if (data.error) {
+    throw new Error(`LibreTranslate error: ${data.error}`)
   }
 
-  const translatedText = data.responseData?.translatedText
+  const translatedText = data.translatedText
   if (!translatedText) {
-    throw new Error('No translation returned from MyMemory')
+    throw new Error('No translation returned from LibreTranslate')
   }
 
-  // Split the result back into individual translations
-  const translations = translatedText.split('\n')
+  // Handle both string and array responses
+  const translations = Array.isArray(translatedText)
+    ? translatedText
+    : [translatedText]
 
   // Handle case where returned lines don't match expected count
   if (translations.length !== texts.length) {
@@ -186,9 +191,9 @@ export async function translateToZhCN(text: string): Promise<TranslationResult> 
 
   while (retries > 0) {
     try {
-      // Translate using MyMemory API with timeout
+      // Translate using LibreTranslate API with timeout
       const translated = await withTimeout(
-        translateWithMyMemory(text),
+        translateWithLibreTranslate(text),
         TIMEOUT_MS,
         'Translation timeout'
       )
@@ -256,10 +261,10 @@ export async function translateBatch(texts: string[]): Promise<TranslationResult
 
 /**
  * Translate multiple texts efficiently in batches with proxy rotation
- * Sends up to 10 titles at once separated by newlines (much faster!)
+ * Sends up to 30 titles at once as a JSON array (much faster!)
  * Returns array of translations in same order as input
- * Uses proxy rotation to bypass rate limiting
- * (Batch size limited to 10 to stay within MyMemory's 500 char query limit)
+ * Uses proxy rotation to distribute requests
+ * (Batch size can be larger since LibreTranslate uses POST with no URL length limits)
  */
 export async function translateBatchEfficient(titles: string[], delayMs = 300): Promise<TranslationResult[]> {
   if (titles.length === 0) {
@@ -269,10 +274,10 @@ export async function translateBatchEfficient(titles: string[], delayMs = 300): 
   console.log(`[Translation] Starting batch translation of ${titles.length} titles...`)
 
   const results: TranslationResult[] = Array(titles.length).fill(null)
-  const batchSize = 10  // Limited to 10 titles per request to stay within MyMemory's 500 char query limit
+  const batchSize = 30  // Increased from 10 to 30 since LibreTranslate uses POST (no URL length limits)
   let batchCount = 0
 
-  // Process in batches of 10
+  // Process in batches of 30
   for (let i = 0; i < titles.length; i += batchSize) {
     const batchStart = i
     const batchEnd = Math.min(i + batchSize, titles.length)
@@ -321,7 +326,7 @@ export async function translateBatchEfficient(titles: string[], delayMs = 300): 
     while (retries > 0 && !translated) {
       try {
         translatedTexts = await withTimeout(
-          translateBatchWithMyMemory(titlesToTranslate),
+          translateBatchWithLibreTranslate(titlesToTranslate),
           15000,
           'Batch translation timeout'
         )
