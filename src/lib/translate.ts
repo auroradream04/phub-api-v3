@@ -1,8 +1,9 @@
 import { prisma } from '@/lib/prisma'
 import { getRandomProxy } from '@/lib/proxy'
 
-// LibreTranslate API endpoint
+// LibreTranslate API configuration
 const LIBRETRANSLATE_URL = process.env.LIBRETRANSLATE_URL || 'https://translate.alvinchang.dev'
+const LIBRETRANSLATE_API_KEY = process.env.LIBRETRANSLATE_API_KEY || ''
 
 // In-memory cache for translations (cleared on server restart)
 const translationCache = new Map<string, string>()
@@ -54,6 +55,9 @@ async function translateWithLibreTranslate(text: string): Promise<string> {
   formData.append('q', text)
   formData.append('source', 'auto')  // Auto-detect source language
   formData.append('target', 'zh')    // Chinese (simplified)
+  if (LIBRETRANSLATE_API_KEY) {
+    formData.append('api_key', LIBRETRANSLATE_API_KEY)
+  }
 
   // Try to use a random proxy to distribute requests
   const proxyInfo = getRandomProxy('translate')
@@ -108,6 +112,9 @@ async function translateBatchWithLibreTranslate(texts: string[]): Promise<string
   formData.append('q', JSON.stringify(texts))
   formData.append('source', 'auto')  // Auto-detect source language
   formData.append('target', 'zh')    // Chinese (simplified)
+  if (LIBRETRANSLATE_API_KEY) {
+    formData.append('api_key', LIBRETRANSLATE_API_KEY)
+  }
 
   // Try to use a random proxy to distribute requests
   const proxyInfo = getRandomProxy('translate')
