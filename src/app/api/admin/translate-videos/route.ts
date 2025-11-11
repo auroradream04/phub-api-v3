@@ -16,16 +16,18 @@ export const revalidate = 0 // No caching for translation endpoint
  * - limit: Number of videos to translate (default: ALL videos needing translation)
  *   Example: ?limit=500 to translate only 500 videos at a time
  * - maxRetries: Skip videos that have been retried this many times (default: 5)
- * - delay: Delay between batches in milliseconds (default: 300)
+ * - delay: Delay between batches in milliseconds (default: 500)
  *   Example: ?delay=1000 for slower, more stable translations
- * - batchSize: Number of videos per translation batch (default: 100)
- *   Example: ?batchSize=200 for even faster (LibreTranslate has no character limit!)
+ * - concurrency: Number of parallel translation requests (default: 10)
+ *   Example: ?concurrency=50 for 50 parallel requests at once
+ *   Example: ?concurrency=100 for maximum speed (requires stable connection)
  *
  * Returns: Streaming response with real-time progress updates
  *
  * Example for fastest translation:
- *   POST /api/admin/translate-videos?delay=200&batchSize=200
- *   (69,254 videos in ~80 API calls!)
+ *   POST /api/admin/translate-videos?delay=200&concurrency=100
+ *   Example for safest (slowest):
+ *   POST /api/admin/translate-videos?delay=2000&concurrency=5
  */
 export async function POST(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
@@ -40,9 +42,12 @@ export async function POST(request: NextRequest) {
   const limit = limitParam ? parseInt(limitParam) : totalNeedingTranslation
   const maxRetries = parseInt(searchParams.get('maxRetries') || '5')
   const delayMs = parseInt(searchParams.get('delay') || '500') // Delay between chunks (default 500ms)
-  const batchSize = parseInt(searchParams.get('batchSize') || '10') // Parallel translation size (default 10 titles at once)
 
-  console.log(`[Admin Translation] Starting bulk translation for up to ${limit} videos out of ${totalNeedingTranslation} needing translation (max retries: ${maxRetries}, delay: ${delayMs}ms, batch size: ${batchSize})`)
+  // Concurrency: check 'concurrency' param first, then fall back to legacy 'batchSize'
+  const concurrencyParam = searchParams.get('concurrency') || searchParams.get('batchSize')
+  const batchSize = parseInt(concurrencyParam || '10') // Number of parallel translation requests (default 10)
+
+  console.log(`[Admin Translation] Starting bulk translation for up to ${limit} videos out of ${totalNeedingTranslation} needing translation (max retries: ${maxRetries}, delay: ${delayMs}ms, concurrency: ${batchSize})`)
 
   // Create a readable stream that we'll write progress to
   const encoder = new TextEncoder()
