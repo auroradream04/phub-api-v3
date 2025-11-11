@@ -1,5 +1,4 @@
 import { prisma } from '@/lib/prisma'
-import { getRandomProxy } from '@/lib/proxy'
 
 // LibreTranslate API configuration
 const LIBRETRANSLATE_URL = process.env.LIBRETRANSLATE_URL || 'https://translate.alvinchang.dev'
@@ -46,8 +45,8 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, timeoutErr
 }
 
 /**
- * Translate using LibreTranslate API with proxy rotation
- * LibreTranslate is open-source and self-hosted with no rate limiting
+ * Translate using LibreTranslate API
+ * LibreTranslate is open-source, self-hosted, no rate limiting, no character limits
  * Supports auto-detection of source language
  */
 async function translateWithLibreTranslate(text: string): Promise<string> {
@@ -59,9 +58,7 @@ async function translateWithLibreTranslate(text: string): Promise<string> {
     formData.append('api_key', LIBRETRANSLATE_API_KEY)
   }
 
-  // Try to use a random proxy to distribute requests
-  const proxyInfo = getRandomProxy('translate')
-  const fetchOptions: RequestInit & { agent?: unknown } = {
+  const fetchOptions: RequestInit = {
     method: 'POST',
     headers: {
       'User-Agent': 'Mozilla/5.0 (compatible; Translation Bot/1.0)'
@@ -69,14 +66,11 @@ async function translateWithLibreTranslate(text: string): Promise<string> {
     body: formData
   }
 
-  if (proxyInfo) {
-    fetchOptions.agent = proxyInfo.agent
-  }
-
   const response = await fetch(`${LIBRETRANSLATE_URL}/translate`, fetchOptions)
 
   if (!response.ok) {
-    throw new Error(`LibreTranslate API error: ${response.status}`)
+    const errorText = await response.text().catch(() => '')
+    throw new Error(`LibreTranslate API error ${response.status}: ${errorText.substring(0, 200)}`)
   }
 
   const data = await response.json() as {
@@ -117,9 +111,7 @@ async function translateBatchWithLibreTranslate(texts: string[]): Promise<string
     formData.append('api_key', LIBRETRANSLATE_API_KEY)
   }
 
-  // Try to use a random proxy to distribute requests
-  const proxyInfo = getRandomProxy('translate')
-  const fetchOptions: RequestInit & { agent?: unknown } = {
+  const fetchOptions: RequestInit = {
     method: 'POST',
     headers: {
       'User-Agent': 'Mozilla/5.0 (compatible; Translation Bot/1.0)'
@@ -127,40 +119,42 @@ async function translateBatchWithLibreTranslate(texts: string[]): Promise<string
     body: formData
   }
 
-  if (proxyInfo) {
-    fetchOptions.agent = proxyInfo.agent
-    console.log(`[Translation] Using proxy: ${proxyInfo.proxyUrl}`)
+  try {
+    const response = await fetch(`${LIBRETRANSLATE_URL}/translate`, fetchOptions)
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => '')
+      throw new Error(`LibreTranslate API error ${response.status}: ${errorText.substring(0, 300)}`)
+    }
+
+    const data = await response.json() as {
+      translatedText?: string
+      error?: string
+    }
+
+    if (data.error) {
+      throw new Error(`LibreTranslate error: ${data.error}`)
+    }
+
+    const translatedText = data.translatedText
+    if (!translatedText) {
+      throw new Error('No translation returned from LibreTranslate')
+    }
+
+    // Split the result back into individual translations (newline-separated)
+    const translations = translatedText.split('\n')
+
+    // Handle case where returned lines don't match expected count
+    if (translations.length !== texts.length) {
+      console.warn(`[Translation Batch] Line count mismatch: expected ${texts.length}, got ${translations.length}`)
+    }
+
+    return translations
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error)
+    console.error(`[Translation Batch] Request failed: ${errorMsg}`)
+    throw error
   }
-
-  const response = await fetch(`${LIBRETRANSLATE_URL}/translate`, fetchOptions)
-
-  if (!response.ok) {
-    throw new Error(`LibreTranslate API error: ${response.status}`)
-  }
-
-  const data = await response.json() as {
-    translatedText?: string
-    error?: string
-  }
-
-  if (data.error) {
-    throw new Error(`LibreTranslate error: ${data.error}`)
-  }
-
-  const translatedText = data.translatedText
-  if (!translatedText) {
-    throw new Error('No translation returned from LibreTranslate')
-  }
-
-  // Split the result back into individual translations (newline-separated)
-  const translations = translatedText.split('\n')
-
-  // Handle case where returned lines don't match expected count
-  if (translations.length !== texts.length) {
-    console.warn(`[Translation Batch] Line count mismatch: expected ${texts.length}, got ${translations.length}`)
-  }
-
-  return translations
 }
 
 /**
@@ -266,11 +260,10 @@ export async function translateBatch(texts: string[]): Promise<TranslationResult
 }
 
 /**
- * Translate multiple texts efficiently in batches with proxy rotation
+ * Translate multiple texts efficiently in batches
  * Sends up to 100 titles at once (no character limit on self-hosted LibreTranslate!)
  * Returns array of translations in same order as input
- * Uses proxy rotation to distribute requests
- * (LibreTranslate charLimit: -1 = unlimited, so we can batch aggressively)
+ * LibreTranslate charLimit: -1 = unlimited, so we can batch aggressively
  */
 export async function translateBatchEfficient(titles: string[], delayMs = 300): Promise<TranslationResult[]> {
   if (titles.length === 0) {
@@ -323,6 +316,8 @@ export async function translateBatchEfficient(titles: string[], delayMs = 300): 
     }
 
     console.log(`[Translation] Batch ${batchCount}: Need to translate ${titlesToTranslate.length}/${batch.length} titles`)
+    const totalChars = titlesToTranslate.join('\n').length
+    console.log(`[Translation] Batch ${batchCount}: Total characters: ${totalChars}`)
 
     // Translate all uncached titles at once
     let retries = 3
@@ -333,7 +328,7 @@ export async function translateBatchEfficient(titles: string[], delayMs = 300): 
       try {
         translatedTexts = await withTimeout(
           translateBatchWithLibreTranslate(titlesToTranslate),
-          15000,
+          30000,  // Increased from 15s to 30s for larger batches
           'Batch translation timeout'
         )
 
