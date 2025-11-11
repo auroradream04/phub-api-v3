@@ -24,14 +24,15 @@ export async function isTranslationEnabled(): Promise<boolean> {
 
 /**
  * Detect if text is primarily Chinese
+ * Using 30% threshold - if it contains any significant Chinese content, accept it
  */
 export function isChinese(text: string): boolean {
   // Count Chinese characters (CJK Unified Ideographs)
   const chineseChars = text.match(/[\u4e00-\u9fa5]/g) || []
   const totalChars = text.replace(/\s+/g, '').length
 
-  // If more than 50% of non-space characters are Chinese, consider it Chinese
-  return totalChars > 0 && (chineseChars.length / totalChars) > 0.5
+  // If more than 30% of non-space characters are Chinese, consider it Chinese
+  return totalChars > 0 && (chineseChars.length / totalChars) > 0.3
 }
 
 /**
@@ -210,8 +211,16 @@ export interface TranslationResult {
  * Each translation attempt has a 10-second timeout
  */
 export async function translateToZhCN(text: string): Promise<TranslationResult> {
-  // If already Chinese, return as-is
+  // If already Chinese (>50%), return as-is
   if (isChinese(text)) {
+    return { text, success: true, wasCached: false }
+  }
+
+  // If contains ANY Chinese characters (mixed language), return as-is
+  // Mixed language like "Avi Love 同时想要 2 个男人" will break LibreTranslate
+  const hasChineseChars = /[\u4e00-\u9fa5]/.test(text)
+  if (hasChineseChars) {
+    console.log(`[Translation] Skipping mixed language: "${text.substring(0, 50)}"`)
     return { text, success: true, wasCached: false }
   }
 
@@ -237,9 +246,9 @@ export async function translateToZhCN(text: string): Promise<TranslationResult> 
 
       // Check for garbage translation first
       if (isGarbageTranslation(translated)) {
-        console.warn(`[Translation] Garbage translation detected: "${text.substring(0, 50)}" → "${translated.substring(0, 80)}"`)
-        // Return failure - don't cache garbage
-        return { text, success: false, wasCached: false, isChinese: false }
+        console.warn(`[Translation] Garbage detected, accepting original: "${text.substring(0, 50)}"`)
+        // Mark as success but return original text - don't retry this again
+        return { text, success: true, wasCached: false, isChinese: false }
       }
 
       // Validate result is Chinese
