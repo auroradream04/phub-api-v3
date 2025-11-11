@@ -35,6 +35,35 @@ export function isChinese(text: string): boolean {
 }
 
 /**
+ * Detect if translation is garbage (repeating character patterns)
+ * LibreTranslate produces garbage like "二 二 二 二..." or "相相相相相..."
+ */
+export function isGarbageTranslation(text: string): boolean {
+  // Check for repeating character patterns (5+ same char in a row)
+  // e.g., "二二二二二" or "相相相相相"
+  const repeatingPattern = /(.)\1{4,}/g
+  const repeatingMatches = text.match(repeatingPattern)
+  if (repeatingMatches) {
+    const repeatedContent = repeatingMatches.reduce((sum, m) => sum + m.length, 0)
+    const ratio = repeatedContent / text.length
+    // If more than 15% of content is repeated chars, it's garbage
+    if (ratio > 0.15) {
+      console.warn(`[Translation] Garbage detected: ${ratio.toFixed(1)}% repeated characters`)
+      return true
+    }
+  }
+
+  // Check for spaced repeating patterns like "二 二 二 二"
+  const spacedRepeating = /(\S+)(\s+\1){4,}/
+  if (spacedRepeating.test(text)) {
+    console.warn('[Translation] Garbage detected: spaced repeating pattern')
+    return true
+  }
+
+  return false
+}
+
+/**
  * Helper to wrap a promise with timeout
  */
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, timeoutError: string): Promise<T> {
@@ -205,6 +234,13 @@ export async function translateToZhCN(text: string): Promise<TranslationResult> 
         TIMEOUT_MS,
         'Translation timeout'
       )
+
+      // Check for garbage translation first
+      if (isGarbageTranslation(translated)) {
+        console.warn(`[Translation] Garbage translation detected: "${text.substring(0, 50)}" → "${translated.substring(0, 80)}"`)
+        // Return failure - don't cache garbage
+        return { text, success: false, wasCached: false, isChinese: false }
+      }
 
       // Validate result is Chinese
       if (!isChinese(translated)) {
