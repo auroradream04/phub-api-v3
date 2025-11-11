@@ -118,6 +118,11 @@ export default function AdminDashboard() {
   const [translationStats, setTranslationStats] = useState<TranslationStats | null>(null)
   const [translating, setTranslating] = useState(false)
   const [translationProgress, setTranslationProgress] = useState<TranslationProgress | null>(null)
+  const [showTranslationOptions, setShowTranslationOptions] = useState(false)
+  const [translationConcurrency, setTranslationConcurrency] = useState(10)
+  const [translationDelay, setTranslationDelay] = useState(500)
+  const [translationLimit, setTranslationLimit] = useState('')
+  const [translationMaxRetries, setTranslationMaxRetries] = useState(5)
 
   // Check for saved progress on load
   useEffect(() => {
@@ -193,7 +198,16 @@ export default function AdminDashboard() {
     setMessage('Starting translation...')
 
     try {
-      const response = await fetch('/api/admin/translate-videos', {
+      // Build query params
+      const params = new URLSearchParams()
+      params.append('concurrency', String(translationConcurrency))
+      params.append('delay', String(translationDelay))
+      params.append('maxRetries', String(translationMaxRetries))
+      if (translationLimit) {
+        params.append('limit', translationLimit)
+      }
+
+      const response = await fetch(`/api/admin/translate-videos?${params.toString()}`, {
         method: 'POST'
       })
 
@@ -767,6 +781,118 @@ export default function AdminDashboard() {
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Translation Options */}
+          <div className="bg-gradient-to-br from-card to-card/50 border border-border/50 rounded-2xl p-8 shadow-sm mt-8">
+            <div className="space-y-4">
+              {/* Translation Options Toggle */}
+              <button
+                onClick={() => setShowTranslationOptions(!showTranslationOptions)}
+                className="text-sm font-semibold text-muted-foreground hover:text-primary flex items-center gap-2 transition-colors uppercase tracking-wider"
+              >
+                {showTranslationOptions ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                Translation Options
+              </button>
+
+              {showTranslationOptions && (
+                <div className="bg-muted/30 border border-border/50 rounded-xl p-6 space-y-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      Concurrency (1-100)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="100"
+                      value={translationConcurrency}
+                      onChange={(e) => setTranslationConcurrency(Math.max(1, Math.min(100, parseInt(e.target.value) || 10)))}
+                      disabled={translating}
+                      className="w-full px-4 py-2 border border-border bg-input text-foreground rounded-lg disabled:opacity-50 transition-colors"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">Parallel requests (default: 10, max: 100)</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      Delay (milliseconds)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="100"
+                      value={translationDelay}
+                      onChange={(e) => setTranslationDelay(Math.max(0, parseInt(e.target.value) || 500))}
+                      disabled={translating}
+                      className="w-full px-4 py-2 border border-border bg-input text-foreground rounded-lg disabled:opacity-50 transition-colors"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">Delay between batches (default: 500ms)</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      Limit (optional)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={translationLimit}
+                      onChange={(e) => setTranslationLimit(e.target.value)}
+                      disabled={translating}
+                      placeholder="Leave empty for ALL"
+                      className="w-full px-4 py-2 border border-border bg-input text-foreground rounded-lg disabled:opacity-50 transition-colors"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">Max videos to translate (default: ALL)</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      Max Retries
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="20"
+                      value={translationMaxRetries}
+                      onChange={(e) => setTranslationMaxRetries(Math.max(0, Math.min(20, parseInt(e.target.value) || 5)))}
+                      disabled={translating}
+                      className="w-full px-4 py-2 border border-border bg-input text-foreground rounded-lg disabled:opacity-50 transition-colors"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">Skip after N failures (default: 5)</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Quick Presets */}
+              {showTranslationOptions && (
+                <div className="bg-muted/30 border border-border/50 rounded-xl p-4 space-y-2">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Quick Presets</p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    <button
+                      onClick={() => { setTranslationConcurrency(5); setTranslationDelay(2000); setTranslationMaxRetries(5) }}
+                      disabled={translating}
+                      className="px-3 py-2 text-xs bg-muted hover:bg-muted/80 text-foreground rounded-lg disabled:opacity-50 transition-colors font-medium"
+                    >
+                      🐢 Safe (5 parallel, 2s delay)
+                    </button>
+                    <button
+                      onClick={() => { setTranslationConcurrency(10); setTranslationDelay(500); setTranslationMaxRetries(5) }}
+                      disabled={translating}
+                      className="px-3 py-2 text-xs bg-muted hover:bg-muted/80 text-foreground rounded-lg disabled:opacity-50 transition-colors font-medium"
+                    >
+                      ⚡ Balanced (10 parallel, 500ms)
+                    </button>
+                    <button
+                      onClick={() => { setTranslationConcurrency(50); setTranslationDelay(200); setTranslationMaxRetries(3) }}
+                      disabled={translating}
+                      className="px-3 py-2 text-xs bg-muted hover:bg-muted/80 text-foreground rounded-lg disabled:opacity-50 transition-colors font-medium"
+                    >
+                      🚀 Fast (50 parallel, 200ms)
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Secondary Actions */}
