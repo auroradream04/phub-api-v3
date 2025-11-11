@@ -53,7 +53,7 @@ async function translateWithLibreTranslate(text: string): Promise<string> {
   const formData = new URLSearchParams()
   formData.append('q', text)
   formData.append('source', 'auto')  // Auto-detect source language
-  formData.append('target', 'zh')    // Chinese (simplified)
+  formData.append('target', 'zh-Hans')    // Simplified Chinese (mainland)
   if (LIBRETRANSLATE_API_KEY) {
     formData.append('api_key', LIBRETRANSLATE_API_KEY)
   }
@@ -110,7 +110,7 @@ async function translateBatchWithLibreTranslate(texts: string[]): Promise<string
   const bundledText = texts.join('\n')
   formData.append('q', bundledText)
   formData.append('source', 'auto')  // Auto-detect source language
-  formData.append('target', 'zh')    // Chinese (simplified)
+  formData.append('target', 'zh-Hans')    // Simplified Chinese (mainland)
   if (LIBRETRANSLATE_API_KEY) {
     formData.append('api_key', LIBRETRANSLATE_API_KEY)
   }
