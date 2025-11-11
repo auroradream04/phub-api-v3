@@ -66,7 +66,11 @@ async function translateWithLibreTranslate(text: string): Promise<string> {
     body: formData
   }
 
+  console.log(`[LibreTranslate] Sending single title: "${text.substring(0, 50)}"`)
+  const startTime = Date.now()
   const response = await fetch(`${LIBRETRANSLATE_URL}/translate`, fetchOptions)
+  const elapsed = Date.now() - startTime
+  console.log(`[LibreTranslate] Response received after ${elapsed}ms`)
 
   if (!response.ok) {
     const errorText = await response.text().catch(() => '')
@@ -120,7 +124,11 @@ async function translateBatchWithLibreTranslate(texts: string[]): Promise<string
   }
 
   try {
+    console.log(`[LibreTranslate] Sending ${texts.length} titles to ${LIBRETRANSLATE_URL}/translate`)
+    const startTime = Date.now()
     const response = await fetch(`${LIBRETRANSLATE_URL}/translate`, fetchOptions)
+    const elapsed = Date.now() - startTime
+    console.log(`[LibreTranslate] Response received after ${elapsed}ms`)
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => '')
@@ -273,10 +281,10 @@ export async function translateBatchEfficient(titles: string[], delayMs = 300): 
   console.log(`[Translation] Starting batch translation of ${titles.length} titles...`)
 
   const results: TranslationResult[] = Array(titles.length).fill(null)
-  const batchSize = 100  // Increased to 100 since LibreTranslate has no character limit (-1)
+  const batchSize = 50  // Reduced from 100: 50 titles ~ 10-12 seconds (100 was ~22 seconds, too risky with timeout)
   let batchCount = 0
 
-  // Process in batches of 100
+  // Process in batches of 50
   for (let i = 0; i < titles.length; i += batchSize) {
     const batchStart = i
     const batchEnd = Math.min(i + batchSize, titles.length)
@@ -328,7 +336,7 @@ export async function translateBatchEfficient(titles: string[], delayMs = 300): 
       try {
         translatedTexts = await withTimeout(
           translateBatchWithLibreTranslate(titlesToTranslate),
-          30000,  // Increased from 15s to 30s for larger batches
+          60000,  // 60 seconds: LibreTranslate is slow (~22s for 100 titles, so ~11s for 50)
           'Batch translation timeout'
         )
 

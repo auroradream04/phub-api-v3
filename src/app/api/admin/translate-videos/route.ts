@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { translateBatchEfficient, isChinese } from '@/lib/translate'
+import { translateBatch, isChinese } from '@/lib/translate'
 
 export const revalidate = 0 // No caching for translation endpoint
 
@@ -39,8 +39,8 @@ export async function POST(request: NextRequest) {
   const limitParam = searchParams.get('limit')
   const limit = limitParam ? parseInt(limitParam) : totalNeedingTranslation
   const maxRetries = parseInt(searchParams.get('maxRetries') || '5')
-  const delayMs = parseInt(searchParams.get('delay') || '200') // Delay between batches (default 200ms, can be faster with large batches)
-  const batchSize = parseInt(searchParams.get('batchSize') || '100') // Batch size (default 100, LibreTranslate has no character limit!)
+  const delayMs = parseInt(searchParams.get('delay') || '500') // Delay between chunks (default 500ms)
+  const batchSize = parseInt(searchParams.get('batchSize') || '10') // Parallel translation size (default 10 titles at once)
 
   console.log(`[Admin Translation] Starting bulk translation for up to ${limit} videos out of ${totalNeedingTranslation} needing translation (max retries: ${maxRetries}, delay: ${delayMs}ms, batch size: ${batchSize})`)
 
@@ -152,8 +152,8 @@ export async function POST(request: NextRequest) {
           // Get titles for this chunk
           const titlesToTranslate = chunk.map(v => v.originalTitle || v.vodName)
 
-          // Translate chunk efficiently with configured delay
-          const translationResults = await translateBatchEfficient(titlesToTranslate, delayMs)
+          // Translate chunk (1-by-1, parallelized with Promise.all)
+          const translationResults = await translateBatch(titlesToTranslate)
 
           // Process results and update database
           for (let i = 0; i < chunk.length; i++) {
@@ -167,10 +167,12 @@ export async function POST(request: NextRequest) {
 
               if (result.success && isChinese_result) {
                 // Translation succeeded AND result is Chinese (or original) - update video
+                // Truncate to 255 chars (database column limit)
+                const truncatedText = result.text.substring(0, 255)
                 await prisma.video.update({
                   where: { id: video.id },
                   data: {
-                    vodName: result.text,
+                    vodName: truncatedText,
                     originalTitle: originalTitle,
                     needsTranslation: false,
                     translationFailedAt: null,
@@ -280,6 +282,11 @@ export async function POST(request: NextRequest) {
                 })()
               })
             }
+          }
+
+          // Delay before next chunk
+          if (chunkEnd < toProcess.length) {
+            await new Promise(resolve => setTimeout(resolve, delayMs))
           }
         }
 
