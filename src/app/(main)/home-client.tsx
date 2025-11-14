@@ -45,6 +45,8 @@ export default function HomeClient({ initialVideos, initialStats, allCategories 
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || ''
   const telegramLink = process.env.NEXT_PUBLIC_TELEGRAM_LINK || 'https://t.me/your_group'
+  const apiJsonEndpoint = process.env.NEXT_PUBLIC_API_JSON_ENDPOINT || `${appUrl}/api/provide/vod?ac=list`
+  const apiXmlEndpoint = process.env.NEXT_PUBLIC_API_XML_ENDPOINT || `${appUrl}/api/provide/vod?ac=list&at=xml`
 
   const handleCategoryChange = async (category: string | null) => {
     setSelectedCategory(category)
@@ -146,7 +148,7 @@ export default function HomeClient({ initialVideos, initialStats, allCategories 
                     </div>
                     <button
                       onClick={() => {
-                        navigator.clipboard.writeText(`${appUrl}/api/provide/vod?ac=list&at=xml`)
+                        navigator.clipboard.writeText(apiXmlEndpoint)
                         // Optional: Add toast notification here
                       }}
                       className="px-3 py-1 bg-muted hover:bg-primary hover:text-primary-foreground text-xs font-medium rounded transition-colors"
@@ -155,12 +157,12 @@ export default function HomeClient({ initialVideos, initialStats, allCategories 
                     </button>
                   </div>
                   <a
-                    href={`${appUrl}/api/provide/vod?ac=list&at=xml`}
+                    href={apiXmlEndpoint}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-xs text-muted-foreground hover:text-primary transition-colors break-all font-mono"
                   >
-                    {appUrl}/api/provide/vod?ac=list&at=xml
+                    {apiXmlEndpoint}
                   </a>
                 </div>
               </div>
@@ -178,7 +180,7 @@ export default function HomeClient({ initialVideos, initialStats, allCategories 
                     </div>
                     <button
                       onClick={() => {
-                        navigator.clipboard.writeText(`${appUrl}/api/provide/vod?ac=list`)
+                        navigator.clipboard.writeText(apiJsonEndpoint)
                         // Optional: Add toast notification here
                       }}
                       className="px-3 py-1 bg-muted hover:bg-primary hover:text-primary-foreground text-xs font-medium rounded transition-colors"
@@ -187,12 +189,12 @@ export default function HomeClient({ initialVideos, initialStats, allCategories 
                     </button>
                   </div>
                   <a
-                    href={`${appUrl}/api/provide/vod?ac=list`}
+                    href={apiJsonEndpoint}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-xs text-muted-foreground hover:text-primary transition-colors break-all font-mono"
                   >
-                    {appUrl}/api/provide/vod?ac=list
+                    {apiJsonEndpoint}
                   </a>
                 </div>
               </div>

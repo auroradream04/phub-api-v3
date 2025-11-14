@@ -11,8 +11,8 @@ export const metadata: Metadata = {
 
 export default function MacCMSGuide() {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://api.md8av.com'
-  const apiUrl = `${appUrl}/api/provide/vod?ac=list&at=xml`
-  const jsonUrl = `${appUrl}/api/provide/vod?ac=list`
+  const apiUrl = process.env.NEXT_PUBLIC_API_XML_ENDPOINT || `${appUrl}/api/provide/vod?ac=list&at=xml`
+  const jsonUrl = process.env.NEXT_PUBLIC_API_JSON_ENDPOINT || `${appUrl}/api/provide/vod?ac=list`
 
   return (
     <div className="min-h-screen bg-background">
