@@ -40,7 +40,7 @@ async function main() {
     // Now handle the title reset with raw SQL since Prisma doesn't support conditional updates well
     console.log('\nResetting vodName from originalTitle...')
     const sqlResult = await prisma.$executeRawUnsafe(`
-      UPDATE video
+      UPDATE \`video\`
       SET vodName = COALESCE(originalTitle, vodName)
       WHERE originalTitle IS NOT NULL
     `)
