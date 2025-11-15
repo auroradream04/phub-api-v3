@@ -121,23 +121,23 @@ export const DATABASE_TO_CONSOLIDATED: Record<string, string> = {
   'step fantasy': 'fetish',
   'cuckold': 'fetish',
 
-  // === KINK (extreme/violent content) ===
-  'hardcore': 'kink',
+  // === KINK (extreme/violent content) - CONSOLIDATED INTO INTERRACIAL ===
+  'hardcore': 'interracial',
 
   // === ROUGH SEX ===
   'rough sex': 'rough-sex',
 
-  // === COUNTRY CATEGORIES (individual countries) ===
-  'russian': 'russian',
-  'indian': 'indian',
-  'german': 'german',
-  'french': 'french',
-  'italian': 'italian',
-  'brazilian': 'brazilian',
-  'korean': 'korean',
-  'arab': 'arab',
-  'czech': 'czech',
-  'british': 'british',
+  // === COUNTRY CATEGORIES (consolidated into interracial) ===
+  'russian': 'interracial',
+  'indian': 'interracial',
+  'german': 'interracial',
+  'french': 'interracial',
+  'italian': 'interracial',
+  'brazilian': 'interracial',
+  'korean': 'interracial',
+  'arab': 'interracial',
+  'czech': 'interracial',
+  'british': 'interracial',
 
   // === ANIME (hentai, cartoon) ===
   'hentai': 'anime',
@@ -195,7 +195,8 @@ export const DATABASE_TO_CONSOLIDATED: Record<string, string> = {
 
 /**
  * Consolidated categories shown in MACCMS API
- * These are the main categories users see and select from (28 categories)
+ * These are the main categories users see and select from (17 categories)
+ * Note: Country categories and 'kink' are now consolidated into 'interracial'
  */
 export const CONSOLIDATED_CATEGORIES = [
   'gay',
@@ -204,18 +205,7 @@ export const CONSOLIDATED_CATEGORIES = [
   'solo',
   'group',
   'fetish',
-  'kink',
   'rough-sex',
-  'russian',
-  'indian',
-  'german',
-  'italian',
-  'french',
-  'brazilian',
-  'korean',
-  'arab',
-  'czech',
-  'british',
   'interracial',
   'young-teen',
   'anime',
@@ -238,18 +228,7 @@ export const CONSOLIDATED_TO_CHINESE: Record<string, string> = {
   'solo': '独奏',
   'group': '群交',
   'fetish': '恋物癖',
-  'kink': '变态性爱',
   'rough-sex': '粗暴性爱',
-  'russian': '俄罗斯',
-  'indian': '印度',
-  'german': '德国',
-  'italian': '意大利',
-  'french': '法国',
-  'brazilian': '巴西',
-  'korean': '韩国',
-  'arab': '阿拉伯',
-  'czech': '捷克',
-  'british': '英国',
   'interracial': '混血',
   'young-teen': '年轻/青少年',
   'anime': '动漫',
@@ -264,7 +243,8 @@ export const CONSOLIDATED_TO_CHINESE: Record<string, string> = {
 
 /**
  * Map consolidated category to a type_id for MACCMS
- * We assign consistent IDs for API compatibility (1-28)
+ * We assign consistent IDs for API compatibility (1-17)
+ * Note: Previous IDs for country categories and kink have been removed
  */
 export const CONSOLIDATED_TYPE_IDS: Record<string, number> = {
   'gay': 1,
@@ -273,28 +253,17 @@ export const CONSOLIDATED_TYPE_IDS: Record<string, number> = {
   'solo': 4,
   'group': 5,
   'fetish': 6,
-  'kink': 7,
-  'rough-sex': 8,
-  'russian': 9,
-  'indian': 10,
-  'german': 11,
-  'italian': 12,
-  'french': 13,
-  'brazilian': 14,
-  'korean': 15,
-  'arab': 16,
-  'czech': 17,
-  'british': 18,
-  'interracial': 19,
-  'young-teen': 20,
-  'anime': 21,
-  'vr': 22,
-  'cosplay': 23,
-  'verified-amateurs': 24,
-  'behind-the-scenes': 25,
-  'japanese': 26,
-  'chinese': 27,
-  'niche': 28,
+  'rough-sex': 7,
+  'interracial': 8,
+  'young-teen': 9,
+  'anime': 10,
+  'vr': 11,
+  'cosplay': 12,
+  'verified-amateurs': 13,
+  'behind-the-scenes': 14,
+  'japanese': 15,
+  'chinese': 16,
+  'niche': 17,
 };
 
 /**
