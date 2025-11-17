@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getConsolidatedFromDatabase, getVariantsForConsolidated, CONSOLIDATED_TO_CHINESE } from '@/lib/maccms-mappings'
 
-export const revalidate = 3600 // 1 hour
+export const revalidate = 7200 // 2 hours
 
 export async function GET(request: NextRequest) {
   try {

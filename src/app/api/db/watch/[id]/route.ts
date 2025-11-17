@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCategoryChineseName } from '@/lib/category-mapping'
 
-export const revalidate = 3600 // 1 hour - cache for better performance
+export const revalidate = 7200 // 2 hours - cache for better performance
 
 export async function GET(
   request: NextRequest,

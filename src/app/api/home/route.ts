@@ -3,7 +3,7 @@ import { PornHub } from 'pornhub.js'
 import type { VideoListOrdering } from 'pornhub.js'
 import { getRandomProxy } from '@/lib/proxy'
 
-export const revalidate = 3600 // 1 hour
+export const revalidate = 7200 // 2 hours
 
 // Helper to fetch with retry logic for soft-blocking (empty data responses)
 async function fetchWithRetry(
