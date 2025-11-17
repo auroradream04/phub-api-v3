@@ -100,7 +100,7 @@ export default function AdminSettingsPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-8">
+      <div className="space-y-8">
         {/* Advertisement Settings */}
         {settings.filter(s => s.key.startsWith('AD_') && !s.key.includes('Checkpoint')).length > 0 && (
           <div className="bg-card border border-border/50 rounded-2xl shadow-md overflow-hidden">
@@ -108,7 +108,7 @@ export default function AdminSettingsPage() {
               <h2 className="text-xl font-bold text-foreground">Advertisement Settings</h2>
               <p className="text-sm text-muted-foreground mt-1">Configure how ads are displayed to users</p>
             </div>
-            <div className="divide-y divide-border/50">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-8">
               {settings
                 .filter(setting => setting.key.startsWith('AD_'))
                 .map((setting) => {
@@ -118,20 +118,18 @@ export default function AdminSettingsPage() {
                     setting.key === 'AD_MIN_VIDEO_FOR_MIDROLL'
 
                   return (
-                    <div key={setting.id} className="px-8 py-6 flex items-center justify-between hover:bg-muted/30 transition-colors">
-                      <div className="flex-1">
-                        <label htmlFor={setting.key} className="block text-sm font-semibold text-foreground">
-                          {setting.key
-                            .split('_')
-                            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                            .join(' ')}
-                        </label>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          {getSettingDescription(setting.key)}
-                        </p>
-                      </div>
+                    <div key={setting.id} className="border border-border/50 rounded-lg p-6 bg-background/50 hover:bg-background transition-colors">
+                      <label htmlFor={setting.key} className="block text-sm font-semibold text-foreground mb-2">
+                        {setting.key
+                          .split('_')
+                          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                          .join(' ')}
+                      </label>
+                      <p className="text-xs text-muted-foreground mb-4">
+                        {getSettingDescription(setting.key)}
+                      </p>
 
-                      <div className="ml-8 flex-shrink-0">
+                      <div className="mt-4">
                         {isBooleanSetting ? (
                           <button
                             onClick={() => updateSetting(setting.key, setting.value === 'true' ? 'false' : 'true')}
@@ -153,7 +151,7 @@ export default function AdminSettingsPage() {
                             id={setting.key}
                             value={setting.value}
                             onChange={(e) => updateSetting(setting.key, e.target.value)}
-                            className="block w-48 px-4 py-2.5 border border-border/50 bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/50 text-sm"
+                            className="block w-full px-4 py-2.5 border border-border/50 bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/50 text-sm"
                             min={isNumberSetting ? "0" : undefined}
                           />
                         )}
@@ -172,27 +170,25 @@ export default function AdminSettingsPage() {
               <h2 className="text-xl font-bold text-foreground">Video Streaming Settings</h2>
               <p className="text-sm text-muted-foreground mt-1">Configure CORS proxy and video delivery</p>
             </div>
-            <div className="divide-y divide-border/50">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-8">
               {settings
                 .filter(setting => setting.key === 'cors_proxy_url' || setting.key === 'cors_proxy_enabled')
                 .map((setting) => {
                   const isBooleanSetting = setting.key === 'cors_proxy_enabled'
 
                   return (
-                    <div key={setting.id} className="px-8 py-6 flex items-center justify-between hover:bg-muted/30 transition-colors">
-                      <div className="flex-1">
-                        <label htmlFor={setting.key} className="block text-sm font-semibold text-foreground">
-                          {setting.key
-                            .split('_')
-                            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                            .join(' ')}
-                        </label>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          {getSettingDescription(setting.key)}
-                        </p>
-                      </div>
+                    <div key={setting.id} className="border border-border/50 rounded-lg p-6 bg-background/50 hover:bg-background transition-colors">
+                      <label htmlFor={setting.key} className="block text-sm font-semibold text-foreground mb-2">
+                        {setting.key
+                          .split('_')
+                          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                          .join(' ')}
+                      </label>
+                      <p className="text-xs text-muted-foreground mb-4">
+                        {getSettingDescription(setting.key)}
+                      </p>
 
-                      <div className="ml-8 flex-shrink-0">
+                      <div className="mt-4">
                         {isBooleanSetting ? (
                           <button
                             onClick={() => updateSetting(setting.key, setting.value === 'true' ? 'false' : 'true')}
@@ -214,7 +210,7 @@ export default function AdminSettingsPage() {
                             id={setting.key}
                             value={setting.value}
                             onChange={(e) => updateSetting(setting.key, e.target.value)}
-                            className="block w-48 px-4 py-2.5 border border-border/50 bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/50 text-sm"
+                            className="block w-full px-4 py-2.5 border border-border/50 bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/50 text-sm"
                           />
                         )}
                       </div>
@@ -232,7 +228,7 @@ export default function AdminSettingsPage() {
               <h2 className="text-xl font-bold text-foreground">Scraper Settings</h2>
               <p className="text-sm text-muted-foreground mt-1">Configure video scraping and content processing</p>
             </div>
-            <div className="divide-y divide-border/50">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-8">
               {settings
                 .filter(setting => setting.key === 'scraper_min_views' || setting.key === 'scraper_min_duration' || setting.key === 'auto_translate_titles')
                 .map((setting) => {
@@ -240,20 +236,18 @@ export default function AdminSettingsPage() {
                   const isNumberSetting = setting.key.includes('min_views') || setting.key.includes('min_duration')
 
                   return (
-                    <div key={setting.id} className="px-8 py-6 flex items-center justify-between hover:bg-muted/30 transition-colors">
-                      <div className="flex-1">
-                        <label htmlFor={setting.key} className="block text-sm font-semibold text-foreground">
-                          {setting.key
-                            .split('_')
-                            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                            .join(' ')}
-                        </label>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          {getSettingDescription(setting.key)}
-                        </p>
-                      </div>
+                    <div key={setting.id} className="border border-border/50 rounded-lg p-6 bg-background/50 hover:bg-background transition-colors">
+                      <label htmlFor={setting.key} className="block text-sm font-semibold text-foreground mb-2">
+                        {setting.key
+                          .split('_')
+                          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                          .join(' ')}
+                      </label>
+                      <p className="text-xs text-muted-foreground mb-4">
+                        {getSettingDescription(setting.key)}
+                      </p>
 
-                      <div className="ml-8 flex-shrink-0">
+                      <div className="mt-4">
                         {isBooleanSetting ? (
                           <button
                             onClick={() => updateSetting(setting.key, setting.value === 'true' ? 'false' : 'true')}
@@ -275,7 +269,7 @@ export default function AdminSettingsPage() {
                             id={setting.key}
                             value={setting.value}
                             onChange={(e) => updateSetting(setting.key, e.target.value)}
-                            className="block w-48 px-4 py-2.5 border border-border/50 bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/50 text-sm"
+                            className="block w-full px-4 py-2.5 border border-border/50 bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/50 text-sm"
                             min={isNumberSetting ? "0" : undefined}
                           />
                         )}
@@ -304,7 +298,7 @@ export default function AdminSettingsPage() {
               <h2 className="text-xl font-bold text-foreground">Other Settings</h2>
               <p className="text-sm text-muted-foreground mt-1">Miscellaneous configuration</p>
             </div>
-            <div className="divide-y divide-border/50">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-8">
               {settings
                 .filter(setting =>
                   !setting.key.startsWith('AD_') &&
@@ -319,26 +313,24 @@ export default function AdminSettingsPage() {
                 )
                 .map((setting) => {
                   return (
-                    <div key={setting.id} className="px-8 py-6 flex items-center justify-between hover:bg-muted/30 transition-colors">
-                      <div className="flex-1">
-                        <label htmlFor={setting.key} className="block text-sm font-semibold text-foreground">
-                          {setting.key
-                            .split('_')
-                            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                            .join(' ')}
-                        </label>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          {getSettingDescription(setting.key)}
-                        </p>
-                      </div>
+                    <div key={setting.id} className="border border-border/50 rounded-lg p-6 bg-background/50 hover:bg-background transition-colors">
+                      <label htmlFor={setting.key} className="block text-sm font-semibold text-foreground mb-2">
+                        {setting.key
+                          .split('_')
+                          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                          .join(' ')}
+                      </label>
+                      <p className="text-xs text-muted-foreground mb-4">
+                        {getSettingDescription(setting.key)}
+                      </p>
 
-                      <div className="ml-8 flex-shrink-0">
+                      <div className="mt-4">
                         <input
                           type="text"
                           id={setting.key}
                           value={setting.value}
                           onChange={(e) => updateSetting(setting.key, e.target.value)}
-                          className="block w-48 px-4 py-2.5 border border-border/50 bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/50 text-sm"
+                          className="block w-full px-4 py-2.5 border border-border/50 bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/50 text-sm"
                         />
                       </div>
                     </div>
