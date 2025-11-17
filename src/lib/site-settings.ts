@@ -52,4 +52,36 @@ export const SETTING_KEYS = {
   CORS_PROXY_ENABLED: 'cors_proxy_enabled',
   SEGMENTS_TO_SKIP: 'segments_to_skip',
   ADS_SCRIPT_URL: 'ads_script_url',
+  // Ad placement settings
+  AD_ALWAYS_PREROLL: 'AD_ALWAYS_PREROLL',
+  AD_PREROLL_ENABLED: 'AD_PREROLL_ENABLED',
+  AD_POSTROLL_ENABLED: 'AD_POSTROLL_ENABLED',
+  AD_MIDROLL_ENABLED: 'AD_MIDROLL_ENABLED',
+  AD_MIDROLL_INTERVAL: 'AD_MIDROLL_INTERVAL',
+  AD_MAX_ADS_PER_VIDEO: 'AD_MAX_ADS_PER_VIDEO',
+  AD_MIN_VIDEO_FOR_MIDROLL: 'AD_MIN_VIDEO_FOR_MIDROLL',
 } as const
+
+// Ad settings interface
+export interface AdSettings {
+  alwaysPreroll: boolean
+  prerollEnabled: boolean
+  postrollEnabled: boolean
+  midrollEnabled: boolean
+  midrollInterval: number
+  maxAdsPerVideo: number
+  minVideoForMidroll: number
+}
+
+// Helper to get all ad settings at once
+export async function getAdSettings(): Promise<AdSettings> {
+  return {
+    alwaysPreroll: (await getSiteSetting(SETTING_KEYS.AD_ALWAYS_PREROLL, 'true')) === 'true',
+    prerollEnabled: (await getSiteSetting(SETTING_KEYS.AD_PREROLL_ENABLED, 'true')) === 'true',
+    postrollEnabled: (await getSiteSetting(SETTING_KEYS.AD_POSTROLL_ENABLED, 'true')) === 'true',
+    midrollEnabled: (await getSiteSetting(SETTING_KEYS.AD_MIDROLL_ENABLED, 'true')) === 'true',
+    midrollInterval: parseInt(await getSiteSetting(SETTING_KEYS.AD_MIDROLL_INTERVAL, '600')),
+    maxAdsPerVideo: parseInt(await getSiteSetting(SETTING_KEYS.AD_MAX_ADS_PER_VIDEO, '20')),
+    minVideoForMidroll: parseInt(await getSiteSetting(SETTING_KEYS.AD_MIN_VIDEO_FOR_MIDROLL, '600')),
+  }
+}

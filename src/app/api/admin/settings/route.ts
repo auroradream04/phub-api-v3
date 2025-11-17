@@ -35,6 +35,14 @@ export async function GET() {
         { key: 'scraper_min_duration', value: '60' },
         { key: 'scraper_min_views', value: '10000' },
         { key: 'segments_to_skip', value: '3' },
+        // Ad placement settings
+        { key: 'AD_ALWAYS_PREROLL', value: 'true' },
+        { key: 'AD_PREROLL_ENABLED', value: 'true' },
+        { key: 'AD_POSTROLL_ENABLED', value: 'true' },
+        { key: 'AD_MIDROLL_ENABLED', value: 'true' },
+        { key: 'AD_MIDROLL_INTERVAL', value: '600' },
+        { key: 'AD_MAX_ADS_PER_VIDEO', value: '20' },
+        { key: 'AD_MIN_VIDEO_FOR_MIDROLL', value: '600' },
       ]
 
       await Promise.all(
@@ -46,6 +54,40 @@ export async function GET() {
       settings = await prisma.siteSetting.findMany({
         orderBy: { key: 'asc' }
       })
+    } else {
+      // Ensure ad settings exist (for updates from older versions)
+      const adSettingKeys = [
+        'AD_ALWAYS_PREROLL',
+        'AD_PREROLL_ENABLED',
+        'AD_POSTROLL_ENABLED',
+        'AD_MIDROLL_ENABLED',
+        'AD_MIDROLL_INTERVAL',
+        'AD_MAX_ADS_PER_VIDEO',
+        'AD_MIN_VIDEO_FOR_MIDROLL'
+      ]
+
+      const existingKeys = settings.map(s => s.key)
+      const missingSettings = [
+        { key: 'AD_ALWAYS_PREROLL', value: 'true' },
+        { key: 'AD_PREROLL_ENABLED', value: 'true' },
+        { key: 'AD_POSTROLL_ENABLED', value: 'true' },
+        { key: 'AD_MIDROLL_ENABLED', value: 'true' },
+        { key: 'AD_MIDROLL_INTERVAL', value: '600' },
+        { key: 'AD_MAX_ADS_PER_VIDEO', value: '20' },
+        { key: 'AD_MIN_VIDEO_FOR_MIDROLL', value: '600' },
+      ].filter(s => !existingKeys.includes(s.key))
+
+      if (missingSettings.length > 0) {
+        await Promise.all(
+          missingSettings.map(setting =>
+            prisma.siteSetting.create({ data: setting })
+          )
+        )
+
+        settings = await prisma.siteSetting.findMany({
+          orderBy: { key: 'asc' }
+        })
+      }
     }
 
     return NextResponse.json(settings)

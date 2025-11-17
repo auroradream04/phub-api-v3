@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { PornHub } from 'pornhub.js'
 import { getRandomProxy } from '@/lib/proxy'
 import { prisma } from '@/lib/prisma'
-import { getSiteSetting, SETTING_KEYS } from '@/lib/site-settings'
+import { getSiteSetting, SETTING_KEYS, getAdSettings } from '@/lib/site-settings'
 import { getClientIP, getCountryFromIP } from '@/lib/geo'
 import { checkAndLogDomain } from '@/lib/domain-middleware'
+import { calculateAdPlacements, calculateM3u8Duration, assignAdsToplacements } from '@/lib/ad-placement'
 
 export const revalidate = 7200 // 2 hours
 
@@ -219,8 +220,6 @@ function extractFirstVariantUrl(m3u8Text: string, baseUrl: string): string | nul
 async function injectAds(m3u8Text: string, quality: string, baseUrl: string, videoId: string, headers: Headers): Promise<string> {
   const lines = m3u8Text.split('\n')
   const result: string[] = []
-
-  let headerComplete = false
   const baseUrlObj = new URL(baseUrl)
   const basePath = baseUrlObj.pathname.substring(0, baseUrlObj.pathname.lastIndexOf('/'))
 
@@ -228,131 +227,115 @@ async function injectAds(m3u8Text: string, quality: string, baseUrl: string, vid
   const corsProxyEnabled = (await getSiteSetting(SETTING_KEYS.CORS_PROXY_ENABLED, 'true')) === 'true'
   const corsProxyUrl = await getSiteSetting(SETTING_KEYS.CORS_PROXY_URL, 'https://cors.freechatnow.net/')
 
-  // Get active ads from database (get all segments)
-  const activeAds = await prisma.ad.findMany({
-    where: { status: 'active' },
-    include: {
-      segments: true
-    }
-  })
+  // Get ad settings
+  const adSettings = await getAdSettings()
 
-  // Check if any ad is forced to display
-  const forcedAd = activeAds.find(ad => ad.forceDisplay)
+  // Calculate video duration from M3U8
+  const videoDurationSeconds = calculateM3u8Duration(m3u8Text)
 
-  // Select ad based on strategy
-  let selectedAd = null
+  // Calculate ad placements based on settings
+  let placements = calculateAdPlacements(videoDurationSeconds, adSettings)
 
-  if (forcedAd) {
-    // If there's a forced ad, always use it
-    selectedAd = forcedAd
-  } else if (activeAds.length > 0) {
-    // Use weighted random selection
-    selectedAd = selectAdByWeight(activeAds)
+  // Assign ads to placements
+  placements = await assignAdsToplacements(placements)
+
+  // Create a map of time percentages to placements for quick lookup
+  const placementMap = new Map<number, typeof placements[0]>()
+  for (const placement of placements) {
+    placementMap.set(placement.percentageOfVideo, placement)
   }
 
-  // Get segments to skip from settings
-  const segmentsToSkipSetting = await getSiteSetting(SETTING_KEYS.SEGMENTS_TO_SKIP, '2')
-  const segmentsToSkip = parseInt(segmentsToSkipSetting, 10) || 2
-
-  let _segmentCount = 0
-  let adInjected = false
+  // Copy header tags
+  let headerComplete = false
   let pendingExtInf = ''
-  let skippedSegments = 0
+  let currentTimePercentage = 0
+  let segmentCount = 0
+  let totalSegmentsEstimate = 0
 
+  // First pass: count total segments
   for (const line of lines) {
-    // Collect all header tags first
-    if (line.startsWith('#EXTM3U') ||
-        line.startsWith('#EXT-X-VERSION') ||
-        line.startsWith('#EXT-X-TARGETDURATION') ||
-        line.startsWith('#EXT-X-MEDIA-SEQUENCE') ||
-        line.startsWith('#EXT-X-PLAYLIST-TYPE') ||
-        line.startsWith('#EXT-X-ALLOW-CACHE')) {
+    if (line.startsWith('#EXTINF:')) {
+      totalSegmentsEstimate++
+    }
+  }
+
+  // Second pass: build M3U8 with injected ads
+  for (const line of lines) {
+    // Copy header tags
+    if (
+      line.startsWith('#EXTM3U') ||
+      line.startsWith('#EXT-X-VERSION') ||
+      line.startsWith('#EXT-X-TARGETDURATION') ||
+      line.startsWith('#EXT-X-MEDIA-SEQUENCE') ||
+      line.startsWith('#EXT-X-PLAYLIST-TYPE') ||
+      line.startsWith('#EXT-X-ALLOW-CACHE')
+    ) {
       result.push(line)
       continue
     }
 
-    // Store EXTINF tags temporarily
+    // Store EXTINF temporarily
     if (line.startsWith('#EXTINF:')) {
       pendingExtInf = line
       continue
     }
 
-    // After all headers, inject ad and skip first 2 segments
-    if (!headerComplete && !line.startsWith('#') && line.trim() !== '') {
-      headerComplete = true
-
-      if (selectedAd && selectedAd.segments.length > 0 && !adInjected) {
-        // Select a random segment from the ad
-        const randomSegment = selectedAd.segments[Math.floor(Math.random() * selectedAd.segments.length)]
-
-        // Calculate segment duration (3 seconds default)
-        const segmentDuration = 3
-
-        // Add ad segment - serve through our API
-        result.push(`#EXTINF:${segmentDuration}.0,`)
-        // Create URL that will serve the specific segment with .ts extension
-        const adUrl = `${process.env.NEXTAUTH_URL || 'http://md8av.com'}/api/ads/serve/${selectedAd.id}/${randomSegment.quality}.ts`
-        result.push(adUrl)
-
-        // Add discontinuity tag to signal timestamp reset after ad
-        result.push('#EXT-X-DISCONTINUITY')
-
-        adInjected = true
-
-        // Record impression with referrer, user agent, IP, and country
-        try {
-          const clientIP = getClientIP(headers)
-          const country = await getCountryFromIP(clientIP)
-
-          await prisma.adImpression.create({
-            data: {
-              adId: selectedAd.id,
-              videoId: videoId,
-              referrer: headers.get('referer') || headers.get('origin') || 'direct',
-              userAgent: headers.get('user-agent') || 'unknown',
-              ipAddress: clientIP,
-              country: country
-            }
-          })
-        } catch {
-          // Failed to record impression
-        }
-
-        // Skip the first segment (don't add it to result)
-        pendingExtInf = '' // Clear the pending EXTINF for first segment
-        skippedSegments = 1
-        continue
-      } else if (!selectedAd || selectedAd.segments.length === 0) {
-        // No ad, so add the first segment normally
-        if (pendingExtInf) {
-          result.push(pendingExtInf)
-          pendingExtInf = ''
-        }
-      }
-    }
-
-    // Handle other comment lines (not EXTINF, those are handled separately)
-    if (line.startsWith('#') && !line.startsWith('#EXTINF:')) {
-      result.push(line)
-    } else if (line.trim() !== '' && !line.startsWith('#')) {
-      // This is a segment URL
-
-      // Skip segments if we need to
-      if (adInjected && skippedSegments < segmentsToSkip) {
-        skippedSegments++
-        pendingExtInf = '' // Clear the pending EXTINF
-        continue
+    // Process segment URLs
+    if (!line.startsWith('#') && line.trim() !== '') {
+      if (!headerComplete) {
+        headerComplete = true
       }
 
-      _segmentCount++
+      // Check if we need to inject ads before this segment
+      const progressPercentage = (segmentCount / Math.max(totalSegmentsEstimate, 1)) * 100
+      currentTimePercentage = Math.round(progressPercentage)
 
-      // Add the pending EXTINF before this segment
+      // Inject ads that should appear at or near this progress point
+      for (const [percentage, placement] of placementMap.entries()) {
+        // Check if this ad should be injected before current segment
+        if (percentage <= currentTimePercentage && !placement.injected && placement.selectedAd) {
+          // Select random ad segment
+          const randomSegment = placement.selectedAd.segments[
+            Math.floor(Math.random() * placement.selectedAd.segments.length)
+          ]
+
+          // Add ad segment
+          result.push('#EXTINF:3.0,')
+          const adUrl = `${process.env.NEXTAUTH_URL || 'http://md8av.com'}/api/ads/serve/${placement.selectedAd.id}/${randomSegment.quality}.ts`
+          result.push(adUrl)
+          result.push('#EXT-X-DISCONTINUITY')
+
+          // Mark as injected
+          ;(placement as any).injected = true
+
+          // Record impression
+          try {
+            const clientIP = getClientIP(headers)
+            const country = await getCountryFromIP(clientIP)
+
+            await prisma.adImpression.create({
+              data: {
+                adId: placement.selectedAd.id,
+                videoId: videoId,
+                referrer: headers.get('referer') || headers.get('origin') || 'direct',
+                userAgent: headers.get('user-agent') || 'unknown',
+                ipAddress: clientIP,
+                country: country
+              }
+            })
+          } catch {
+            // Failed to record impression
+          }
+        }
+      }
+
+      // Add video segment
       if (pendingExtInf) {
         result.push(pendingExtInf)
         pendingExtInf = ''
       }
 
-      // Convert relative URLs to absolute and apply CORS proxy if enabled
+      // Convert relative URLs to absolute and apply CORS proxy
       let segmentUrl: string
       if (line.startsWith('http')) {
         segmentUrl = line
@@ -360,13 +343,17 @@ async function injectAds(m3u8Text: string, quality: string, baseUrl: string, vid
         segmentUrl = `${baseUrlObj.origin}${basePath}/${line.trim()}`
       }
 
-      // Prepend CORS proxy if enabled (for all external URLs, not our API)
+      // Apply CORS proxy if enabled
       const isOwnApi = segmentUrl.includes(process.env.NEXTAUTH_URL || 'md8av.com')
       if (corsProxyEnabled && !isOwnApi) {
         segmentUrl = `${corsProxyUrl}${segmentUrl}`
       }
 
       result.push(segmentUrl)
+      segmentCount++
+    } else if (line.startsWith('#') && !line.startsWith('#EXTINF:')) {
+      // Copy other tags
+      result.push(line)
     }
   }
 

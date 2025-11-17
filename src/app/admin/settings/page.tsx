@@ -104,8 +104,12 @@ export default function AdminSettingsPage() {
         {settings
           .filter(setting => !setting.key.startsWith('scrape_'))
           .map((setting) => {
-          const isBooleanSetting = setting.key === 'cors_proxy_enabled' || setting.key === 'auto_translate_titles'
-          const isNumberSetting = setting.key.includes('min_views') || setting.key.includes('min_duration')
+          const isBooleanSetting = setting.key === 'cors_proxy_enabled' || setting.key === 'auto_translate_titles' ||
+            setting.key === 'AD_ALWAYS_PREROLL' || setting.key === 'AD_PREROLL_ENABLED' ||
+            setting.key === 'AD_POSTROLL_ENABLED' || setting.key === 'AD_MIDROLL_ENABLED'
+          const isNumberSetting = setting.key.includes('min_views') || setting.key.includes('min_duration') ||
+            setting.key === 'AD_MIDROLL_INTERVAL' || setting.key === 'AD_MAX_ADS_PER_VIDEO' ||
+            setting.key === 'AD_MIN_VIDEO_FOR_MIDROLL'
 
           return (
             <div key={setting.id} className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
@@ -189,7 +193,15 @@ function getSettingDescription(key: string): string {
     'ads_script_url': 'External URL for fetching ad content',
     'scraper_min_views': 'Minimum view count required to scrape a video (e.g., 10000). Videos below this will be skipped.',
     'scraper_min_duration': 'Minimum duration in seconds required to scrape a video (e.g., 60). Videos shorter than this will be skipped.',
-    'auto_translate_titles': 'Automatically translate non-Chinese video titles to Chinese using Google Translate'
+    'auto_translate_titles': 'Automatically translate non-Chinese video titles to Chinese using Google Translate',
+    // Ad placement settings
+    'AD_ALWAYS_PREROLL': 'Always show a pre-roll ad at the beginning of every video (mandatory)',
+    'AD_PREROLL_ENABLED': 'Enable or disable pre-roll ads that play before video starts',
+    'AD_POSTROLL_ENABLED': 'Enable or disable post-roll ads that play at the end of video',
+    'AD_MIDROLL_ENABLED': 'Enable or disable mid-roll ads throughout the video',
+    'AD_MIDROLL_INTERVAL': 'How often to show mid-roll ads in seconds (e.g., 600 = every 10 minutes)',
+    'AD_MAX_ADS_PER_VIDEO': 'Maximum number of total ads to show per video (e.g., 20)',
+    'AD_MIN_VIDEO_FOR_MIDROLL': 'Minimum video length in seconds before showing mid-roll ads (e.g., 600 = 10 minutes)'
   }
   return descriptions[key] || 'No description available'
 }
