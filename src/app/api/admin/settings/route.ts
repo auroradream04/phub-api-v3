@@ -24,9 +24,10 @@ export async function GET() {
 
     let settings = await prisma.siteSetting.findMany({
       where: {
-        key: {
-          notIn: ['scrape_', 'Checkpoint Scrape']
-        }
+        AND: [
+          { key: { not: { startsWith: 'scrape_' } } },
+          { key: { not: { startsWith: 'Checkpoint Scrape' } } }
+        ]
       },
       orderBy: { key: 'asc' }
     })
@@ -91,6 +92,12 @@ export async function GET() {
         )
 
         settings = await prisma.siteSetting.findMany({
+          where: {
+            AND: [
+              { key: { not: { startsWith: 'scrape_' } } },
+              { key: { not: { startsWith: 'Checkpoint Scrape' } } }
+            ]
+          },
           orderBy: { key: 'asc' }
         })
       }
