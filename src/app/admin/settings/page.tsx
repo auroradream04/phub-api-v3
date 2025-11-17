@@ -8,6 +8,115 @@ interface Setting {
   value: string
 }
 
+const SettingInput = ({
+  setting,
+  onUpdate,
+  isBoolean,
+  isNumber
+}: {
+  setting: Setting
+  onUpdate: (value: string) => void
+  isBoolean: boolean
+  isNumber: boolean
+}) => {
+  if (isBoolean) {
+    return (
+      <button
+        onClick={() => onUpdate(setting.value === 'true' ? 'false' : 'true')}
+        className={`relative inline-flex h-8 w-14 items-center rounded-full transition-all duration-200 ${
+          setting.value === 'true'
+            ? 'bg-primary shadow-md shadow-primary/30'
+            : 'bg-muted'
+        }`}
+      >
+        <span
+          className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform duration-200 ${
+            setting.value === 'true' ? 'translate-x-7' : 'translate-x-1'
+          }`}
+        />
+      </button>
+    )
+  }
+
+  return (
+    <input
+      type={isNumber ? 'number' : 'text'}
+      value={setting.value}
+      onChange={(e) => onUpdate(e.target.value)}
+      className="w-full px-4 py-3 border border-border/50 bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/50 text-sm"
+      min={isNumber ? "0" : undefined}
+    />
+  )
+}
+
+const SettingsSection = ({
+  title,
+  description,
+  settings,
+  onUpdate
+}: {
+  title: string
+  description: string
+  settings: Setting[]
+  onUpdate: (key: string, value: string) => void
+}) => {
+  if (settings.length === 0) return null
+
+  return (
+    <div className="border border-border/50 rounded-lg bg-card/50 p-8">
+      {/* Section Header */}
+      <h3 className="text-sm font-semibold text-foreground mb-1">{title}</h3>
+      <p className="text-xs text-muted-foreground mb-8">{description}</p>
+
+      {/* Settings Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        {settings.map((setting) => {
+          const isBooleanSetting = setting.key === 'AD_ALWAYS_PREROLL' ||
+            setting.key === 'AD_PREROLL_ENABLED' ||
+            setting.key === 'AD_POSTROLL_ENABLED' ||
+            setting.key === 'AD_MIDROLL_ENABLED' ||
+            setting.key === 'cors_proxy_enabled' ||
+            setting.key === 'auto_translate_titles'
+
+          const isNumberSetting = setting.key === 'AD_MIDROLL_INTERVAL' ||
+            setting.key === 'AD_MAX_ADS_PER_VIDEO' ||
+            setting.key === 'AD_MIN_VIDEO_FOR_MIDROLL' ||
+            setting.key === 'scraper_min_views' ||
+            setting.key === 'scraper_min_duration'
+
+          const label = setting.key
+            .split('_')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' ')
+
+          return (
+            <div key={setting.id}>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                {label}
+              </label>
+              {isBooleanSetting ? (
+                <SettingInput
+                  setting={setting}
+                  onUpdate={(value) => onUpdate(setting.key, value)}
+                  isBoolean={true}
+                  isNumber={false}
+                />
+              ) : (
+                <SettingInput
+                  setting={setting}
+                  onUpdate={(value) => onUpdate(setting.key, value)}
+                  isBoolean={false}
+                  isNumber={isNumberSetting}
+                />
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<Setting[]>([])
   const [loading, setLoading] = useState(true)
@@ -35,9 +144,7 @@ export default function AdminSettingsPage() {
     setMessage(null)
 
     try {
-      // Filter out checkpoint scrape entries before saving
       const settingsToSave = settings.filter(s => !s.key.startsWith('scrape_'))
-
       const response = await fetch('/api/admin/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -45,7 +152,6 @@ export default function AdminSettingsPage() {
       })
 
       if (!response.ok) throw new Error('Failed to save settings')
-
       setMessage({ type: 'success', text: 'Settings saved successfully!' })
     } catch {
       setMessage({ type: 'error', text: 'Failed to save settings' })
@@ -60,25 +166,38 @@ export default function AdminSettingsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex items-center justify-center h-96">
         <div className="text-muted-foreground">Loading settings...</div>
       </div>
     )
   }
 
+  const adSettings = settings.filter(s => s.key.startsWith('AD_') && !s.key.includes('Checkpoint'))
+  const videoSettings = settings.filter(s => (s.key === 'cors_proxy_url' || s.key === 'cors_proxy_enabled') && !s.key.includes('Checkpoint'))
+  const scraperSettings = settings.filter(s => (s.key === 'scraper_min_views' || s.key === 'scraper_min_duration' || s.key === 'auto_translate_titles') && !s.key.includes('Checkpoint'))
+  const otherSettings = settings.filter(s =>
+    !s.key.startsWith('AD_') &&
+    !s.key.startsWith('scrape_') &&
+    !s.key.includes('Checkpoint') &&
+    !s.key.includes('checkpoint') &&
+    s.key !== 'scraper_min_views' &&
+    s.key !== 'scraper_min_duration' &&
+    s.key !== 'auto_translate_titles' &&
+    s.key !== 'cors_proxy_url' &&
+    s.key !== 'cors_proxy_enabled'
+  )
+
   return (
-    <div className="py-8">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-          Site Settings
-        </h1>
-        <p className="mt-2 text-muted-foreground">
-          Configure global site settings for CORS proxy, ads, and video streaming.
-        </p>
+    <div className="pb-8">
+      {/* Header */}
+      <div className="mb-8 mt-8">
+        <h1 className="text-4xl font-bold text-primary">Site Settings</h1>
+        <p className="mt-2 text-sm text-muted-foreground">Configure global site settings for ads, video streaming, and content processing.</p>
       </div>
 
+      {/* Message Alert */}
       {message && (
-        <div className={`mb-6 p-4 rounded-lg border flex items-start gap-3 ${
+        <div className={`mb-6 rounded-lg border p-4 flex items-start gap-3 ${
           message.type === 'success'
             ? 'bg-primary/10 text-primary border-primary/30'
             : 'bg-destructive/10 text-destructive border-destructive/30'
@@ -94,258 +213,49 @@ export default function AdminSettingsPage() {
               </svg>
             )}
           </div>
-          <div>
-            <p className="text-sm font-medium">{message.text}</p>
-          </div>
+          <p className="text-sm font-medium">{message.text}</p>
         </div>
       )}
 
-      <div className="space-y-8">
-        {/* Advertisement Settings */}
-        {settings.filter(s => s.key.startsWith('AD_') && !s.key.includes('Checkpoint')).length > 0 && (
-          <div className="bg-card border border-border/50 rounded-2xl shadow-md overflow-hidden">
-            <div className="border-b border-border/50 px-8 py-6">
-              <h2 className="text-xl font-bold text-foreground">Advertisement Settings</h2>
-              <p className="text-sm text-muted-foreground mt-1">Configure how ads are displayed to users</p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-8">
-              {settings
-                .filter(setting => setting.key.startsWith('AD_'))
-                .map((setting) => {
-                  const isBooleanSetting = setting.key === 'AD_ALWAYS_PREROLL' || setting.key === 'AD_PREROLL_ENABLED' ||
-                    setting.key === 'AD_POSTROLL_ENABLED' || setting.key === 'AD_MIDROLL_ENABLED'
-                  const isNumberSetting = setting.key === 'AD_MIDROLL_INTERVAL' || setting.key === 'AD_MAX_ADS_PER_VIDEO' ||
-                    setting.key === 'AD_MIN_VIDEO_FOR_MIDROLL'
+      {/* Settings Sections */}
+      <div className="space-y-6">
+        <SettingsSection
+          title="Advertisement Settings"
+          description="Configure how ads are displayed to users"
+          settings={adSettings}
+          onUpdate={updateSetting}
+        />
 
-                  return (
-                    <div key={setting.id} className="border border-border/50 rounded-lg p-6 bg-background/50 hover:bg-background transition-colors">
-                      <label htmlFor={setting.key} className="block text-sm font-semibold text-foreground mb-2">
-                        {setting.key
-                          .split('_')
-                          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                          .join(' ')}
-                      </label>
-                      <p className="text-xs text-muted-foreground mb-4">
-                        {getSettingDescription(setting.key)}
-                      </p>
+        <SettingsSection
+          title="Video Streaming Settings"
+          description="Configure CORS proxy and video delivery"
+          settings={videoSettings}
+          onUpdate={updateSetting}
+        />
 
-                      <div className="mt-4">
-                        {isBooleanSetting ? (
-                          <button
-                            onClick={() => updateSetting(setting.key, setting.value === 'true' ? 'false' : 'true')}
-                            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-200 ${
-                              setting.value === 'true'
-                                ? 'bg-primary shadow-md shadow-primary/30'
-                                : 'bg-muted'
-                            }`}
-                          >
-                            <span
-                              className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform duration-200 ${
-                                setting.value === 'true' ? 'translate-x-6' : 'translate-x-1'
-                              }`}
-                            />
-                          </button>
-                        ) : (
-                          <input
-                            type={isNumberSetting ? 'number' : 'text'}
-                            id={setting.key}
-                            value={setting.value}
-                            onChange={(e) => updateSetting(setting.key, e.target.value)}
-                            className="block w-full px-4 py-2.5 border border-border/50 bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/50 text-sm"
-                            min={isNumberSetting ? "0" : undefined}
-                          />
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
-            </div>
-          </div>
-        )}
+        <SettingsSection
+          title="Scraper Settings"
+          description="Configure video scraping and content processing"
+          settings={scraperSettings}
+          onUpdate={updateSetting}
+        />
 
-        {/* Video Streaming Settings */}
-        {settings.filter(s => (s.key === 'cors_proxy_url' || s.key === 'cors_proxy_enabled') && !s.key.includes('Checkpoint')).length > 0 && (
-          <div className="bg-card border border-border/50 rounded-2xl shadow-md overflow-hidden">
-            <div className="border-b border-border/50 px-8 py-6">
-              <h2 className="text-xl font-bold text-foreground">Video Streaming Settings</h2>
-              <p className="text-sm text-muted-foreground mt-1">Configure CORS proxy and video delivery</p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-8">
-              {settings
-                .filter(setting => setting.key === 'cors_proxy_url' || setting.key === 'cors_proxy_enabled')
-                .map((setting) => {
-                  const isBooleanSetting = setting.key === 'cors_proxy_enabled'
-
-                  return (
-                    <div key={setting.id} className="border border-border/50 rounded-lg p-6 bg-background/50 hover:bg-background transition-colors">
-                      <label htmlFor={setting.key} className="block text-sm font-semibold text-foreground mb-2">
-                        {setting.key
-                          .split('_')
-                          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                          .join(' ')}
-                      </label>
-                      <p className="text-xs text-muted-foreground mb-4">
-                        {getSettingDescription(setting.key)}
-                      </p>
-
-                      <div className="mt-4">
-                        {isBooleanSetting ? (
-                          <button
-                            onClick={() => updateSetting(setting.key, setting.value === 'true' ? 'false' : 'true')}
-                            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-200 ${
-                              setting.value === 'true'
-                                ? 'bg-primary shadow-md shadow-primary/30'
-                                : 'bg-muted'
-                            }`}
-                          >
-                            <span
-                              className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform duration-200 ${
-                                setting.value === 'true' ? 'translate-x-6' : 'translate-x-1'
-                              }`}
-                            />
-                          </button>
-                        ) : (
-                          <input
-                            type="text"
-                            id={setting.key}
-                            value={setting.value}
-                            onChange={(e) => updateSetting(setting.key, e.target.value)}
-                            className="block w-full px-4 py-2.5 border border-border/50 bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/50 text-sm"
-                          />
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
-            </div>
-          </div>
-        )}
-
-        {/* Scraper Settings */}
-        {settings.filter(s => (s.key === 'scraper_min_views' || s.key === 'scraper_min_duration' || s.key === 'auto_translate_titles') && !s.key.includes('Checkpoint')).length > 0 && (
-          <div className="bg-card border border-border/50 rounded-2xl shadow-md overflow-hidden">
-            <div className="border-b border-border/50 px-8 py-6">
-              <h2 className="text-xl font-bold text-foreground">Scraper Settings</h2>
-              <p className="text-sm text-muted-foreground mt-1">Configure video scraping and content processing</p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-8">
-              {settings
-                .filter(setting => setting.key === 'scraper_min_views' || setting.key === 'scraper_min_duration' || setting.key === 'auto_translate_titles')
-                .map((setting) => {
-                  const isBooleanSetting = setting.key === 'auto_translate_titles'
-                  const isNumberSetting = setting.key.includes('min_views') || setting.key.includes('min_duration')
-
-                  return (
-                    <div key={setting.id} className="border border-border/50 rounded-lg p-6 bg-background/50 hover:bg-background transition-colors">
-                      <label htmlFor={setting.key} className="block text-sm font-semibold text-foreground mb-2">
-                        {setting.key
-                          .split('_')
-                          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                          .join(' ')}
-                      </label>
-                      <p className="text-xs text-muted-foreground mb-4">
-                        {getSettingDescription(setting.key)}
-                      </p>
-
-                      <div className="mt-4">
-                        {isBooleanSetting ? (
-                          <button
-                            onClick={() => updateSetting(setting.key, setting.value === 'true' ? 'false' : 'true')}
-                            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-200 ${
-                              setting.value === 'true'
-                                ? 'bg-primary shadow-md shadow-primary/30'
-                                : 'bg-muted'
-                            }`}
-                          >
-                            <span
-                              className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform duration-200 ${
-                                setting.value === 'true' ? 'translate-x-6' : 'translate-x-1'
-                              }`}
-                            />
-                          </button>
-                        ) : (
-                          <input
-                            type={isNumberSetting ? 'number' : 'text'}
-                            id={setting.key}
-                            value={setting.value}
-                            onChange={(e) => updateSetting(setting.key, e.target.value)}
-                            className="block w-full px-4 py-2.5 border border-border/50 bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/50 text-sm"
-                            min={isNumberSetting ? "0" : undefined}
-                          />
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
-            </div>
-          </div>
-        )}
-
-        {/* Other Settings */}
-        {settings.filter(s =>
-          !s.key.startsWith('AD_') &&
-          !s.key.startsWith('scrape_') &&
-          !s.key.includes('Checkpoint') &&
-          !s.key.includes('checkpoint') &&
-          s.key !== 'scraper_min_views' &&
-          s.key !== 'scraper_min_duration' &&
-          s.key !== 'auto_translate_titles' &&
-          s.key !== 'cors_proxy_url' &&
-          s.key !== 'cors_proxy_enabled'
-        ).length > 0 && (
-          <div className="bg-card border border-border/50 rounded-2xl shadow-md overflow-hidden">
-            <div className="border-b border-border/50 px-8 py-6">
-              <h2 className="text-xl font-bold text-foreground">Other Settings</h2>
-              <p className="text-sm text-muted-foreground mt-1">Miscellaneous configuration</p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-8">
-              {settings
-                .filter(setting =>
-                  !setting.key.startsWith('AD_') &&
-                  !setting.key.startsWith('scrape_') &&
-                  !setting.key.includes('Checkpoint') &&
-                  !setting.key.includes('checkpoint') &&
-                  setting.key !== 'scraper_min_views' &&
-                  setting.key !== 'scraper_min_duration' &&
-                  setting.key !== 'auto_translate_titles' &&
-                  setting.key !== 'cors_proxy_url' &&
-                  setting.key !== 'cors_proxy_enabled'
-                )
-                .map((setting) => {
-                  return (
-                    <div key={setting.id} className="border border-border/50 rounded-lg p-6 bg-background/50 hover:bg-background transition-colors">
-                      <label htmlFor={setting.key} className="block text-sm font-semibold text-foreground mb-2">
-                        {setting.key
-                          .split('_')
-                          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                          .join(' ')}
-                      </label>
-                      <p className="text-xs text-muted-foreground mb-4">
-                        {getSettingDescription(setting.key)}
-                      </p>
-
-                      <div className="mt-4">
-                        <input
-                          type="text"
-                          id={setting.key}
-                          value={setting.value}
-                          onChange={(e) => updateSetting(setting.key, e.target.value)}
-                          className="block w-full px-4 py-2.5 border border-border/50 bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/50 text-sm"
-                        />
-                      </div>
-                    </div>
-                  )
-                })}
-            </div>
-          </div>
+        {otherSettings.length > 0 && (
+          <SettingsSection
+            title="Other Settings"
+            description="Miscellaneous configuration"
+            settings={otherSettings}
+            onUpdate={updateSetting}
+          />
         )}
       </div>
 
+      {/* Save Button */}
       <div className="mt-8 flex justify-end">
         <button
           onClick={handleSave}
           disabled={saving}
-          className="px-6 py-2.5 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground rounded-lg hover:shadow-lg hover:shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-semibold flex items-center justify-center gap-2"
+          className="px-6 py-2.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 font-medium flex items-center justify-center gap-2 text-sm"
         >
           {saving ? (
             <>
