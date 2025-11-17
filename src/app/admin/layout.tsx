@@ -96,7 +96,11 @@ export default function AdminLayout({
           </div>
         </div>
       </nav>
-      <main>{children}</main>
+      <main className="px-4 sm:px-6 lg:px-8">
+        <div className="max-w-[800px] mx-auto">
+          {children}
+        </div>
+      </main>
     </div>
   )
 }
