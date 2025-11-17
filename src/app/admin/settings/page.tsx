@@ -100,9 +100,9 @@ export default function AdminSettingsPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-8">
+      <div className="grid grid-cols-2 gap-8">
         {/* Advertisement Settings */}
-        {settings.filter(s => s.key.startsWith('AD_')).length > 0 && (
+        {settings.filter(s => s.key.startsWith('AD_') && !s.key.includes('Checkpoint')).length > 0 && (
           <div className="bg-card border border-border/50 rounded-2xl shadow-md overflow-hidden">
             <div className="border-b border-border/50 px-8 py-6">
               <h2 className="text-xl font-bold text-foreground">Advertisement Settings</h2>
@@ -121,7 +121,10 @@ export default function AdminSettingsPage() {
                     <div key={setting.id} className="px-8 py-6 flex items-center justify-between hover:bg-muted/30 transition-colors">
                       <div className="flex-1">
                         <label htmlFor={setting.key} className="block text-sm font-semibold text-foreground">
-                          {setting.key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                          {setting.key
+                            .split('_')
+                            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                            .join(' ')}
                         </label>
                         <p className="mt-1 text-sm text-muted-foreground">
                           {getSettingDescription(setting.key)}
@@ -163,7 +166,7 @@ export default function AdminSettingsPage() {
         )}
 
         {/* Video Streaming Settings */}
-        {settings.filter(s => s.key === 'cors_proxy_url' || s.key === 'cors_proxy_enabled').length > 0 && (
+        {settings.filter(s => (s.key === 'cors_proxy_url' || s.key === 'cors_proxy_enabled') && !s.key.includes('Checkpoint')).length > 0 && (
           <div className="bg-card border border-border/50 rounded-2xl shadow-md overflow-hidden">
             <div className="border-b border-border/50 px-8 py-6">
               <h2 className="text-xl font-bold text-foreground">Video Streaming Settings</h2>
@@ -179,7 +182,10 @@ export default function AdminSettingsPage() {
                     <div key={setting.id} className="px-8 py-6 flex items-center justify-between hover:bg-muted/30 transition-colors">
                       <div className="flex-1">
                         <label htmlFor={setting.key} className="block text-sm font-semibold text-foreground">
-                          {setting.key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                          {setting.key
+                            .split('_')
+                            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                            .join(' ')}
                         </label>
                         <p className="mt-1 text-sm text-muted-foreground">
                           {getSettingDescription(setting.key)}
@@ -220,7 +226,7 @@ export default function AdminSettingsPage() {
         )}
 
         {/* Scraper Settings */}
-        {settings.filter(s => s.key === 'scraper_min_views' || s.key === 'scraper_min_duration' || s.key === 'auto_translate_titles').length > 0 && (
+        {settings.filter(s => (s.key === 'scraper_min_views' || s.key === 'scraper_min_duration' || s.key === 'auto_translate_titles') && !s.key.includes('Checkpoint')).length > 0 && (
           <div className="bg-card border border-border/50 rounded-2xl shadow-md overflow-hidden">
             <div className="border-b border-border/50 px-8 py-6">
               <h2 className="text-xl font-bold text-foreground">Scraper Settings</h2>
@@ -237,7 +243,10 @@ export default function AdminSettingsPage() {
                     <div key={setting.id} className="px-8 py-6 flex items-center justify-between hover:bg-muted/30 transition-colors">
                       <div className="flex-1">
                         <label htmlFor={setting.key} className="block text-sm font-semibold text-foreground">
-                          {setting.key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                          {setting.key
+                            .split('_')
+                            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                            .join(' ')}
                         </label>
                         <p className="mt-1 text-sm text-muted-foreground">
                           {getSettingDescription(setting.key)}
@@ -282,7 +291,8 @@ export default function AdminSettingsPage() {
         {settings.filter(s =>
           !s.key.startsWith('AD_') &&
           !s.key.startsWith('scrape_') &&
-          !s.key.startsWith('Checkpoint Scrape') &&
+          !s.key.includes('Checkpoint') &&
+          !s.key.includes('checkpoint') &&
           s.key !== 'scraper_min_views' &&
           s.key !== 'scraper_min_duration' &&
           s.key !== 'auto_translate_titles' &&
@@ -299,7 +309,8 @@ export default function AdminSettingsPage() {
                 .filter(setting =>
                   !setting.key.startsWith('AD_') &&
                   !setting.key.startsWith('scrape_') &&
-                  !setting.key.startsWith('Checkpoint Scrape') &&
+                  !setting.key.includes('Checkpoint') &&
+                  !setting.key.includes('checkpoint') &&
                   setting.key !== 'scraper_min_views' &&
                   setting.key !== 'scraper_min_duration' &&
                   setting.key !== 'auto_translate_titles' &&
@@ -311,7 +322,10 @@ export default function AdminSettingsPage() {
                     <div key={setting.id} className="px-8 py-6 flex items-center justify-between hover:bg-muted/30 transition-colors">
                       <div className="flex-1">
                         <label htmlFor={setting.key} className="block text-sm font-semibold text-foreground">
-                          {setting.key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                          {setting.key
+                            .split('_')
+                            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                            .join(' ')}
                         </label>
                         <p className="mt-1 text-sm text-muted-foreground">
                           {getSettingDescription(setting.key)}
