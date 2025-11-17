@@ -12,16 +12,22 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Clean up old scraper checkpoints
+    // Clean up old scraper checkpoints and any stale checkpoint data
     await prisma.siteSetting.deleteMany({
       where: {
-        key: {
-          startsWith: 'scrape_'
-        }
+        OR: [
+          { key: { startsWith: 'scrape_' } },
+          { key: { startsWith: 'Checkpoint Scrape' } }
+        ]
       }
     })
 
     let settings = await prisma.siteSetting.findMany({
+      where: {
+        key: {
+          notIn: ['scrape_', 'Checkpoint Scrape']
+        }
+      },
       orderBy: { key: 'asc' }
     })
 

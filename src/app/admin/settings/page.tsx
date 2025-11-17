@@ -100,62 +100,234 @@ export default function AdminSettingsPage() {
         </div>
       )}
 
-      <div className="space-y-4">
-        {settings
-          .filter(setting => !setting.key.startsWith('scrape_'))
-          .map((setting) => {
-          const isBooleanSetting = setting.key === 'cors_proxy_enabled' || setting.key === 'auto_translate_titles' ||
-            setting.key === 'AD_ALWAYS_PREROLL' || setting.key === 'AD_PREROLL_ENABLED' ||
-            setting.key === 'AD_POSTROLL_ENABLED' || setting.key === 'AD_MIDROLL_ENABLED'
-          const isNumberSetting = setting.key.includes('min_views') || setting.key.includes('min_duration') ||
-            setting.key === 'AD_MIDROLL_INTERVAL' || setting.key === 'AD_MAX_ADS_PER_VIDEO' ||
-            setting.key === 'AD_MIN_VIDEO_FOR_MIDROLL'
+      <div className="space-y-8">
+        {/* Advertisement Settings */}
+        <div>
+          <h2 className="text-2xl font-bold text-foreground mb-4 flex items-center gap-2">
+            <span className="text-primary">📺</span> Advertisement Settings
+          </h2>
+          <div className="space-y-4">
+            {settings
+              .filter(setting => setting.key.startsWith('AD_'))
+              .map((setting) => {
+                const isBooleanSetting = setting.key === 'AD_ALWAYS_PREROLL' || setting.key === 'AD_PREROLL_ENABLED' ||
+                  setting.key === 'AD_POSTROLL_ENABLED' || setting.key === 'AD_MIDROLL_ENABLED'
+                const isNumberSetting = setting.key === 'AD_MIDROLL_INTERVAL' || setting.key === 'AD_MAX_ADS_PER_VIDEO' ||
+                  setting.key === 'AD_MIN_VIDEO_FOR_MIDROLL'
 
-          return (
-            <div key={setting.id} className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-              <div className="px-6 py-5 sm:p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <label htmlFor={setting.key} className="block text-sm font-semibold text-foreground">
-                      {setting.key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-                    </label>
-                    <p className="mt-1.5 text-sm text-muted-foreground">
-                      {getSettingDescription(setting.key)}
-                    </p>
-                  </div>
+                return (
+                  <div key={setting.id} className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                    <div className="px-6 py-5 sm:p-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <label htmlFor={setting.key} className="block text-sm font-semibold text-foreground">
+                            {setting.key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                          </label>
+                          <p className="mt-1.5 text-sm text-muted-foreground">
+                            {getSettingDescription(setting.key)}
+                          </p>
+                        </div>
 
-                  <div className="ml-6">
-                    {isBooleanSetting ? (
-                      <button
-                        onClick={() => updateSetting(setting.key, setting.value === 'true' ? 'false' : 'true')}
-                        className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-200 ${
-                          setting.value === 'true'
-                            ? 'bg-primary shadow-md shadow-primary/30'
-                            : 'bg-muted'
-                        }`}
-                      >
-                        <span
-                          className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform duration-200 ${
-                            setting.value === 'true' ? 'translate-x-6' : 'translate-x-1'
-                          }`}
-                        />
-                      </button>
-                    ) : (
-                      <input
-                        type={isNumberSetting ? 'number' : 'text'}
-                        id={setting.key}
-                        value={setting.value}
-                        onChange={(e) => updateSetting(setting.key, e.target.value)}
-                        className="block w-64 px-4 py-2.5 border border-border/50 bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/50 sm:text-sm"
-                        min={isNumberSetting ? "0" : undefined}
-                      />
-                    )}
+                        <div className="ml-6">
+                          {isBooleanSetting ? (
+                            <button
+                              onClick={() => updateSetting(setting.key, setting.value === 'true' ? 'false' : 'true')}
+                              className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-200 ${
+                                setting.value === 'true'
+                                  ? 'bg-primary shadow-md shadow-primary/30'
+                                  : 'bg-muted'
+                              }`}
+                            >
+                              <span
+                                className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform duration-200 ${
+                                  setting.value === 'true' ? 'translate-x-6' : 'translate-x-1'
+                                }`}
+                              />
+                            </button>
+                          ) : (
+                            <input
+                              type={isNumberSetting ? 'number' : 'text'}
+                              id={setting.key}
+                              value={setting.value}
+                              onChange={(e) => updateSetting(setting.key, e.target.value)}
+                              className="block w-64 px-4 py-2.5 border border-border/50 bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/50 sm:text-sm"
+                              min={isNumberSetting ? "0" : undefined}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            </div>
-          )
-        })}
+                )
+              })}
+          </div>
+        </div>
+
+        {/* Video Streaming Settings */}
+        <div>
+          <h2 className="text-2xl font-bold text-foreground mb-4 flex items-center gap-2">
+            <span className="text-primary">🎬</span> Video Streaming Settings
+          </h2>
+          <div className="space-y-4">
+            {settings
+              .filter(setting => setting.key === 'cors_proxy_url' || setting.key === 'cors_proxy_enabled')
+              .map((setting) => {
+                const isBooleanSetting = setting.key === 'cors_proxy_enabled'
+
+                return (
+                  <div key={setting.id} className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                    <div className="px-6 py-5 sm:p-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <label htmlFor={setting.key} className="block text-sm font-semibold text-foreground">
+                            {setting.key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                          </label>
+                          <p className="mt-1.5 text-sm text-muted-foreground">
+                            {getSettingDescription(setting.key)}
+                          </p>
+                        </div>
+
+                        <div className="ml-6">
+                          {isBooleanSetting ? (
+                            <button
+                              onClick={() => updateSetting(setting.key, setting.value === 'true' ? 'false' : 'true')}
+                              className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-200 ${
+                                setting.value === 'true'
+                                  ? 'bg-primary shadow-md shadow-primary/30'
+                                  : 'bg-muted'
+                              }`}
+                            >
+                              <span
+                                className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform duration-200 ${
+                                  setting.value === 'true' ? 'translate-x-6' : 'translate-x-1'
+                                }`}
+                              />
+                            </button>
+                          ) : (
+                            <input
+                              type="text"
+                              id={setting.key}
+                              value={setting.value}
+                              onChange={(e) => updateSetting(setting.key, e.target.value)}
+                              className="block w-64 px-4 py-2.5 border border-border/50 bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/50 sm:text-sm"
+                            />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+          </div>
+        </div>
+
+        {/* Scraper Settings */}
+        <div>
+          <h2 className="text-2xl font-bold text-foreground mb-4 flex items-center gap-2">
+            <span className="text-primary">🔄</span> Scraper Settings
+          </h2>
+          <div className="space-y-4">
+            {settings
+              .filter(setting => setting.key === 'scraper_min_views' || setting.key === 'scraper_min_duration' || setting.key === 'auto_translate_titles')
+              .map((setting) => {
+                const isBooleanSetting = setting.key === 'auto_translate_titles'
+                const isNumberSetting = setting.key.includes('min_views') || setting.key.includes('min_duration')
+
+                return (
+                  <div key={setting.id} className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                    <div className="px-6 py-5 sm:p-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <label htmlFor={setting.key} className="block text-sm font-semibold text-foreground">
+                            {setting.key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                          </label>
+                          <p className="mt-1.5 text-sm text-muted-foreground">
+                            {getSettingDescription(setting.key)}
+                          </p>
+                        </div>
+
+                        <div className="ml-6">
+                          {isBooleanSetting ? (
+                            <button
+                              onClick={() => updateSetting(setting.key, setting.value === 'true' ? 'false' : 'true')}
+                              className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-200 ${
+                                setting.value === 'true'
+                                  ? 'bg-primary shadow-md shadow-primary/30'
+                                  : 'bg-muted'
+                              }`}
+                            >
+                              <span
+                                className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform duration-200 ${
+                                  setting.value === 'true' ? 'translate-x-6' : 'translate-x-1'
+                                }`}
+                              />
+                            </button>
+                          ) : (
+                            <input
+                              type={isNumberSetting ? 'number' : 'text'}
+                              id={setting.key}
+                              value={setting.value}
+                              onChange={(e) => updateSetting(setting.key, e.target.value)}
+                              className="block w-64 px-4 py-2.5 border border-border/50 bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/50 sm:text-sm"
+                              min={isNumberSetting ? "0" : undefined}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+          </div>
+        </div>
+
+        {/* Other Settings */}
+        <div>
+          <h2 className="text-2xl font-bold text-foreground mb-4 flex items-center gap-2">
+            <span className="text-primary">⚙️</span> Other Settings
+          </h2>
+          <div className="space-y-4">
+            {settings
+              .filter(setting =>
+                !setting.key.startsWith('AD_') &&
+                !setting.key.startsWith('scrape_') &&
+                !setting.key.startsWith('Checkpoint Scrape') &&
+                setting.key !== 'scraper_min_views' &&
+                setting.key !== 'scraper_min_duration' &&
+                setting.key !== 'auto_translate_titles' &&
+                setting.key !== 'cors_proxy_url' &&
+                setting.key !== 'cors_proxy_enabled'
+              )
+              .map((setting) => {
+                return (
+                  <div key={setting.id} className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                    <div className="px-6 py-5 sm:p-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <label htmlFor={setting.key} className="block text-sm font-semibold text-foreground">
+                            {setting.key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                          </label>
+                          <p className="mt-1.5 text-sm text-muted-foreground">
+                            {getSettingDescription(setting.key)}
+                          </p>
+                        </div>
+
+                        <div className="ml-6">
+                          <input
+                            type="text"
+                            id={setting.key}
+                            value={setting.value}
+                            onChange={(e) => updateSetting(setting.key, e.target.value)}
+                            className="block w-64 px-4 py-2.5 border border-border/50 bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/50 sm:text-sm"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+          </div>
+        </div>
       </div>
 
       <div className="mt-8 flex justify-end">
