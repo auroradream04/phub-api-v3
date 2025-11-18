@@ -177,25 +177,6 @@ function isMasterPlaylist(m3u8Text: string): boolean {
   return m3u8Text.includes('#EXT-X-STREAM-INF')
 }
 
-function selectAdByWeight(ads: AdWithSegments[]): AdWithSegments | null {
-  // Calculate total weight
-  const totalWeight = ads.reduce((sum, ad) => sum + ad.weight, 0)
-
-  // Generate random number between 0 and totalWeight
-  let random = Math.random() * totalWeight
-
-  // Select ad based on weight
-  for (const ad of ads) {
-    random -= ad.weight
-    if (random <= 0) {
-      return ad
-    }
-  }
-
-  // Fallback to first ad (shouldn't happen)
-  return ads[0]
-}
-
 function extractFirstVariantUrl(m3u8Text: string, baseUrl: string): string | null {
   const lines = m3u8Text.split('\n')
 
@@ -306,7 +287,7 @@ async function injectAds(m3u8Text: string, quality: string, baseUrl: string, vid
           result.push('#EXT-X-DISCONTINUITY')
 
           // Mark as injected
-          ;(placement as any).injected = true
+          placement.injected = true
 
           // Record impression
           try {

@@ -92,12 +92,18 @@ export function calculateM3u8Duration(m3u8Text: string): number {
   return Math.round(totalDuration)
 }
 
+interface AdWithSegments {
+  id: string
+  weight: number
+  segments: Array<{ quality: string; url: string }>
+}
+
 /**
  * Select ad by weighted random selection
  */
 export function selectAdByWeight(
-  ads: Array<{ id: string; weight: number; segments: any[] }>
-): typeof ads[0] | null {
+  ads: AdWithSegments[]
+): AdWithSegments | null {
   if (ads.length === 0) return null
 
   const totalWeight = ads.reduce((sum, ad) => sum + ad.weight, 0)

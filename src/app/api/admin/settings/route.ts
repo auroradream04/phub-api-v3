@@ -63,16 +63,6 @@ export async function GET() {
       })
     } else {
       // Ensure ad settings exist (for updates from older versions)
-      const adSettingKeys = [
-        'AD_ALWAYS_PREROLL',
-        'AD_PREROLL_ENABLED',
-        'AD_POSTROLL_ENABLED',
-        'AD_MIDROLL_ENABLED',
-        'AD_MIDROLL_INTERVAL',
-        'AD_MAX_ADS_PER_VIDEO',
-        'AD_MIN_VIDEO_FOR_MIDROLL'
-      ]
-
       const existingKeys = settings.map(s => s.key)
       const missingSettings = [
         { key: 'AD_ALWAYS_PREROLL', value: 'true' },

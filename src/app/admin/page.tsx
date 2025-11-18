@@ -561,42 +561,6 @@ export default function AdminDashboard() {
   }
 
   // Clean up Unknown category videos
-  const cleanupUnknown = async () => {
-    setMessage('🔍 Checking for Unknown category videos...')
-
-    try {
-      // First check how many exist
-      const checkRes = await fetch('/api/scraper/cleanup-unknown')
-      const checkData = await checkRes.json()
-
-      if (!checkData.success || checkData.totalUnknownVideos === 0) {
-        setMessage('✅ No Unknown category videos found')
-        return
-      }
-
-      if (!confirm(`⚠️ Found ${checkData.totalUnknownVideos} videos with "Unknown" category.\nDelete them? These are corrupted entries from before the fix was deployed.`)) {
-        return
-      }
-
-      // Delete them
-      const deleteRes = await fetch('/api/scraper/cleanup-unknown', {
-        method: 'POST'
-      })
-      const deleteData = await deleteRes.json()
-
-      if (deleteData.success) {
-        setMessage(`✅ Cleaned up ${deleteData.deleted} Unknown category videos`)
-        await fetchStats()
-      } else {
-        setMessage(`❌ ${deleteData.message}`)
-      }
-    } catch {
-      setMessage(`❌ Failed to cleanup Unknown videos`)
-    }
-  }
-
-  // Clear cache
-  const clearCache = async () => {
     try {
       const res = await fetch('/api/admin/cache/clear', {
         method: 'POST',
