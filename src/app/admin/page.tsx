@@ -561,6 +561,9 @@ export default function AdminDashboard() {
   }
 
   // Clean up Unknown category videos
+
+  // Clear cache
+  const clearCache = async () => {
     try {
       const res = await fetch('/api/admin/cache/clear', {
         method: 'POST',

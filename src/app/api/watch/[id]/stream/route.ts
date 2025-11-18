@@ -278,7 +278,7 @@ async function injectAds(m3u8Text: string, quality: string, baseUrl: string, vid
           // Select random ad segment
           const randomSegment = placement.selectedAd.segments[
             Math.floor(Math.random() * placement.selectedAd.segments.length)
-          ]
+          ] as { quality: number | string }
 
           // Add ad segment
           result.push('#EXTINF:3.0,')

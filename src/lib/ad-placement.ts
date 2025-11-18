@@ -8,8 +8,9 @@ export interface AdPlacement {
   type: 'pre-roll' | 'mid-roll' | 'post-roll'
   selectedAd?: {
     id: string
-    segments: Array<{ quality: number }>
+    segments: unknown[]
   }
+  injected?: boolean
 }
 
 /**
@@ -92,18 +93,12 @@ export function calculateM3u8Duration(m3u8Text: string): number {
   return Math.round(totalDuration)
 }
 
-interface AdWithSegments {
-  id: string
-  weight: number
-  segments: Array<{ quality: string; url: string }>
-}
-
 /**
  * Select ad by weighted random selection
  */
 export function selectAdByWeight(
-  ads: AdWithSegments[]
-): AdWithSegments | null {
+  ads: Array<{ id: string; weight: number; segments: unknown[] }>
+): typeof ads[0] | null {
   if (ads.length === 0) return null
 
   const totalWeight = ads.reduce((sum, ad) => sum + ad.weight, 0)
