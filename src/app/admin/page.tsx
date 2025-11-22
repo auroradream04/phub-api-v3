@@ -60,6 +60,7 @@ interface ScraperProgress {
   categoriesCompleted: number
   totalVideosScraped: number
   totalVideosFailed: number
+  newVideosAdded?: number
   currentCategory?: string
   currentPage?: number
   startedAt: string
@@ -92,6 +93,13 @@ export default function AdminDashboard() {
   const [savedProgress, setSavedProgress] = useState<ScraperProgress | null>(null)
   const [currentProgress, setCurrentProgress] = useState<ScraperProgress | null>(null)
   const checkpointIdRef = useRef<string>('')
+
+  // Category filtering states
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<Set<number>>(new Set())
+  
+  const [availableCategories, setAvailableCategories] = useState<Array<{id: number; name: string; isCustom: boolean}>>([])
+  const [loadingCategories, setLoadingCategories] = useState(false)
+  const [categoriesSearchQuery, setCategoriesSearchQuery] = useState('')
 
   // Category browser states
   const [categoryTab, setCategoryTab] = useState<'database' | 'consolidated'>('database')
@@ -155,6 +163,38 @@ export default function AdminDashboard() {
     fetchStats()
     fetchRetryStats()
     fetchTranslationStats()
+  }, [])
+
+  // Load categories for filtering
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        setLoadingCategories(true)
+        const res = await fetch('/api/categories')
+        const data = await res.json()
+        // Extract categories array
+        const cats = Array.isArray(data) ? data : (data.categories || data || [])
+        // Map to the format we need: {id, name, isCustom}
+        // Convert category names to human-readable format (e.g., "muscular-men" -> "Muscular Men")
+        const formatted = cats.map((cat: any) => ({
+          id: cat.id,
+          name: cat.name
+            ? cat.name
+                .split('-')
+                .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ')
+            : '',
+          isCustom: cat.isCustom ?? false
+        }))
+        setAvailableCategories(formatted)
+      } catch (error) {
+        console.error('Failed to load categories:', error)
+      } finally {
+        setLoadingCategories(false)
+      }
+    }
+    
+    loadCategories()
   }, [])
 
   const fetchStats = async () => {
@@ -408,19 +448,26 @@ export default function AdminDashboard() {
       const categoriesData = await categoriesRes.json()
 
       if (checkpointData.success && checkpointData.progress) {
-        const startedAt = currentProgress?.startedAt || new Date().toISOString()
+        // Use checkpoint's startedAt if available
+        const startedAt = checkpointData.checkpoint?.startedAt || currentProgress?.startedAt || new Date().toISOString()
         const elapsedSeconds = (Date.now() - new Date(startedAt).getTime()) / 1000
 
         const totalVideos = checkpointData.progress.totalVideosScraped || 0
-        const pagesProcessed = checkpointData.progress.categoriesCompleted * pagesPerCategory + (checkpointData.progress.categoriesCompleted === 0 ? 0 : 1)
+        const pagesProcessed = checkpointData.progress.categoriesCompleted * pagesPerCategory
 
+        // Calculate new videos added
+        const videoCountAtStart = checkpointData.checkpoint?.videoCountAtStart || 0
+        const videoCountCurrent = checkpointData.checkpoint?.videoCountCurrent || videoCountAtStart + totalVideos
+        const newVideosAdded = Math.max(0, videoCountCurrent - videoCountAtStart)
+        
         const progress: ScraperProgress = {
           checkpointId: String(id),
           pagesPerCategory: Number(pagesPerCategory),
-          totalCategories: Number(categoriesData.total || 161),
+          totalCategories: Number(checkpointData.progress.categoriesTotal || categoriesData.total || 165),
           categoriesCompleted: Number(checkpointData.progress.categoriesCompleted || 0),
           totalVideosScraped: totalVideos,
           totalVideosFailed: Number(checkpointData.progress.totalVideosFailed || 0),
+          newVideosAdded: newVideosAdded,
           startedAt: startedAt,
           videosPerSecond: elapsedSeconds > 0 ? Math.round((totalVideos / elapsedSeconds) * 10) / 10 : 0,
           pagesPerSecond: elapsedSeconds > 0 ? Math.round((pagesProcessed / elapsedSeconds) * 100) / 100 : 0
@@ -437,7 +484,14 @@ export default function AdminDashboard() {
   // Main scraper function (uses crash-recovery)
   const startScraping = async (resumeFromCheckpoint?: string) => {
     const resuming = !!resumeFromCheckpoint
-    if (!resuming && !confirm(`Start scraping ${pagesPerCategory} pages from each category?`)) return
+    if (!resuming) {
+      const categoryCount = selectedCategoryIds.size > 0 ? selectedCategoryIds.size : 'all'
+      const categoryLabel = selectedCategoryIds.size === 1 ? 'category' : 'categories'
+      const msg = selectedCategoryIds.size > 0
+        ? `Start scraping ${pagesPerCategory} pages from ${selectedCategoryIds.size} selected ${categoryLabel}?`
+        : `Start scraping ${pagesPerCategory} pages from each of all categories?`
+      if (!confirm(msg)) return
+    }
 
     setScraping(true)
     setMessage(resuming ? '🔄 Resuming scraper...' : '🚀 Starting scraper with crash recovery...')
@@ -469,13 +523,20 @@ export default function AdminDashboard() {
     }, 2000)
 
     try {
+      const body: Record<string, unknown> = {
+        pagesPerCategory,
+        resumeCheckpointId: resumeFromCheckpoint || checkpointId || undefined
+      }
+      
+      // Add category filter if selected
+      if (selectedCategoryIds.size > 0) {
+        body.categoryIds = Array.from(selectedCategoryIds)
+      }
+      
       const res = await fetch('/api/scraper/categories-with-recovery', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          pagesPerCategory,
-          resumeCheckpointId: resumeFromCheckpoint || checkpointId || undefined
-        })
+        body: JSON.stringify(body)
       })
 
       const data = await res.json()
@@ -685,7 +746,108 @@ export default function AdminDashboard() {
               </div>
             )}
 
-              {/* Primary Action: Start Scraping */}
+              {/* Category Selector */}
+              {loadingCategories ? (
+                <p className="text-sm text-muted-foreground py-4">Loading categories...</p>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-sm font-semibold text-foreground uppercase tracking-wider">
+                      Filter by Categories (Optional)
+                    </label>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setSelectedCategoryIds(new Set(availableCategories.map((c) => c.id)))}
+                        className="text-xs px-3 py-1.5 rounded bg-muted text-foreground hover:bg-muted/80 transition-colors font-medium"
+                        disabled={scraping}
+                      >
+                        All
+                      </button>
+                      <button
+                        onClick={() => setSelectedCategoryIds(new Set())}
+                        className="text-xs px-3 py-1.5 rounded bg-muted text-foreground hover:bg-muted/80 transition-colors font-medium"
+                        disabled={scraping}
+                      >
+                        None
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <input
+                    type="text"
+                    placeholder="Search categories..."
+                    value={categoriesSearchQuery}
+                    onChange={(e) => setCategoriesSearchQuery(e.target.value)}
+                    className="w-full px-4 py-2 text-sm border border-border/50 rounded-lg bg-input placeholder:text-muted-foreground focus:ring-2 focus:ring-primary focus:border-primary"
+                    disabled={scraping}
+                  />
+                  
+                  <div className="border border-border/50 rounded-xl bg-card/50 p-5 max-h-80 overflow-y-auto">
+                    {Array.isArray(availableCategories) && availableCategories.length > 0 ? (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                        {availableCategories
+                          .filter((cat) =>
+                            cat.name.toLowerCase().includes(categoriesSearchQuery.toLowerCase())
+                          )
+                          .map((cat) => (
+                            <button
+                              key={cat.id}
+                              onClick={() => {
+                                const newSelected = new Set(selectedCategoryIds)
+                                if (newSelected.has(cat.id)) {
+                                  newSelected.delete(cat.id)
+                                } else {
+                                  newSelected.add(cat.id)
+                                }
+                                setSelectedCategoryIds(newSelected)
+                              }}
+                              disabled={scraping}
+                              className={`relative px-3 py-2 rounded-lg text-sm text-left transition-all border-2 ${
+                                selectedCategoryIds.has(cat.id)
+                                  ? 'border-primary bg-primary/10 text-foreground font-medium'
+                                  : 'border-border/50 bg-card/30 text-muted-foreground hover:border-primary/50 hover:bg-card/50'
+                              } disabled:opacity-50 disabled:cursor-not-allowed`}
+                            >
+                              <div className="flex items-start gap-2">
+                                <div className={`w-4 h-4 rounded border-2 mt-0.5 flex-shrink-0 transition-all ${
+                                  selectedCategoryIds.has(cat.id)
+                                    ? 'border-primary bg-primary'
+                                    : 'border-border/50'
+                                }`}>
+                                  {selectedCategoryIds.has(cat.id) && (
+                                    <svg className="w-full h-full text-white" viewBox="0 0 16 16" fill="currentColor">
+                                      <path d="M13.5 2L6 10.5 2.5 7" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                                    </svg>
+                                  )}
+                                </div>
+                                <span className="break-words">{cat.name}</span>
+                                {cat.isCustom && <span className="text-xs text-primary font-semibold whitespace-nowrap">★</span>}
+                              </div>
+                            </button>
+                          ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground text-center py-8">No categories available</p>
+                    )}
+                  </div>
+                  
+                  {selectedCategoryIds.size > 0 && (
+                    <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg px-4 py-3">
+                      <p className="text-sm text-blue-400 font-medium">
+                        ✓ {selectedCategoryIds.size} category/categories selected
+                      </p>
+                      <p className="text-xs text-blue-400/80 mt-1">Will only scrape these categories</p>
+                    </div>
+                  )}
+                  {selectedCategoryIds.size === 0 && (
+                    <p className="text-xs text-muted-foreground italic">
+                      No categories selected - will scrape all {availableCategories.length} categories
+                    </p>
+                  )}
+                </div>
+              )}
+
+                            {/* Primary Action: Start Scraping */}
               <div className="flex items-end gap-4">
                 <div className="flex-1">
                   <label className="block text-sm font-semibold text-foreground mb-3 uppercase tracking-wider">
@@ -943,6 +1105,18 @@ export default function AdminDashboard() {
                 </p>
                 {currentProgress.videosPerSecond && (
                   <p className="text-xs text-green-500 mt-1">{currentProgress.videosPerSecond} videos/sec</p>
+                )}
+              </div>
+
+              <div className="bg-card/50 rounded-lg p-4">
+                <p className="text-sm text-muted-foreground mb-1">New Added</p>
+                <p className="text-2xl font-bold text-emerald-500">
+                  {(currentProgress.newVideosAdded ?? 0).toLocaleString()}
+                </p>
+                {currentProgress.totalVideosScraped > 0 && (
+                  <p className="text-xs text-emerald-400 mt-1">
+                    {Math.round(((currentProgress.newVideosAdded ?? 0) / currentProgress.totalVideosScraped) * 100)}% new
+                  </p>
                 )}
               </div>
 

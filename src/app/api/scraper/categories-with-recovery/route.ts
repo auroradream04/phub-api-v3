@@ -21,7 +21,7 @@ const CUSTOM_CATEGORY_IDS: Record<string, number> = {
 const ACTIVE_JOBS = new Map<string, { lastUpdateTime: number; pagesPerCategory: number }>()
 
 // Background scraping function
-async function scrapeInBackground(checkpointId: string, pagesPerCategory: number) {
+async function scrapeInBackground(checkpointId: string, pagesPerCategory: number, filterCategoryIds?: number[], filterCategoryNames?: string[]) {
   try {
     console.log(`[Background Scraper] Starting for checkpoint ${checkpointId}`)
 
@@ -77,6 +77,16 @@ async function scrapeInBackground(checkpointId: string, pagesPerCategory: number
       }
     }
 
+    // Apply category filters if provided
+    if (filterCategoryIds && filterCategoryIds.length > 0) {
+      categories = categories.filter((cat) => filterCategoryIds.includes(cat.id))
+      console.log(`[Background Scraper] Filtered to ${categories.length} categories by ID`)
+    } else if (filterCategoryNames && filterCategoryNames.length > 0) {
+      const normalizedNames = filterCategoryNames.map((name) => name.toLowerCase().trim())
+      categories = categories.filter((cat) => normalizedNames.includes(cat.name.toLowerCase()))
+      console.log(`[Background Scraper] Filtered to ${categories.length} categories by name`)
+    }
+
     const checkpoint = await getScraperCheckpoint(checkpointId)
     if (!checkpoint) {
       console.error(`[Background Scraper] Checkpoint lost`)
@@ -84,6 +94,18 @@ async function scrapeInBackground(checkpointId: string, pagesPerCategory: number
     }
 
     const totalCategories = categories.length
+    
+    // Get initial video count for tracking new vs duplicate videos
+    const videoCountAtStart = await prisma.video.count()
+    
+    // Update checkpoint with the actual filtered category count and initial video count
+    await updateScraperCheckpoint(checkpointId, {
+      ...checkpoint,
+      totalCategories: totalCategories,
+      videoCountAtStart: videoCountAtStart
+    })
+    
+    console.log(`[Background Scraper] Starting with ${videoCountAtStart} videos in database`)
     const startCategoryIndex = checkpoint.lastCategoryIndex + 1 // Resume from next category
     const startPageForFirstCategory = checkpoint.lastPageCompleted + 1 // Resume from next page in that category
 
@@ -223,10 +245,15 @@ async function scrapeInBackground(checkpointId: string, pagesPerCategory: number
       await new Promise((resolve) => setTimeout(resolve, 2000))
     }
 
-    // Mark as completed
+    // Mark as completed and capture final video count
+    const videoCountFinal = await prisma.video.count()
     await updateScraperCheckpoint(checkpointId, {
-      status: 'completed'
+      status: 'completed',
+      videoCountCurrent: videoCountFinal
     })
+    
+    const newVideosAdded = videoCountFinal - (checkpoint.videoCountAtStart || 0)
+    console.log(`[Background Scraper] Completed. Videos in DB: ${videoCountFinal} (${newVideosAdded} new, ${checkpoint.totalVideosScraped - newVideosAdded} duplicates/updated)`)
 
     // Clean up job tracking
     ACTIVE_JOBS.delete(checkpointId)
@@ -253,11 +280,17 @@ export async function POST(_request: NextRequest) {
   let checkpointId: string = ''
 
   try {
-    const { pagesPerCategory = 5, resumeCheckpointId } = await _request.json()
+    const {
+      pagesPerCategory = 5,
+      resumeCheckpointId,
+      categoryIds,
+      categoryNames,
+    } = await _request.json()
 
     console.log(`[Scraper Categories] Started with options:`, {
       pagesPerCategory,
       resumeCheckpointId: resumeCheckpointId || 'new',
+      filterType: categoryIds?.length ? 'IDs' : categoryNames?.length ? 'names' : 'all',
     })
 
     // Create or resume checkpoint
@@ -285,13 +318,13 @@ export async function POST(_request: NextRequest) {
       })
 
       // Don't await this - let it run in background
-      scrapeInBackground(checkpointId, pagesPerCategory)
+      scrapeInBackground(checkpointId, pagesPerCategory, categoryIds, categoryNames)
 
       return response
     }
 
     // Resuming: run scraping in background too
-    scrapeInBackground(checkpointId, pagesPerCategory)
+    scrapeInBackground(checkpointId, pagesPerCategory, categoryIds, categoryNames)
 
     return NextResponse.json({
       success: true,
@@ -370,7 +403,7 @@ export async function GET(_request: NextRequest) {
       totalVideosScraped: checkpoint.totalVideosScraped,
       totalVideosFailed: checkpoint.totalVideosFailed,
       categoriesCompleted: checkpoint.lastCategoryIndex + 1, // 0-based index, so +1 for display
-      categoriesTotal: 165, // Total number of categories in database
+      categoriesTotal: checkpoint.totalCategories || 165, // Use actual filtered count or fallback to 165
     },
   })
 }

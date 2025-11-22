@@ -54,7 +54,7 @@ export default function AdminLayout({
       <nav className="bg-card border-b border-border">
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 justify-between">
-            <div className="flex items-center gap-8">
+            <div className="flex items-center gap-4">
               <Link href="/admin" className="flex items-center gap-2 hover:opacity-80 transition-opacity flex-shrink-0">
                 <Image
                   src="/logo.png"
@@ -66,7 +66,7 @@ export default function AdminLayout({
                   priority
                 />
               </Link>
-              <div className="hidden sm:flex sm:space-x-8">
+              <div className="hidden sm:flex sm:space-x-2">
                 {navigation.map((item) => (
                   <Link
                     key={item.name}
@@ -83,9 +83,6 @@ export default function AdminLayout({
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <span className="text-sm text-muted-foreground">
-                {session?.user?.email}
-              </span>
               <button
                 onClick={() => signOut({ callbackUrl: '/login' })}
                 className="rounded-md bg-destructive px-3 py-2 text-sm font-semibold text-destructive-foreground hover:bg-destructive/90 transition-colors"
@@ -96,7 +93,7 @@ export default function AdminLayout({
           </div>
         </div>
       </nav>
-      <main className="px-4 sm:px-6 lg:px-8">
+      <main className="px-4 sm:px-6 lg:px-0">
         <div className="max-w-[800px] mx-auto">
           {children}
         </div>

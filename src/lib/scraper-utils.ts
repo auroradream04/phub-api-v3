@@ -152,6 +152,9 @@ export interface ScraperCheckpoint {
   // Stats only
   totalVideosScraped: number
   totalVideosFailed: number
+  totalCategories?: number // Total categories being scraped (may be filtered)
+  videoCountAtStart?: number // Total videos in DB when scrape started
+  videoCountCurrent?: number // Current total videos in DB
 }
 
 export async function createScraperCheckpoint(): Promise<string> {
