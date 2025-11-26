@@ -9,13 +9,6 @@ import { calculateAdPlacements, calculateM3u8Duration, assignAdsToplacements } f
 
 export const revalidate = 7200 // 2 hours
 
-interface AdWithSegments {
-  id: string
-  title: string
-  weight: number
-  segments: Array<{ quality: number }>
-}
-
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

@@ -176,7 +176,7 @@ export default function AdminDashboard() {
         const cats = Array.isArray(data) ? data : (data.categories || data || [])
         // Map to the format we need: {id, name, isCustom}
         // Convert category names to human-readable format (e.g., "muscular-men" -> "Muscular Men")
-        const formatted = cats.map((cat: any) => ({
+        const formatted = cats.map((cat: { id: string; name?: string; isCustom?: boolean }) => ({
           id: cat.id,
           name: cat.name
             ? cat.name
@@ -485,7 +485,7 @@ export default function AdminDashboard() {
   const startScraping = async (resumeFromCheckpoint?: string) => {
     const resuming = !!resumeFromCheckpoint
     if (!resuming) {
-      const categoryCount = selectedCategoryIds.size > 0 ? selectedCategoryIds.size : 'all'
+      const _categoryCount = selectedCategoryIds.size > 0 ? selectedCategoryIds.size : 'all'
       const categoryLabel = selectedCategoryIds.size === 1 ? 'category' : 'categories'
       const msg = selectedCategoryIds.size > 0
         ? `Start scraping ${pagesPerCategory} pages from ${selectedCategoryIds.size} selected ${categoryLabel}?`
