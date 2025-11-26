@@ -1,8 +1,11 @@
 /**
  * Keyword-based Search Scraper for Japanese and Chinese categories
  *
- * Uses multiple search terms to maximize video discovery for these specific categories.
- * Each keyword is searched and results are assigned to the appropriate category.
+ * ULTRA-OPTIMIZED VERSION:
+ * - In-memory cache of all vodIds and vodNames (loaded once at start)
+ * - Zero DB lookups per page - only batch inserts
+ * - Minimal delays since we use proxies
+ * - Category updates batched at the very end
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -13,55 +16,34 @@ import { isTranslationEnabled, translateBatch } from '@/lib/translate'
 import { parseViews, parseDuration, mergeCategories } from '@/lib/scraper-utils'
 import { getCanonicalCategory } from '@/lib/category-mapping'
 
-// Search terms for Japanese content - varied to maximize results
+// Search terms for Japanese content
 const JAPANESE_KEYWORDS = [
-  'japanese',
-  '日本',
-  'jav',
-  'japan',
-  'tokyo',
-  '東京',
-  'uncensored japanese',
-  'japanese amateur',
-  'japanese wife',
-  'japanese milf',
-  'japanese teen',
-  'japanese massage',
-  'japanese schoolgirl',
-  'japanese cosplay',
+  'japanese', '日本', 'jav', 'japan', 'tokyo', '東京',
+  'uncensored japanese', 'japanese amateur', 'japanese wife',
+  'japanese milf', 'japanese teen', 'japanese massage',
+  'japanese schoolgirl', 'japanese cosplay',
 ]
 
 // Search terms for Chinese content
 const CHINESE_KEYWORDS = [
-  'chinese',
-  '中文',
-  '中国',
-  'china',
-  'taiwan',
-  '台灣',
-  'hong kong',
-  '香港',
-  'chinese amateur',
-  'chinese wife',
-  'chinese teen',
-  'madou',
-  'swag',
-  '國產',
+  'chinese', '中文', '中国', 'china', 'taiwan', '台灣',
+  'hong kong', '香港', 'chinese amateur', 'chinese wife',
+  'chinese teen', 'madou', 'swag', '國產',
 ]
 
-// Category IDs
 const CATEGORY_IDS = {
   japanese: 9999,
   chinese: 9998,
 }
 
-// Helper to strip emojis
+// Minimal delays - proxies handle rate limiting
+const PAGE_DELAY_MS = 50
+const KEYWORD_DELAY_MS = 100
+
 function stripEmojis(str: string): string {
-  return str.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F100}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{FE00}-\u{FE0F}\u{1F000}-\u{1F02F}\u{1F0A0}-\u{1F0FF}]/gu, '')
-    .trim()
+  return str.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F100}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{FE00}-\u{FE0F}\u{1F000}-\u{1F02F}\u{1F0A0}-\u{1F0FF}]/gu, '').trim()
 }
 
-// Normalize provider
 function normalizeProvider(provider: unknown): string {
   if (!provider) return ''
   if (typeof provider === 'string') return provider
@@ -72,33 +54,6 @@ function normalizeProvider(provider: unknown): string {
   return ''
 }
 
-// Deduplicate video name
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function deduplicateVideoName(baseName: string, tx: any): Promise<string> {
-  const existingWithBaseName = await tx.video.findFirst({
-    where: { vodName: baseName },
-    select: { id: true },
-  })
-
-  if (!existingWithBaseName) {
-    return baseName
-  }
-
-  for (let suffix = 2; suffix <= 1000; suffix++) {
-    const candidateName = `${baseName} (${suffix})`
-    const existingWithSuffix = await tx.video.findFirst({
-      where: { vodName: candidateName },
-      select: { id: true },
-    })
-    if (!existingWithSuffix) {
-      return candidateName
-    }
-  }
-
-  return `${baseName} (${Math.random().toString(36).substring(7)})`
-}
-
-// Type for scraped video
 interface ScrapedVideo {
   id: string
   views?: string
@@ -108,7 +63,14 @@ interface ScrapedVideo {
   provider?: string | { username?: string; name?: string }
 }
 
-// Search with retry logic
+// In-memory cache for a scraping job
+interface VideoCache {
+  vodIds: Map<string, string>  // vodId -> vodClass (for category merging)
+  vodNames: Set<string>        // For deduplication
+  pendingCategoryUpdates: Map<string, string>  // vodId -> newClass (batch update at end)
+}
+
+// Search with retry (minimal delays)
 async function searchWithRetry(
   keyword: string,
   page: number,
@@ -129,8 +91,7 @@ async function searchWithRetry(
       if (!result.data || result.data.length === 0) {
         retries--
         if (retries > 0) {
-          console.warn(`[Keyword Search] Empty data for "${keyword}" page ${page}, retrying...`)
-          await new Promise(resolve => setTimeout(resolve, 1000))
+          await new Promise(resolve => setTimeout(resolve, 100))
           continue
         }
       }
@@ -140,7 +101,7 @@ async function searchWithRetry(
       retries--
       if (retries > 0) {
         console.warn(`[Keyword Search] Error for "${keyword}", retrying: ${err instanceof Error ? err.message : err}`)
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        await new Promise(resolve => setTimeout(resolve, 100))
         continue
       }
       throw err
@@ -150,7 +111,7 @@ async function searchWithRetry(
   return { data: [] }
 }
 
-// Store progress in memory (since this runs in background)
+// Job tracking with cache
 const ACTIVE_KEYWORD_JOBS = new Map<string, {
   category: string
   keywords: string[]
@@ -163,17 +124,48 @@ const ACTIVE_KEYWORD_JOBS = new Map<string, {
   status: 'running' | 'completed' | 'failed'
   startedAt: string
   lastUpdate: string
+  cache: VideoCache | null
 }>()
 
-// Process a single keyword search batch
-async function processKeywordBatch(
+// Load entire database into memory cache (runs once per job)
+async function loadVideoCache(): Promise<VideoCache> {
+  console.log('[Keyword Search] Loading video cache from database...')
+  const startTime = Date.now()
+
+  // Single query to get all vodIds and their classes
+  const allVideos = await prisma.video.findMany({
+    select: { vodId: true, vodClass: true, vodName: true }
+  })
+
+  const cache: VideoCache = {
+    vodIds: new Map(),
+    vodNames: new Set(),
+    pendingCategoryUpdates: new Map(),
+  }
+
+  for (const video of allVideos) {
+    cache.vodIds.set(video.vodId, video.vodClass || '')
+    if (video.vodName) {
+      cache.vodNames.add(video.vodName)
+    }
+  }
+
+  const elapsed = Date.now() - startTime
+  console.log(`[Keyword Search] Cache loaded: ${cache.vodIds.size} videos, ${cache.vodNames.size} names in ${elapsed}ms`)
+
+  return cache
+}
+
+// Process a page using in-memory cache (ZERO db lookups!)
+async function processPageWithCache(
   keyword: string,
   categoryId: number,
   categoryName: string,
   page: number,
   shouldTranslate: boolean,
   minViews: number,
-  minDuration: number
+  minDuration: number,
+  cache: VideoCache
 ): Promise<{ scraped: number; errors: number; duplicates: number; hasMore: boolean }> {
   const baseUrl = process.env.NEXTAUTH_URL || 'https://api.md8av.com'
 
@@ -184,20 +176,19 @@ async function processKeywordBatch(
       return { scraped: 0, errors: 0, duplicates: 0, hasMore: false }
     }
 
-    let scraped = 0
-    let errors = 0
-    let duplicates = 0
+    const canonicalCategory = getCanonicalCategory(categoryName)
+    const publishDate = new Date()
+    const year = publishDate.getFullYear().toString()
 
     // Filter videos
     const videosToProcess: Array<{
-      video: ScrapedVideo
+      vodId: string
       views: number
       durationSeconds: number
       cleanTitle: string
       cleanDuration: string
       cleanProvider: string
-      publishDate: Date
-      year: string
+      preview?: string
     }> = []
 
     for (const video of result.data) {
@@ -207,108 +198,202 @@ async function processKeywordBatch(
       if (minViews > 0 && views < minViews) continue
       if (minDuration > 0 && durationSeconds < minDuration) continue
 
-      const publishDate = new Date()
-      const year = publishDate.getFullYear().toString()
-
       videosToProcess.push({
-        video,
+        vodId: video.id,
         views,
         durationSeconds,
         cleanTitle: stripEmojis(video.title),
         cleanDuration: stripEmojis(video.duration),
         cleanProvider: stripEmojis(normalizeProvider(video.provider)),
-        publishDate,
-        year
+        preview: video.preview,
       })
     }
 
-    // Batch translate if enabled
-    let translationResults: Array<{ text: string; success: boolean; wasCached: boolean }> = []
-    if (shouldTranslate && videosToProcess.length > 0) {
-      const titlesToTranslate = videosToProcess.map(v => v.cleanTitle)
-      translationResults = await translateBatch(titlesToTranslate)
+    if (videosToProcess.length === 0) {
+      return { scraped: 0, errors: 0, duplicates: 0, hasMore: !result.paging?.isEnd }
     }
 
-    // Save to database
-    const canonicalCategory = getCanonicalCategory(categoryName)
+    // Batch translate if enabled
+    let translatedTitles: string[] = videosToProcess.map(v => v.cleanTitle)
+    let translationFailed: boolean[] = videosToProcess.map(() => false)
+
+    if (shouldTranslate) {
+      const translationResults = await translateBatch(videosToProcess.map(v => v.cleanTitle))
+      translatedTitles = translationResults.map((r, i) => r.success ? r.text : videosToProcess[i]!.cleanTitle)
+      translationFailed = translationResults.map(r => !r.success)
+    }
+
+    // Separate new vs existing using IN-MEMORY CACHE (no DB query!)
+    const videosToCreate: Array<{
+      vodId: string
+      vodName: string
+      originalTitle?: string
+      typeId: number
+      typeName: string
+      vodClass: string
+      vodEn: string
+      vodTime: Date
+      vodRemarks: string
+      vodPlayFrom: string
+      vodPic?: string
+      vodArea: string
+      vodLang: string
+      vodYear: string
+      vodActor: string
+      vodDirector: string
+      vodContent: string
+      vodPlayUrl: string
+      vodProvider: string
+      views: number
+      duration: number
+      needsTranslation: boolean
+      translationFailedAt: Date | null
+      translationRetryCount: number
+    }> = []
+
+    let duplicateCount = 0
 
     for (let i = 0; i < videosToProcess.length; i++) {
-      const item = videosToProcess[i]!
-      const translationResult = shouldTranslate ? translationResults[i]! : null
-      const finalTitle = translationResult ? translationResult.text : item.cleanTitle
-      const translationFailed = translationResult ? !translationResult.success : false
+      const video = videosToProcess[i]!
+      const title = translatedTitles[i]!
+      const failed = translationFailed[i]!
 
-      try {
-        // Check if video already exists
-        const existing = await prisma.video.findUnique({
-          where: { vodId: item.video.id },
-          select: { id: true, vodClass: true }
-        })
-
-        if (existing) {
-          // Update categories only
-          const updatedClass = mergeCategories(existing.vodClass, canonicalCategory)
-          await prisma.video.update({
-            where: { vodId: item.video.id },
-            data: { vodClass: updatedClass }
-          })
-          duplicates++
-          continue
+      // Check cache instead of DB
+      if (cache.vodIds.has(video.vodId)) {
+        // Video exists - queue category update for later
+        const currentClass = cache.vodIds.get(video.vodId)!
+        const mergedClass = mergeCategories(currentClass, canonicalCategory)
+        if (mergedClass !== currentClass) {
+          cache.pendingCategoryUpdates.set(video.vodId, mergedClass)
+          // Update cache immediately so subsequent checks are accurate
+          cache.vodIds.set(video.vodId, mergedClass)
         }
+        duplicateCount++
+        continue
+      }
 
-        // New video - insert
-        await prisma.$transaction(async (tx) => {
-          const deduplicatedName = await deduplicateVideoName(finalTitle, tx)
-          const vodEn = deduplicatedName
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/^-|-$/g, '')
-            .substring(0, 50)
+      // New video - deduplicate name using cache
+      let finalName = title
+      let suffix = 2
+      while (cache.vodNames.has(finalName)) {
+        finalName = `${title} (${suffix})`
+        suffix++
+        if (suffix > 1000) {
+          finalName = `${title} (${Math.random().toString(36).substring(7)})`
+          break
+        }
+      }
 
-          await tx.video.create({
-            data: {
-              vodId: item.video.id,
-              vodName: deduplicatedName,
-              originalTitle: shouldTranslate ? item.cleanTitle : undefined,
-              typeId: categoryId,
-              typeName: canonicalCategory,
-              vodClass: canonicalCategory,
-              vodEn,
-              vodTime: item.publishDate,
-              vodRemarks: `HD ${item.cleanDuration}`,
-              vodPlayFrom: 'dplayer',
-              vodPic: item.video.preview,
-              vodArea: 'CN',
-              vodLang: 'zh',
-              vodYear: item.year,
-              vodActor: item.cleanProvider,
-              vodDirector: '',
-              vodContent: deduplicatedName,
-              vodPlayUrl: `HD$${baseUrl}/api/watch/${item.video.id}/stream.m3u8?q=720`,
-              vodProvider: item.cleanProvider,
-              views: item.views,
-              duration: item.durationSeconds,
-              needsTranslation: translationFailed,
-              translationFailedAt: translationFailed ? new Date() : null,
-              translationRetryCount: 0,
-            }
-          })
+      // Add to cache immediately
+      cache.vodIds.set(video.vodId, canonicalCategory)
+      cache.vodNames.add(finalName)
+
+      const vodEn = finalName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '')
+        .substring(0, 50)
+
+      videosToCreate.push({
+        vodId: video.vodId,
+        vodName: finalName,
+        originalTitle: shouldTranslate ? video.cleanTitle : undefined,
+        typeId: categoryId,
+        typeName: canonicalCategory,
+        vodClass: canonicalCategory,
+        vodEn,
+        vodTime: publishDate,
+        vodRemarks: `HD ${video.cleanDuration}`,
+        vodPlayFrom: 'dplayer',
+        vodPic: video.preview,
+        vodArea: 'CN',
+        vodLang: 'zh',
+        vodYear: year,
+        vodActor: video.cleanProvider,
+        vodDirector: '',
+        vodContent: finalName,
+        vodPlayUrl: `HD$${baseUrl}/api/watch/${video.vodId}/stream.m3u8?q=720`,
+        vodProvider: video.cleanProvider,
+        views: video.views,
+        duration: video.durationSeconds,
+        needsTranslation: failed,
+        translationFailedAt: failed ? new Date() : null,
+        translationRetryCount: 0,
+      })
+    }
+
+    // Batch insert new videos (single query!)
+    let createdCount = 0
+    if (videosToCreate.length > 0) {
+      try {
+        const result = await prisma.video.createMany({
+          data: videosToCreate,
+          skipDuplicates: true,
         })
-
-        scraped++
+        createdCount = result.count
       } catch (err) {
-        console.error(`[Keyword Search] Failed to save video ${item.video.id}:`, err)
-        errors++
+        console.error(`[Keyword Search] Batch create failed:`, err)
+        // Fallback to one-by-one
+        for (const video of videosToCreate) {
+          try {
+            await prisma.video.create({ data: video })
+            createdCount++
+          } catch {
+            // Skip duplicates
+          }
+        }
       }
     }
 
     const hasMore = !result.paging?.isEnd && (result.paging?.maxPage ? page < result.paging.maxPage : true)
 
-    return { scraped, errors, duplicates, hasMore }
+    return {
+      scraped: createdCount,
+      errors: videosToCreate.length - createdCount,
+      duplicates: duplicateCount,
+      hasMore
+    }
   } catch (err) {
-    console.error(`[Keyword Search] Batch error for "${keyword}" page ${page}:`, err)
+    console.error(`[Keyword Search] Error for "${keyword}" page ${page}:`, err)
     return { scraped: 0, errors: 1, duplicates: 0, hasMore: false }
   }
+}
+
+// Flush pending category updates to database (runs at end of job)
+async function flushCategoryUpdates(cache: VideoCache): Promise<number> {
+  if (cache.pendingCategoryUpdates.size === 0) return 0
+
+  console.log(`[Keyword Search] Flushing ${cache.pendingCategoryUpdates.size} category updates...`)
+
+  // Group by newClass for efficient batch updates
+  const updateGroups = new Map<string, string[]>()
+  for (const [vodId, newClass] of cache.pendingCategoryUpdates) {
+    if (!updateGroups.has(newClass)) {
+      updateGroups.set(newClass, [])
+    }
+    updateGroups.get(newClass)!.push(vodId)
+  }
+
+  let totalUpdated = 0
+  for (const [newClass, vodIds] of updateGroups) {
+    try {
+      // Batch update in chunks of 1000 to avoid query size limits
+      for (let i = 0; i < vodIds.length; i += 1000) {
+        const chunk = vodIds.slice(i, i + 1000)
+        const result = await prisma.video.updateMany({
+          where: { vodId: { in: chunk } },
+          data: { vodClass: newClass }
+        })
+        totalUpdated += result.count
+      }
+    } catch (err) {
+      console.error(`[Keyword Search] Category update failed:`, err)
+    }
+  }
+
+  cache.pendingCategoryUpdates.clear()
+  console.log(`[Keyword Search] Updated ${totalUpdated} video categories`)
+  return totalUpdated
 }
 
 // Background scraping function
@@ -324,31 +409,34 @@ async function scrapeKeywordsInBackground(
   if (!job) return
 
   try {
-    // Get settings
+    // Load settings
     const minViewsSetting = await prisma.siteSetting.findUnique({ where: { key: 'scraper_min_views' } })
     const minDurationSetting = await prisma.siteSetting.findUnique({ where: { key: 'scraper_min_duration' } })
     const minViews = minViewsSetting ? parseInt(minViewsSetting.value) : 0
     const minDuration = minDurationSetting ? parseInt(minDurationSetting.value) : 0
     const shouldTranslate = await isTranslationEnabled()
 
+    // Load entire database into memory (once!)
+    job.cache = await loadVideoCache()
+
     for (let keywordIdx = job.currentKeywordIndex; keywordIdx < keywords.length; keywordIdx++) {
       const keyword = keywords[keywordIdx]!
       const startPage = keywordIdx === job.currentKeywordIndex ? job.currentPage : 1
 
-      console.log(`[Keyword Search] Processing "${keyword}" (${keywordIdx + 1}/${keywords.length})`)
+      console.log(`[Keyword Search] "${keyword}" (${keywordIdx + 1}/${keywords.length})`)
 
       for (let page = startPage; page <= pagesPerKeyword; page++) {
-        const result = await processKeywordBatch(
+        const result = await processPageWithCache(
           keyword,
           categoryId,
           category,
           page,
           shouldTranslate,
           minViews,
-          minDuration
+          minDuration,
+          job.cache
         )
 
-        // Update job progress
         job.currentKeywordIndex = keywordIdx
         job.currentPage = page
         job.totalScraped += result.scraped
@@ -356,24 +444,30 @@ async function scrapeKeywordsInBackground(
         job.totalDuplicates += result.duplicates
         job.lastUpdate = new Date().toISOString()
 
-        console.log(`[Keyword Search] "${keyword}" page ${page}: +${result.scraped} new, ${result.duplicates} dups`)
-
-        if (!result.hasMore) {
-          console.log(`[Keyword Search] No more results for "${keyword}" at page ${page}`)
-          break
+        if (result.scraped > 0 || result.duplicates > 0) {
+          console.log(`[Keyword Search] "${keyword}" p${page}: +${result.scraped} new, ${result.duplicates} dups`)
         }
 
-        // Delay between pages
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        if (!result.hasMore) break
+
+        // Minimal delay
+        if (PAGE_DELAY_MS > 0) {
+          await new Promise(resolve => setTimeout(resolve, PAGE_DELAY_MS))
+        }
       }
 
-      // Delay between keywords
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      // Minimal delay between keywords
+      if (KEYWORD_DELAY_MS > 0) {
+        await new Promise(resolve => setTimeout(resolve, KEYWORD_DELAY_MS))
+      }
     }
+
+    // Flush all pending category updates at the end
+    await flushCategoryUpdates(job.cache)
 
     job.status = 'completed'
     job.lastUpdate = new Date().toISOString()
-    console.log(`[Keyword Search] Completed ${category}: ${job.totalScraped} new videos, ${job.totalDuplicates} duplicates, ${job.totalErrors} errors`)
+    console.log(`[Keyword Search] ✓ Completed ${category}: ${job.totalScraped} new, ${job.totalDuplicates} dups, ${job.totalErrors} errors`)
 
   } catch (err) {
     console.error(`[Keyword Search] Fatal error:`, err)
@@ -394,7 +488,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if already running for this category
+    // Check if already running
     for (const [, job] of ACTIVE_KEYWORD_JOBS) {
       if (job.category === category && job.status === 'running') {
         return NextResponse.json(
@@ -419,9 +513,9 @@ export async function POST(request: NextRequest) {
       status: 'running',
       startedAt: new Date().toISOString(),
       lastUpdate: new Date().toISOString(),
+      cache: null,
     })
 
-    // Start background scraping
     scrapeKeywordsInBackground(jobId, category, pagesPerKeyword)
 
     return NextResponse.json({
@@ -446,7 +540,6 @@ export async function GET(request: NextRequest) {
   const jobId = searchParams.get('jobId')
   const category = searchParams.get('category')
 
-  // If jobId provided, return specific job
   if (jobId) {
     const job = ACTIVE_KEYWORD_JOBS.get(jobId)
     if (!job) {
@@ -456,7 +549,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       job: {
-        ...job,
+        category: job.category,
+        status: job.status,
+        totalScraped: job.totalScraped,
+        totalDuplicates: job.totalDuplicates,
+        totalErrors: job.totalErrors,
+        startedAt: job.startedAt,
+        lastUpdate: job.lastUpdate,
+        cacheSize: job.cache?.vodIds.size || 0,
+        pendingUpdates: job.cache?.pendingCategoryUpdates.size || 0,
         progress: {
           currentKeyword: job.keywords[job.currentKeywordIndex] || 'completed',
           keywordsCompleted: job.currentKeywordIndex,
@@ -468,7 +569,6 @@ export async function GET(request: NextRequest) {
     })
   }
 
-  // If category provided, find active job for that category
   if (category) {
     for (const [id, job] of ACTIVE_KEYWORD_JOBS) {
       if (job.category === category) {
@@ -476,7 +576,14 @@ export async function GET(request: NextRequest) {
           success: true,
           jobId: id,
           job: {
-            ...job,
+            category: job.category,
+            status: job.status,
+            totalScraped: job.totalScraped,
+            totalDuplicates: job.totalDuplicates,
+            totalErrors: job.totalErrors,
+            startedAt: job.startedAt,
+            lastUpdate: job.lastUpdate,
+            cacheSize: job.cache?.vodIds.size || 0,
             progress: {
               currentKeyword: job.keywords[job.currentKeywordIndex] || 'completed',
               keywordsCompleted: job.currentKeywordIndex,
@@ -491,11 +598,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: true, job: null, message: 'No active job for this category' })
   }
 
-  // Return all jobs
   const jobs: Record<string, unknown> = {}
   for (const [id, job] of ACTIVE_KEYWORD_JOBS) {
     jobs[id] = {
-      ...job,
+      category: job.category,
+      status: job.status,
+      totalScraped: job.totalScraped,
+      totalDuplicates: job.totalDuplicates,
+      totalErrors: job.totalErrors,
+      cacheSize: job.cache?.vodIds.size || 0,
       progress: {
         currentKeyword: job.keywords[job.currentKeywordIndex] || 'completed',
         keywordsCompleted: job.currentKeywordIndex,
@@ -523,7 +634,12 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ success: false, message: 'Job not found' }, { status: 404 })
   }
 
-  job.status = 'completed' // Mark as completed to stop processing
+  // Flush any pending updates before canceling
+  if (job.cache) {
+    await flushCategoryUpdates(job.cache)
+  }
+
+  job.status = 'completed'
   ACTIVE_KEYWORD_JOBS.delete(jobId)
 
   return NextResponse.json({ success: true, message: 'Job cancelled' })
