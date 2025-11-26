@@ -132,6 +132,35 @@ export default function AdminDashboard() {
   const [translationLimit, setTranslationLimit] = useState('')
   const [translationMaxRetries, setTranslationMaxRetries] = useState(5)
 
+  // Keyword search scraper states
+  const [keywordScrapingJapanese, setKeywordScrapingJapanese] = useState(false)
+  const [keywordScrapingChinese, setKeywordScrapingChinese] = useState(false)
+  const [keywordJobJapanese, setKeywordJobJapanese] = useState<{
+    jobId: string
+    status: string
+    totalScraped: number
+    totalDuplicates: number
+    totalErrors: number
+    currentKeyword: string
+    keywordsCompleted: number
+    totalKeywords: number
+    currentPage: number
+    pagesPerKeyword: number
+  } | null>(null)
+  const [keywordJobChinese, setKeywordJobChinese] = useState<{
+    jobId: string
+    status: string
+    totalScraped: number
+    totalDuplicates: number
+    totalErrors: number
+    currentKeyword: string
+    keywordsCompleted: number
+    totalKeywords: number
+    currentPage: number
+    pagesPerKeyword: number
+  } | null>(null)
+  const [keywordPagesPerKeyword, setKeywordPagesPerKeyword] = useState(5)
+
   // Check for saved progress on load
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY)
@@ -479,6 +508,79 @@ export default function AdminDashboard() {
       console.error('Failed to fetch checkpoint progress:', error)
     }
     return null
+  }
+
+  // Keyword search scraper functions
+  const startKeywordScraping = async (category: 'japanese' | 'chinese') => {
+    const setLoading = category === 'japanese' ? setKeywordScrapingJapanese : setKeywordScrapingChinese
+    const setJob = category === 'japanese' ? setKeywordJobJapanese : setKeywordJobChinese
+
+    if (!confirm(`Start keyword search scraping for ${category}? This will search multiple terms and may take a while.`)) {
+      return
+    }
+
+    setLoading(true)
+    setMessage(`🔍 Starting keyword search for ${category}...`)
+
+    try {
+      const res = await fetch('/api/scraper/keyword-search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          category,
+          pagesPerKeyword: keywordPagesPerKeyword
+        })
+      })
+
+      const data = await res.json()
+
+      if (!data.success) {
+        setMessage(`❌ Failed: ${data.message}`)
+        setLoading(false)
+        return
+      }
+
+      setMessage(`✅ Started keyword search for ${category} (${data.keywords.length} keywords)`)
+
+      // Start polling for progress
+      const pollInterval = setInterval(async () => {
+        try {
+          const statusRes = await fetch(`/api/scraper/keyword-search?jobId=${data.jobId}`)
+          const statusData = await statusRes.json()
+
+          if (statusData.success && statusData.job) {
+            const job = statusData.job
+            setJob({
+              jobId: data.jobId,
+              status: job.status,
+              totalScraped: job.totalScraped,
+              totalDuplicates: job.totalDuplicates,
+              totalErrors: job.totalErrors,
+              currentKeyword: job.progress.currentKeyword,
+              keywordsCompleted: job.progress.keywordsCompleted,
+              totalKeywords: job.progress.totalKeywords,
+              currentPage: job.progress.currentPage,
+              pagesPerKeyword: job.progress.pagesPerKeyword
+            })
+
+            if (job.status === 'completed' || job.status === 'failed') {
+              clearInterval(pollInterval)
+              setLoading(false)
+              setMessage(job.status === 'completed'
+                ? `✅ ${category} keyword search completed: ${job.totalScraped} new videos`
+                : `❌ ${category} keyword search failed`)
+              fetchStats()
+            }
+          }
+        } catch (err) {
+          console.error('Poll error:', err)
+        }
+      }, 2000)
+
+    } catch (err) {
+      setMessage(`❌ Error: ${err instanceof Error ? err.message : 'Unknown error'}`)
+      setLoading(false)
+    }
   }
 
   // Main scraper function (uses crash-recovery)
@@ -858,7 +960,17 @@ export default function AdminDashboard() {
                     min="1"
                     max="50"
                     value={pagesPerCategory}
-                    onChange={(e) => setPagesPerCategory(parseInt(e.target.value) || 5)}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      if (val === '') {
+                        setPagesPerCategory(1)
+                      } else {
+                        const num = parseInt(val)
+                        if (!isNaN(num) && num >= 1) {
+                          setPagesPerCategory(Math.min(num, 50))
+                        }
+                      }
+                    }}
                     disabled={scraping}
                     className="w-full px-5 py-3 border border-border/50 bg-input text-foreground rounded-xl focus:ring-2 focus:ring-primary focus:border-primary disabled:opacity-50 transition-colors hover:border-primary/50"
                   />
@@ -910,6 +1022,153 @@ export default function AdminDashboard() {
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Keyword Search Scraper for Japanese/Chinese */}
+          <div className="bg-gradient-to-br from-card to-card/50 border border-border/50 rounded-2xl p-8 shadow-sm mt-8">
+            <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+              <span className="text-2xl">🔍</span>
+              Keyword Search Scraper
+              <span className="text-xs font-normal text-muted-foreground ml-2">(Japanese & Chinese)</span>
+            </h3>
+            <p className="text-sm text-muted-foreground mb-6">
+              Searches multiple keywords to find more Japanese and Chinese videos beyond what category scraping provides.
+            </p>
+
+            {/* Pages per keyword setting */}
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-foreground mb-2">
+                Pages per Keyword
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="100"
+                value={keywordPagesPerKeyword}
+                onChange={(e) => {
+                  const val = e.target.value
+                  if (val === '') {
+                    setKeywordPagesPerKeyword(1)
+                  } else {
+                    const num = parseInt(val)
+                    if (!isNaN(num) && num >= 1) {
+                      setKeywordPagesPerKeyword(Math.min(num, 100))
+                    }
+                  }
+                }}
+                disabled={keywordScrapingJapanese || keywordScrapingChinese}
+                className="w-32 px-4 py-2 border border-border/50 bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary disabled:opacity-50"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Pages to scrape per keyword (max 100). With 14 keywords × 50 pages = 700 search pages.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Japanese */}
+              <div className="bg-muted/30 border border-border/50 rounded-xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-semibold text-foreground flex items-center gap-2">
+                    🇯🇵 Japanese
+                  </h4>
+                  <button
+                    onClick={() => startKeywordScraping('japanese')}
+                    disabled={keywordScrapingJapanese || scraping}
+                    className="px-4 py-2 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-lg font-medium hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm"
+                  >
+                    {keywordScrapingJapanese ? (
+                      <span className="flex items-center gap-2">
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        Searching...
+                      </span>
+                    ) : (
+                      'Start Search'
+                    )}
+                  </button>
+                </div>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Keywords: japanese, 日本, jav, tokyo, 東京, uncensored japanese, etc.
+                </p>
+                {keywordJobJapanese && (
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Status:</span>
+                      <span className={keywordJobJapanese.status === 'completed' ? 'text-green-500' : keywordJobJapanese.status === 'failed' ? 'text-red-500' : 'text-yellow-500'}>
+                        {keywordJobJapanese.status}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Current:</span>
+                      <span className="text-foreground font-mono text-xs">{keywordJobJapanese.currentKeyword}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Progress:</span>
+                      <span className="text-foreground">{keywordJobJapanese.keywordsCompleted}/{keywordJobJapanese.totalKeywords} keywords</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">New videos:</span>
+                      <span className="text-green-500 font-semibold">{keywordJobJapanese.totalScraped}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Duplicates:</span>
+                      <span className="text-yellow-500">{keywordJobJapanese.totalDuplicates}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Chinese */}
+              <div className="bg-muted/30 border border-border/50 rounded-xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-semibold text-foreground flex items-center gap-2">
+                    🇨🇳 Chinese
+                  </h4>
+                  <button
+                    onClick={() => startKeywordScraping('chinese')}
+                    disabled={keywordScrapingChinese || scraping}
+                    className="px-4 py-2 bg-gradient-to-r from-red-600 to-yellow-500 text-white rounded-lg font-medium hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm"
+                  >
+                    {keywordScrapingChinese ? (
+                      <span className="flex items-center gap-2">
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        Searching...
+                      </span>
+                    ) : (
+                      'Start Search'
+                    )}
+                  </button>
+                </div>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Keywords: chinese, 中文, 中国, taiwan, 台灣, hong kong, 香港, madou, swag, etc.
+                </p>
+                {keywordJobChinese && (
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Status:</span>
+                      <span className={keywordJobChinese.status === 'completed' ? 'text-green-500' : keywordJobChinese.status === 'failed' ? 'text-red-500' : 'text-yellow-500'}>
+                        {keywordJobChinese.status}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Current:</span>
+                      <span className="text-foreground font-mono text-xs">{keywordJobChinese.currentKeyword}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Progress:</span>
+                      <span className="text-foreground">{keywordJobChinese.keywordsCompleted}/{keywordJobChinese.totalKeywords} keywords</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">New videos:</span>
+                      <span className="text-green-500 font-semibold">{keywordJobChinese.totalScraped}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Duplicates:</span>
+                      <span className="text-yellow-500">{keywordJobChinese.totalDuplicates}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Translation Options */}
