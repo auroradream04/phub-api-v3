@@ -209,7 +209,7 @@ export async function GET(
 
       // Fill in all hours
       const current = new Date(startDate)
-      current.setMinutes(0, 0, 0, 0)
+      current.setMinutes(0, 0, 0)
       while (current <= endDate) {
         const hourKey = current.toISOString().slice(0, 13)
         chartData.push({

@@ -125,7 +125,7 @@ export async function GET(
 
       const variantM3u8 = await variantResponse.text()
       console.log(`[Stream API] Variant playlist fetched (${variantM3u8.length} bytes), injecting ads...`)
-      const modifiedM3u8 = await injectAds(variantM3u8, quality, variantUrl, id, request.headers)
+      const modifiedM3u8 = await injectAds(variantM3u8, quality, variantUrl, id)
 
       await domainCheck.logRequest(200, Date.now() - requestStart)
       console.log(`[Stream API] ✓ Stream generated successfully for video ${id} (quality: ${quality}p, duration: ${Date.now() - requestStart}ms)`)
@@ -140,7 +140,7 @@ export async function GET(
     }
 
     console.log('[Stream API] Standard playlist detected, injecting ads...')
-    const modifiedM3u8 = await injectAds(originalM3u8, quality, originalM3u8Url, id, request.headers)
+    const modifiedM3u8 = await injectAds(originalM3u8, quality, originalM3u8Url, id)
 
     // Log successful request
     await domainCheck.logRequest(200, Date.now() - requestStart)
@@ -189,7 +189,7 @@ function extractFirstVariantUrl(m3u8Text: string, baseUrl: string): string | nul
   return null
 }
 
-async function injectAds(m3u8Text: string, quality: string, baseUrl: string, videoId: string, headers: Headers): Promise<string> {
+async function injectAds(m3u8Text: string, quality: string, baseUrl: string, videoId: string): Promise<string> {
   const lines = m3u8Text.split('\n')
   const result: string[] = []
   const baseUrlObj = new URL(baseUrl)
