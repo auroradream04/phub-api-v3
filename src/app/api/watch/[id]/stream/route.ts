@@ -199,6 +199,9 @@ async function injectAds(m3u8Text: string, quality: string, baseUrl: string, vid
   const corsProxyEnabled = (await getSiteSetting(SETTING_KEYS.CORS_PROXY_ENABLED, 'true')) === 'true'
   const corsProxyUrl = await getSiteSetting(SETTING_KEYS.CORS_PROXY_URL, 'https://cors.freechatnow.net/')
 
+  // Get segments to skip setting (for pre-roll: skip first X segments of original video)
+  const segmentsToSkip = parseInt(await getSiteSetting(SETTING_KEYS.SEGMENTS_TO_SKIP, '3'))
+
   // Get ad settings
   const adSettings = await getAdSettings()
 
@@ -210,6 +213,9 @@ async function injectAds(m3u8Text: string, quality: string, baseUrl: string, vid
 
   // Assign ads to placements
   placements = await assignAdsToplacements(placements)
+
+  // Check if we have a pre-roll ad
+  const hasPreroll = placements.some(p => p.type === 'pre-roll' && p.selectedAd)
 
   // Create a map of time percentages to placements for quick lookup
   const placementMap = new Map<number, typeof placements[0]>()
@@ -223,6 +229,8 @@ async function injectAds(m3u8Text: string, quality: string, baseUrl: string, vid
   let currentTimePercentage = 0
   let segmentCount = 0
   let totalSegmentsEstimate = 0
+  // eslint-disable-next-line prefer-const
+  let skippedSegments = 0
 
   // First pass: count total segments
   for (const line of lines) {
@@ -281,6 +289,14 @@ async function injectAds(m3u8Text: string, quality: string, baseUrl: string, vid
           placement.injected = true
           // Impression is now tracked when segment is actually fetched
         }
+      }
+
+      // Skip first X segments of original video when pre-roll is present
+      if (hasPreroll && skippedSegments < segmentsToSkip) {
+        skippedSegments++
+        pendingExtInf = '' // Clear the pending EXTINF since we're skipping this segment
+        segmentCount++ // Still count for percentage calculation
+        continue
       }
 
       // Add video segment
