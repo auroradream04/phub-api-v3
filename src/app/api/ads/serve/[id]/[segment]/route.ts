@@ -3,8 +3,24 @@ import { prisma } from '@/lib/prisma'
 import { readFile } from 'fs/promises'
 import { join } from 'path'
 import { existsSync } from 'fs'
+import { getClientIP, getCountryFromIP } from '@/lib/geo'
 
 export const revalidate = 7200 // 2 hours
+
+// Simple in-memory deduplication (prevents counting same view multiple times)
+// Key: `${ip}:${adId}:${videoId}` → timestamp
+const recentImpressions = new Map<string, number>()
+const DEDUPE_WINDOW_MS = 5 * 60 * 1000 // 5 minutes
+
+// Cleanup old entries periodically
+function cleanupOldImpressions() {
+  const now = Date.now()
+  for (const [key, timestamp] of recentImpressions) {
+    if (now - timestamp > DEDUPE_WINDOW_MS) {
+      recentImpressions.delete(key)
+    }
+  }
+}
 
 export async function GET(
   request: NextRequest,
@@ -12,6 +28,8 @@ export async function GET(
 ) {
   try {
     const { id, segment } = await params
+    const videoId = request.nextUrl.searchParams.get('v') || 'unknown'
+
     // Remove .ts extension if present
     const cleanSegment = segment.endsWith('.ts') ? segment.slice(0, -3) : segment
     const segmentIndex = parseInt(cleanSegment) || 0
@@ -37,11 +55,41 @@ export async function GET(
 
     // Check if file exists
     if (!existsSync(filePath)) {
-
       return NextResponse.json(
         { error: 'Ad file not found' },
         { status: 404 }
       )
+    }
+
+    // Track impression (non-blocking, with deduplication)
+    const headers = request.headers
+    const clientIP = getClientIP(headers)
+    const dedupeKey = `${clientIP}:${id}:${videoId}`
+
+    // Only record if not seen recently
+    if (!recentImpressions.has(dedupeKey)) {
+      recentImpressions.set(dedupeKey, Date.now())
+
+      // Cleanup old entries occasionally (1 in 100 requests)
+      if (Math.random() < 0.01) {
+        cleanupOldImpressions()
+      }
+
+      // Record impression asynchronously (don't block response)
+      getCountryFromIP(clientIP).then(country => {
+        prisma.adImpression.create({
+          data: {
+            adId: id,
+            videoId: videoId,
+            referrer: headers.get('referer') || headers.get('origin') || 'direct',
+            userAgent: headers.get('user-agent') || 'unknown',
+            ipAddress: clientIP,
+            country: country
+          }
+        }).catch(() => {
+          // Failed to record impression - ignore
+        })
+      })
     }
 
     // Read the file
@@ -50,9 +98,9 @@ export async function GET(
     // Return the file content with proper headers
     return new Response(new Uint8Array(fileContent), {
       headers: {
-        'Content-Type': 'video/mp2t', // MPEG-TS content type
+        'Content-Type': 'video/mp2t',
         'Content-Length': fileContent.length.toString(),
-        'Content-Disposition': 'inline', // Force inline display, not download
+        'Content-Disposition': 'inline',
         'Cache-Control': 'public, max-age=3600',
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, OPTIONS',
@@ -62,7 +110,6 @@ export async function GET(
     })
 
   } catch {
-
     return NextResponse.json(
       { error: 'Failed to serve ad segment' },
       { status: 500 }

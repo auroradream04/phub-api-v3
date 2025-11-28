@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useTransition } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import Hls from 'hls.js'
 
@@ -76,6 +76,16 @@ interface AnalyticsData {
   }
 }
 
+const TIME_RANGES = [
+  { label: '30m', value: 0.021 },
+  { label: '1h', value: 0.042 },
+  { label: '24h', value: 1 },
+  { label: '7d', value: 7 },
+  { label: '30d', value: 30 },
+  { label: '90d', value: 90 },
+  { label: '1y', value: 365 },
+] as const
+
 export default function AdDetailPage() {
   const params = useParams()
   const router = useRouter()
@@ -88,10 +98,10 @@ export default function AdDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [timeRange, setTimeRange] = useState(7)
   const [saving, setSaving] = useState(false)
+  const [isPending, startTransition] = useTransition()
   const videoRef = useRef<HTMLVideoElement>(null)
   const hlsRef = useRef<Hls | null>(null)
 
-  // Settings form state
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -103,7 +113,7 @@ export default function AdDetailPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setLoading(true)
+        if (!data) setLoading(true)
         const response = await fetch(`/api/admin/ads/detail/${adId}?days=${timeRange}`)
 
         if (!response.ok) {
@@ -113,7 +123,6 @@ export default function AdDetailPage() {
         const result = await response.json()
         setData(result)
 
-        // Initialize form with current ad data
         setFormData({
           title: result.ad.title,
           description: result.ad.description || '',
@@ -131,7 +140,6 @@ export default function AdDetailPage() {
     fetchData()
   }, [adId, timeRange])
 
-  // Setup HLS player
   useEffect(() => {
     if (!data?.ad.id || !videoRef.current) return
 
@@ -144,7 +152,6 @@ export default function AdDetailPage() {
       hls.loadSource(playlistUrl)
       hls.attachMedia(video)
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      // Native HLS support (Safari)
       video.src = playlistUrl
     }
 
@@ -154,6 +161,12 @@ export default function AdDetailPage() {
       }
     }
   }, [data?.ad.id])
+
+  const handleTimeRangeChange = (value: number) => {
+    startTransition(() => {
+      setTimeRange(value)
+    })
+  }
 
   const handleSaveSettings = async () => {
     try {
@@ -168,13 +181,9 @@ export default function AdDetailPage() {
         throw new Error('Failed to update ad')
       }
 
-      // Refresh data
       const result = await response.json()
       if (data) {
-        setData({
-          ...data,
-          ad: { ...data.ad, ...result }
-        })
+        setData({ ...data, ad: { ...data.ad, ...result } })
       }
 
       alert('Settings saved successfully!')
@@ -185,10 +194,10 @@ export default function AdDetailPage() {
     }
   }
 
-  if (loading) {
+  if (loading && !data) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-pink-500 border-t-transparent"></div>
       </div>
     )
   }
@@ -196,8 +205,10 @@ export default function AdDetailPage() {
   if (error || !data) {
     return (
       <div className="p-8 bg-background min-h-screen">
-        <div className="bg-red-900/30 border border-red-700 rounded-lg p-4">
-          <p className="text-red-400">{error || 'Failed to load data'}</p>
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-red-900/20 border border-red-800 rounded-lg p-4">
+            <p className="text-red-400">{error || 'Failed to load data'}</p>
+          </div>
         </div>
       </div>
     )
@@ -205,504 +216,382 @@ export default function AdDetailPage() {
 
   const maxCount = Math.max(...data.chartData.map(d => d.count), 1)
 
-  // Dynamic y-axis scaling - round to nice numbers like Google Analytics
   const getScaledMax = (max: number) => {
     if (max === 0) return 10
-
     const magnitude = Math.pow(10, Math.floor(Math.log10(max)))
     const normalized = max / magnitude
-
-    // Round up to nearest nice number (1, 2, 5, 10)
     let rounded: number
     if (normalized <= 1) rounded = 1
     else if (normalized <= 2) rounded = 2
     else if (normalized <= 5) rounded = 5
     else rounded = 10
-
     return rounded * magnitude
   }
 
   const scaledMax = getScaledMax(maxCount)
-  const yAxisValues = [scaledMax, scaledMax * 0.75, scaledMax * 0.5, scaledMax * 0.25, 0]
+
+  const formatChartLabel = (dateStr: string) => {
+    const date = new Date(dateStr)
+    if (timeRange <= 1) {
+      return date.toLocaleTimeString('en-US', { hour: 'numeric', hour12: true })
+    }
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  }
+
+  const growthNum = parseFloat(data.stats.growth)
+  const isPositiveGrowth = growthNum >= 0
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="bg-card border-b border-border">
-        <div className="px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between mb-4">
+        <div className="max-w-7xl mx-auto px-6 py-5">
+          <div className="flex items-center justify-between">
             <div>
               <button
                 onClick={() => router.push('/admin/ads')}
-                className="text-sm text-muted-foreground hover:text-foreground mb-2 flex items-center transition-colors"
+                className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors mb-2"
               >
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
                 Back to Ads
               </button>
-              <h1 className="text-2xl font-bold text-foreground">{data.ad.title}</h1>
-              <p className="text-sm text-muted-foreground mt-1">Ad Management</p>
+              <h1 className="text-xl font-semibold text-foreground">{data.ad.title}</h1>
+              <div className="flex items-center gap-2 mt-1">
+                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                  data.ad.status === 'active'
+                    ? 'bg-green-500/10 text-green-400'
+                    : 'bg-zinc-500/10 text-zinc-400'
+                }`}>
+                  {data.ad.status}
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  {data.ad.duration}s duration
+                </span>
+              </div>
             </div>
+
             {activeTab === 'analytics' && (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setTimeRange(0.021)} // ~30 minutes in days
-                  className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                    timeRange === 0.021
-                      ? 'bg-primary text-foreground'
-                      : 'bg-card text-foreground border border-border hover:border-pink-500'
-                  }`}
-                >
-                  30m
-                </button>
-                <button
-                  onClick={() => setTimeRange(0.042)} // ~1 hour in days
-                  className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                    timeRange === 0.042
-                      ? 'bg-primary text-foreground'
-                      : 'bg-card text-foreground border border-border hover:border-pink-500'
-                  }`}
-                >
-                  1h
-                </button>
-                <button
-                  onClick={() => setTimeRange(1)}
-                  className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                    timeRange === 1
-                      ? 'bg-primary text-foreground'
-                      : 'bg-card text-foreground border border-border hover:border-pink-500'
-                  }`}
-                >
-                  1d
-                </button>
-                <button
-                  onClick={() => setTimeRange(7)}
-                  className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                    timeRange === 7
-                      ? 'bg-primary text-foreground'
-                      : 'bg-card text-foreground border border-border hover:border-pink-500'
-                  }`}
-                >
-                  7d
-                </button>
-                <button
-                  onClick={() => setTimeRange(30)}
-                  className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                    timeRange === 30
-                      ? 'bg-primary text-foreground'
-                      : 'bg-card text-foreground border border-border hover:border-pink-500'
-                  }`}
-                >
-                  30d
-                </button>
-                <button
-                  onClick={() => setTimeRange(90)}
-                  className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                    timeRange === 90
-                      ? 'bg-primary text-foreground'
-                      : 'bg-card text-foreground border border-border hover:border-pink-500'
-                  }`}
-                >
-                  90d
-                </button>
-                <button
-                  onClick={() => setTimeRange(365)}
-                  className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                    timeRange === 365
-                      ? 'bg-primary text-foreground'
-                      : 'bg-card text-foreground border border-border hover:border-pink-500'
-                  }`}
-                >
-                  1y
-                </button>
-                <button
-                  onClick={() => {
-                    const daysSinceJan1 = Math.floor((new Date().getTime() - new Date(new Date().getFullYear(), 0, 1).getTime()) / (1000 * 60 * 60 * 24))
-                    setTimeRange(daysSinceJan1)
-                  }}
-                  className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                    timeRange > 365
-                      ? 'bg-primary text-foreground'
-                      : 'bg-card text-foreground border border-border hover:border-pink-500'
-                  }`}
-                >
-                  YTD
-                </button>
+              <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
+                {TIME_RANGES.map(({ label, value }) => (
+                  <button
+                    key={label}
+                    onClick={() => handleTimeRangeChange(value)}
+                    disabled={isPending}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
+                      timeRange === value
+                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                    } ${isPending ? 'opacity-70' : ''}`}
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
             )}
           </div>
 
           {/* Tabs */}
-          <div className="flex space-x-4 border-b border-border">
+          <div className="flex gap-6 mt-4 border-t border-border pt-4">
             <button
               onClick={() => setActiveTab('analytics')}
-              className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${
+              className={`text-sm font-medium pb-2 border-b-2 transition-colors ${
                 activeTab === 'analytics'
-                  ? 'border-pink-500 text-pink-400'
-                  : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+                  ? 'border-pink-500 text-foreground'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
-              <div className="flex items-center gap-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-                Analytics
-              </div>
+              Analytics
             </button>
             <button
               onClick={() => setActiveTab('settings')}
-              className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${
+              className={`text-sm font-medium pb-2 border-b-2 transition-colors ${
                 activeTab === 'settings'
-                  ? 'border-pink-500 text-pink-400'
-                  : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+                  ? 'border-pink-500 text-foreground'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
-              <div className="flex items-center gap-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                Settings
-              </div>
+              Settings
             </button>
           </div>
         </div>
       </div>
 
-      <div className="py-8">
+      <div className={`max-w-7xl mx-auto transition-opacity duration-200 ${isPending ? 'opacity-60' : ''}`}>
         {activeTab === 'analytics' ? (
-          <>
+          <div className="space-y-6">
+            {/* Stats Row */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-card rounded-lg border border-border p-4">
+                <div className="text-sm text-muted-foreground mb-1">Period Impressions</div>
+                <div className="text-2xl font-semibold text-foreground">
+                  {data.stats.impressionsInPeriod.toLocaleString()}
+                </div>
+                <div className={`text-sm mt-1 ${isPositiveGrowth ? 'text-green-400' : 'text-red-400'}`}>
+                  {isPositiveGrowth ? '↑' : '↓'} {Math.abs(growthNum).toFixed(1)}% vs previous
+                </div>
+              </div>
+
+              <div className="bg-card rounded-lg border border-border p-4">
+                <div className="text-sm text-muted-foreground mb-1">Total Impressions</div>
+                <div className="text-2xl font-semibold text-foreground">
+                  {data.stats.totalImpressions.toLocaleString()}
+                </div>
+                <div className="text-sm text-muted-foreground mt-1">All time</div>
+              </div>
+
+              <div className="bg-card rounded-lg border border-border p-4">
+                <div className="text-sm text-muted-foreground mb-1">Unique Videos</div>
+                <div className="text-2xl font-semibold text-foreground">
+                  {data.topVideos.length}
+                </div>
+                <div className="text-sm text-muted-foreground mt-1">In period</div>
+              </div>
+
+              <div className="bg-card rounded-lg border border-border p-4">
+                <div className="text-sm text-muted-foreground mb-1">Top Source</div>
+                <div className="text-lg font-semibold text-foreground truncate">
+                  {data.topSources[0]?.source || 'N/A'}
+                </div>
+                <div className="text-sm text-muted-foreground mt-1">
+                  {data.topSources[0]?.count.toLocaleString() || 0} views
+                </div>
+              </div>
+            </div>
+
+            {/* Chart */}
+            <div className="bg-card rounded-lg border border-border p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-base font-semibold text-foreground">
+                  {timeRange <= 1 ? 'Hourly' : 'Daily'} Views
+                </h2>
+                <span className="text-sm text-muted-foreground">
+                  {new Date(data.period.startDate).toLocaleDateString()} - {new Date(data.period.endDate).toLocaleDateString()}
+                </span>
+              </div>
+
+              {data.chartData.length > 0 ? (
+                <div className="h-64">
+                  <div className="flex h-full">
+                    {/* Y-axis */}
+                    <div className="flex flex-col justify-between text-xs text-muted-foreground pr-3 py-1">
+                      <span>{scaledMax.toLocaleString()}</span>
+                      <span>{Math.round(scaledMax * 0.5).toLocaleString()}</span>
+                      <span>0</span>
+                    </div>
+
+                    {/* Chart area */}
+                    <div className="flex-1 relative">
+                      {/* Grid lines */}
+                      <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
+                        <div className="border-t border-border/50"></div>
+                        <div className="border-t border-border/50"></div>
+                        <div className="border-t border-border/50"></div>
+                      </div>
+
+                      {/* Bars */}
+                      <div className="relative h-full flex items-end gap-px">
+                        {data.chartData.map((point, i) => {
+                          const height = scaledMax > 0 ? (point.count / scaledMax) * 100 : 0
+                          const showLabel = data.chartData.length <= 14 || i % Math.ceil(data.chartData.length / 7) === 0
+
+                          return (
+                            <div key={point.date} className="flex-1 flex flex-col h-full group">
+                              <div className="flex-1 flex items-end justify-center relative">
+                                <div
+                                  className="w-full max-w-[32px] bg-pink-500/80 hover:bg-pink-500 transition-colors rounded-t cursor-pointer mx-auto"
+                                  style={{ height: `${Math.max(height, point.count > 0 ? 2 : 0)}%` }}
+                                />
+                                {/* Tooltip */}
+                                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                                  <div className="bg-popover text-popover-foreground text-xs px-2 py-1.5 rounded shadow-lg border border-border whitespace-nowrap">
+                                    <div className="font-medium">{point.count.toLocaleString()}</div>
+                                    <div className="text-muted-foreground">{formatChartLabel(point.date)}</div>
+                                  </div>
+                                </div>
+                              </div>
+                              {showLabel && (
+                                <div className="text-xs text-muted-foreground text-center mt-2 truncate px-1">
+                                  {formatChartLabel(point.date)}
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="h-64 flex items-center justify-center text-muted-foreground">
+                  No data for this period
+                </div>
+              )}
+            </div>
+
+            {/* Two Column Layout */}
+            <div className="grid lg:grid-cols-2 gap-6">
+              {/* Top Sources */}
+              <div className="bg-card rounded-lg border border-border p-5">
+                <h2 className="text-base font-semibold text-foreground mb-4">Top Sources</h2>
+                {data.topSources.length > 0 ? (
+                  <div className="space-y-3">
+                    {data.topSources.map((source, i) => {
+                      const maxSourceCount = data.topSources[0]?.count || 1
+                      const width = (source.count / maxSourceCount) * 100
+
+                      return (
+                        <div key={i} className="group">
+                          <div className="flex items-center justify-between text-sm mb-1">
+                            <span className="text-foreground truncate pr-2">{source.source}</span>
+                            <span className="text-muted-foreground font-medium">{source.count.toLocaleString()}</span>
+                          </div>
+                          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-pink-500/60 rounded-full transition-all"
+                              style={{ width: `${width}%` }}
+                            />
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No data</p>
+                )}
+              </div>
+
+              {/* Top Videos */}
+              <div className="bg-card rounded-lg border border-border p-5">
+                <h2 className="text-base font-semibold text-foreground mb-4">Top Videos</h2>
+                {data.topVideos.length > 0 ? (
+                  <div className="space-y-3">
+                    {data.topVideos.slice(0, 10).map((video, i) => {
+                      const maxVideoCount = data.topVideos[0]?.count || 1
+                      const width = (video.count / maxVideoCount) * 100
+
+                      return (
+                        <div key={i} className="group">
+                          <div className="flex items-center justify-between text-sm mb-1">
+                            <a
+                              href={`/watch/${video.videoId}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-pink-400 hover:text-pink-300 truncate pr-2 transition-colors"
+                            >
+                              {video.videoId}
+                            </a>
+                            <span className="text-muted-foreground font-medium">{video.count.toLocaleString()}</span>
+                          </div>
+                          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-pink-500/60 rounded-full transition-all"
+                              style={{ width: `${width}%` }}
+                            />
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No data</p>
+                )}
+              </div>
+            </div>
+
+            {/* Two Column Grid */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Devices */}
+              <div className="bg-card rounded-lg border border-border p-4">
+                <h3 className="text-sm font-semibold text-foreground mb-3">Devices</h3>
+                {data.devices.length > 0 ? (
+                  <div className="space-y-2">
+                    {data.devices.map((device, i) => (
+                      <div key={i} className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">{device.device}</span>
+                        <span className="text-foreground font-medium">{device.percentage}%</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No data</p>
+                )}
+              </div>
+
+              {/* Browsers */}
+              <div className="bg-card rounded-lg border border-border p-4">
+                <h3 className="text-sm font-semibold text-foreground mb-3">Browsers</h3>
+                {data.browsers.length > 0 ? (
+                  <div className="space-y-2">
+                    {data.browsers.map((browser, i) => (
+                      <div key={i} className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">{browser.browser}</span>
+                        <span className="text-foreground font-medium">{browser.percentage}%</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No data</p>
+                )}
+              </div>
+
+              {/* Operating Systems */}
+              <div className="bg-card rounded-lg border border-border p-4">
+                <h3 className="text-sm font-semibold text-foreground mb-3">OS</h3>
+                {data.operatingSystems.length > 0 ? (
+                  <div className="space-y-2">
+                    {data.operatingSystems.map((os, i) => (
+                      <div key={i} className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">{os.os}</span>
+                        <span className="text-foreground font-medium">{os.percentage}%</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No data</p>
+                )}
+              </div>
+
+              {/* Countries */}
+              <div className="bg-card rounded-lg border border-border p-4">
+                <h3 className="text-sm font-semibold text-foreground mb-3">Countries</h3>
+                {data.countries.length > 0 ? (
+                  <div className="space-y-2">
+                    {data.countries.slice(0, 5).map((country, i) => (
+                      <div key={i} className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">{country.country}</span>
+                        <span className="text-foreground font-medium">{country.percentage}%</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No data</p>
+                )}
+              </div>
+            </div>
+
             {/* Ad Preview */}
-            <div className="bg-card rounded-lg border border-border p-6 mb-8">
-              <h2 className="text-lg font-semibold text-foreground mb-4">Ad Preview</h2>
-              <div className="flex justify-center">
+            <div className="bg-card rounded-lg border border-border p-5">
+              <h2 className="text-base font-semibold text-foreground mb-4">Ad Preview</h2>
+              <div className="max-w-2xl mx-auto">
                 <video
                   ref={videoRef}
                   controls
-                  className="w-full rounded-lg border border-border"
+                  className="w-full rounded-lg bg-black"
                 >
                   Your browser does not support HLS playback.
                 </video>
               </div>
             </div>
-
-            {/* Stats Cards - Plausible Style */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
-              {/* Total Impressions (Period) */}
-              <div className="bg-card border-l-4 border-pink-500 px-3 py-2">
-                <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
-                  Total Impressions
-                </div>
-                <div className="mt-0.5 flex items-baseline gap-1.5">
-                  <div className="text-xl font-bold text-foreground">
-                    {data.stats.impressionsInPeriod.toLocaleString()}
-                  </div>
-                  <span className="text-[10px] text-green-500">
-                    ↑ {data.stats.growth}%
-                  </span>
-                </div>
-              </div>
-
-              {/* Total All Time */}
-              <div className="bg-card border-l-4 border-pink-500 px-3 py-2">
-                <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
-                  Total (All Time)
-                </div>
-                <div className="mt-0.5 flex items-baseline gap-1.5">
-                  <div className="text-xl font-bold text-foreground">
-                    {data.stats.totalImpressions.toLocaleString()}
-                  </div>
-                </div>
-              </div>
-
-              {/* Unique Videos */}
-              <div className="bg-card border-l-4 border-pink-500 px-3 py-2">
-                <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
-                  Unique Videos
-                </div>
-                <div className="mt-0.5 flex items-baseline gap-1.5">
-                  <div className="text-xl font-bold text-foreground">
-                    {data.topVideos.length}
-                  </div>
-                </div>
-              </div>
-
-              {/* Top Source */}
-              <div className="bg-card border-l-4 border-pink-500 px-3 py-2">
-                <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
-                  Top Source
-                </div>
-                <div className="mt-0.5">
-                  <div className="text-sm font-semibold text-foreground truncate">
-                    {data.topSources[0]?.source || 'N/A'}
-                  </div>
-                  <div className="text-[10px] text-muted-foreground">
-                    {data.topSources[0]?.count || 0} views
-                  </div>
-                </div>
-              </div>
-
-              {/* Top Video */}
-              <div className="bg-card border-l-4 border-pink-500 px-3 py-2">
-                <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
-                  Top Video
-                </div>
-                <div className="mt-0.5">
-                  <div className="text-sm font-semibold text-foreground truncate">
-                    {data.topVideos[0]?.videoId.slice(0, 8) || 'N/A'}
-                  </div>
-                  <div className="text-[10px] text-muted-foreground">
-                    {data.topVideos[0]?.count || 0} views
-                  </div>
-                </div>
-              </div>
-
-              {/* Ad Duration */}
-              <div className="bg-card border-l-4 border-pink-500 px-3 py-2">
-                <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
-                  Ad Duration
-                </div>
-                <div className="mt-0.5 flex items-baseline gap-1.5">
-                  <div className="text-xl font-bold text-foreground">
-                    {data.ad.duration}s
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Chart - Dark Theme */}
-            <div className="bg-card rounded-lg border border-border p-6 mb-8">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-semibold text-foreground">Views Over Time</h2>
-              </div>
-              <div className="flex gap-4">
-                {/* Y-axis labels */}
-                <div className="flex flex-col justify-between items-end text-xs text-muted-foreground w-16">
-                  <span>{yAxisValues[0].toLocaleString()}</span>
-                  <span>{yAxisValues[1].toLocaleString()}</span>
-                  <span>{yAxisValues[2].toLocaleString()}</span>
-                  <span>{yAxisValues[3].toLocaleString()}</span>
-                  <span>{yAxisValues[4].toLocaleString()}</span>
-                </div>
-                {/* Chart area with grid */}
-                <div className="flex-1">
-                  <div className="relative h-80 flex items-end gap-1 border-l border-b border-border">
-                    {/* Grid lines */}
-                    <div className="absolute inset-0 flex flex-col pointer-events-none">
-                      <div className="flex-1 border-t border-border/30"></div>
-                      <div className="flex-1 border-t border-border/30"></div>
-                      <div className="flex-1 border-t border-border/30"></div>
-                      <div className="flex-1 border-t border-border/30"></div>
-                    </div>
-                    {/* Bars */}
-                    {data.chartData.length > 0 ? (
-                      data.chartData.map((point) => {
-                        const height = (point.count / scaledMax) * 100
-                        return (
-                          <div
-                            key={point.date}
-                            className="flex-1 group relative cursor-pointer flex flex-col justify-end"
-                          >
-                            <div
-                              className="bg-primary group-hover:bg-primary/80 transition-colors w-full"
-                              style={{ height: `${height}%`, minHeight: point.count > 0 ? '2px' : '0' }}
-                            />
-                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                              <div className="bg-card text-foreground text-xs px-3 py-2 rounded-lg shadow-lg whitespace-nowrap border border-border">
-                                <div className="font-semibold">{point.count.toLocaleString()} impressions</div>
-                                <div className="text-muted-foreground text-xs mt-1">
-                                  {new Date(point.date).toLocaleDateString('en-US', {
-                                    month: 'short',
-                                    day: 'numeric',
-                                    year: 'numeric'
-                                  })}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        )
-                      })
-                    ) : (
-                      <div className="flex items-center justify-center w-full text-muted-foreground">
-                        No data for this period
-                      </div>
-                    )}
-                  </div>
-                  {data.chartData.length > 0 && (
-                    <div className="flex justify-between mt-4 text-xs text-muted-foreground">
-                      <span>{new Date(data.chartData[0].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                      <span>{new Date(data.chartData[data.chartData.length - 1].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom Grid Layout - Dark Theme */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-              {/* Top Sources */}
-              <div className="bg-card rounded-lg border border-border p-6">
-                <h2 className="text-lg font-semibold text-foreground mb-4">Top Sources</h2>
-                {data.topSources.length > 0 ? (
-                  <div className="space-y-3">
-                    {data.topSources.map((source, index) => (
-                      <div key={index} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 flex-1 min-w-0">
-                          {source.source === 'direct' ? (
-                            <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                            </svg>
-                          ) : (
-                            <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-                            </svg>
-                          )}
-                          <span className="text-sm text-foreground truncate">
-                            {source.source}
-                          </span>
-                        </div>
-                        <span className="text-sm font-semibold text-foreground ml-2">
-                          {source.count.toLocaleString()}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-sm">No sources data</p>
-                )}
-              </div>
-
-              {/* Top Videos */}
-              <div className="bg-card rounded-lg border border-border p-6">
-                <h2 className="text-lg font-semibold text-foreground mb-4">Top Videos</h2>
-                {data.topVideos.length > 0 ? (
-                  <div className="space-y-3">
-                    {data.topVideos.map((video, index) => (
-                      <div key={index} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                          </svg>
-                          <a
-                            href={`/watch/${video.videoId}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-pink-500 hover:text-pink-400 truncate transition-colors"
-                          >
-                            {video.videoId}
-                          </a>
-                        </div>
-                        <span className="text-sm font-semibold text-foreground ml-2">
-                          {video.count.toLocaleString()}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-sm">No videos data</p>
-                )}
-              </div>
-            </div>
-
-            {/* Second Row - Devices, OS, Browsers, Countries */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
-              {/* Devices */}
-              <div className="bg-card rounded-lg border border-border p-6">
-                <h2 className="text-lg font-semibold text-foreground mb-4">Devices</h2>
-                {data.devices.length > 0 ? (
-                  <div className="space-y-3">
-                    {data.devices.map((device, index) => (
-                      <div key={index} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-foreground">{device.device}</span>
-                          <span className="text-xs text-muted-foreground">({device.percentage}%)</span>
-                        </div>
-                        <span className="text-sm font-semibold text-foreground">
-                          {device.count.toLocaleString()}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-sm">No device data</p>
-                )}
-              </div>
-
-              {/* Operating Systems */}
-              <div className="bg-card rounded-lg border border-border p-6">
-                <h2 className="text-lg font-semibold text-foreground mb-4">Operating Systems</h2>
-                {data.operatingSystems.length > 0 ? (
-                  <div className="space-y-3">
-                    {data.operatingSystems.map((os, index) => (
-                      <div key={index} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-foreground">{os.os}</span>
-                          <span className="text-xs text-muted-foreground">({os.percentage}%)</span>
-                        </div>
-                        <span className="text-sm font-semibold text-foreground">
-                          {os.count.toLocaleString()}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-sm">No OS data</p>
-                )}
-              </div>
-
-              {/* Browsers */}
-              <div className="bg-card rounded-lg border border-border p-6">
-                <h2 className="text-lg font-semibold text-foreground mb-4">Browsers</h2>
-                {data.browsers.length > 0 ? (
-                  <div className="space-y-3">
-                    {data.browsers.map((browser, index) => (
-                      <div key={index} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-foreground">{browser.browser}</span>
-                          <span className="text-xs text-muted-foreground">({browser.percentage}%)</span>
-                        </div>
-                        <span className="text-sm font-semibold text-foreground">
-                          {browser.count.toLocaleString()}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-sm">No browser data</p>
-                )}
-              </div>
-
-              {/* Countries */}
-              <div className="bg-card rounded-lg border border-border p-6">
-                <h2 className="text-lg font-semibold text-foreground mb-4">Countries</h2>
-                {data.countries.length > 0 ? (
-                  <div className="space-y-3">
-                    {data.countries.map((country, index) => (
-                      <div key={index} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-foreground">{country.country}</span>
-                          <span className="text-xs text-muted-foreground">({country.percentage}%)</span>
-                        </div>
-                        <span className="text-sm font-semibold text-foreground">
-                          {country.count.toLocaleString()}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-sm">No country data</p>
-                )}
-              </div>
-            </div>
-          </>
+          </div>
         ) : (
-          /* Settings Tab - Dark Theme */
-          <div>
+          /* Settings Tab */
+          <div className="max-w-2xl">
             <div className="bg-card rounded-lg border border-border p-6">
-              <h2 className="text-lg font-semibold text-foreground mb-6">Ad Settings</h2>
+              <h2 className="text-base font-semibold text-foreground mb-6">Ad Settings</h2>
 
-              <div className="space-y-6">
+              <div className="space-y-5">
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
                     Title
@@ -711,7 +600,7 @@ export default function AdDetailPage() {
                     type="text"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full px-3 py-2 bg-card border border-border text-foreground rounded-md focus:ring-pink-500 focus:border-pink-500 placeholder-gray-500"
+                    className="w-full px-3 py-2 bg-background border border-border text-foreground rounded-lg focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-colors"
                   />
                 </div>
 
@@ -723,7 +612,7 @@ export default function AdDetailPage() {
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     rows={3}
-                    className="w-full px-3 py-2 bg-card border border-border text-foreground rounded-md focus:ring-pink-500 focus:border-pink-500 placeholder-gray-500"
+                    className="w-full px-3 py-2 bg-background border border-border text-foreground rounded-lg focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-colors resize-none"
                     placeholder="Optional description"
                   />
                 </div>
@@ -736,7 +625,7 @@ export default function AdDetailPage() {
                     <select
                       value={formData.status}
                       onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                      className="w-full px-3 py-2 bg-card border border-border text-foreground rounded-md focus:ring-pink-500 focus:border-pink-500"
+                      className="w-full px-3 py-2 bg-background border border-border text-foreground rounded-lg focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-colors"
                     >
                       <option value="active">Active</option>
                       <option value="inactive">Inactive</option>
@@ -745,7 +634,7 @@ export default function AdDetailPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">
-                      Weight (Probability)
+                      Weight
                     </label>
                     <input
                       type="number"
@@ -753,23 +642,22 @@ export default function AdDetailPage() {
                       max="100"
                       value={formData.weight}
                       onChange={(e) => setFormData({ ...formData, weight: parseInt(e.target.value) || 1 })}
-                      className="w-full px-3 py-2 bg-card border border-border text-foreground rounded-md focus:ring-pink-500 focus:border-pink-500"
+                      className="w-full px-3 py-2 bg-background border border-border text-foreground rounded-lg focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-colors"
                     />
-                    <p className="text-xs text-muted-foreground mt-1">Higher weight = higher chance (1-100)</p>
+                    <p className="text-xs text-muted-foreground mt-1">Higher = more likely to show</p>
                   </div>
                 </div>
 
-                <div>
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={formData.forceDisplay}
-                      onChange={(e) => setFormData({ ...formData, forceDisplay: e.target.checked })}
-                      className="h-4 w-4 text-pink-600 focus:ring-pink-500 bg-card border-border rounded"
-                    />
-                    <span className="ml-2 text-sm text-foreground">
-                      Force display (always show this ad, ignores weight)
-                    </span>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="forceDisplay"
+                    checked={formData.forceDisplay}
+                    onChange={(e) => setFormData({ ...formData, forceDisplay: e.target.checked })}
+                    className="h-4 w-4 text-pink-500 bg-background border-border rounded focus:ring-pink-500/20"
+                  />
+                  <label htmlFor="forceDisplay" className="ml-2 text-sm text-foreground">
+                    Force display (ignores weight, always shows)
                   </label>
                 </div>
 
@@ -777,7 +665,7 @@ export default function AdDetailPage() {
                   <button
                     onClick={handleSaveSettings}
                     disabled={saving}
-                    className="w-full px-6 py-3 bg-primary text-foreground font-medium rounded-lg hover:bg-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="w-full px-4 py-2.5 bg-pink-600 hover:bg-pink-700 text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     {saving ? 'Saving...' : 'Save Settings'}
                   </button>

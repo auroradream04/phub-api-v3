@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PornHub } from 'pornhub.js'
 import { getRandomProxy } from '@/lib/proxy'
-import { prisma } from '@/lib/prisma'
 import { getSiteSetting, SETTING_KEYS, getAdSettings } from '@/lib/site-settings'
-import { getClientIP, getCountryFromIP } from '@/lib/geo'
 import { checkAndLogDomain } from '@/lib/domain-middleware'
 import { calculateAdPlacements, calculateM3u8Duration, assignAdsToplacements } from '@/lib/ad-placement'
 
@@ -273,33 +271,15 @@ async function injectAds(m3u8Text: string, quality: string, baseUrl: string, vid
             Math.floor(Math.random() * placement.selectedAd.segments.length)
           ] as { quality: number | string }
 
-          // Add ad segment
+          // Add ad segment with videoId for tracking
           result.push('#EXTINF:3.0,')
-          const adUrl = `${process.env.NEXTAUTH_URL || 'http://md8av.com'}/api/ads/serve/${placement.selectedAd.id}/${randomSegment.quality}.ts`
+          const adUrl = `${process.env.NEXTAUTH_URL || 'http://md8av.com'}/api/ads/serve/${placement.selectedAd.id}/${randomSegment.quality}.ts?v=${videoId}`
           result.push(adUrl)
           result.push('#EXT-X-DISCONTINUITY')
 
           // Mark as injected
           placement.injected = true
-
-          // Record impression
-          try {
-            const clientIP = getClientIP(headers)
-            const country = await getCountryFromIP(clientIP)
-
-            await prisma.adImpression.create({
-              data: {
-                adId: placement.selectedAd.id,
-                videoId: videoId,
-                referrer: headers.get('referer') || headers.get('origin') || 'direct',
-                userAgent: headers.get('user-agent') || 'unknown',
-                ipAddress: clientIP,
-                country: country
-              }
-            })
-          } catch {
-            // Failed to record impression
-          }
+          // Impression is now tracked when segment is actually fetched
         }
       }
 
