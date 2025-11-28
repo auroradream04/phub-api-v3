@@ -176,12 +176,14 @@ function formatDate(date: Date): string {
   return date.toISOString().replace('T', ' ').split('.')[0]
 }
 
-// Helper to strip emojis and special unicode characters (failsafe for MACCMS latin1 encoding)
+// Helper to strip all 4-byte UTF-8 characters (emojis, rare CJK, etc.)
+// MySQL utf8 charset only supports up to 3-byte characters (U+FFFF)
+// This strips anything above U+FFFF to prevent MACCMS database errors
 function stripEmojis(str: string): string {
   if (!str) return ''
-  // Remove emojis and other problematic unicode characters
-  return str.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F100}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{FE00}-\u{FE0F}\u{1F000}-\u{1F02F}\u{1F0A0}-\u{1F0FF}]/gu, '')
-    .trim()
+  // Remove ALL characters above U+FFFF (4-byte UTF-8)
+  // This includes emojis, CJK Extension B-G, musical symbols, etc.
+  return str.replace(/[\u{10000}-\u{10FFFF}]/gu, '').trim()
 }
 
 // Build consolidated MACCMS categories from the mapping
