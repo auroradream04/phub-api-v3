@@ -391,7 +391,9 @@ export default function HomeClient({ initialVideos, initialStats, allCategories 
                         </Link>
                       </TableCell>
                       <TableCell className="text-center text-muted-foreground text-xs py-2 h-auto">
-                        <span className="line-clamp-1">2025-10-28</span>
+                        <span className="line-clamp-1">
+                          {video.createdAt ? new Date(video.createdAt).toLocaleDateString('zh-CN') : '-'}
+                        </span>
                       </TableCell>
                     </TableRow>
                   );
