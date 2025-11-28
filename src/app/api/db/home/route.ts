@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
       prisma.video.findMany({
         where: dbCategoryFilter,
         orderBy: {
-          createdAt: 'desc' // Newest first
+          vodTime: 'desc' // Sort by video's original date, not when added to DB
         },
         skip: (page - 1) * pageSize,
         take: pageSize,
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
           vodRemarks: true,
           views: true,
           typeName: true,
-          createdAt: true
+          vodTime: true
         }
       }),
       prisma.video.count({
@@ -71,14 +71,14 @@ export async function GET(request: NextRequest) {
         rating: '0',
         category: chineseName,
         consolidatedCategory: consolidatedCat,
-        createdAt: video.createdAt.toISOString()
+        createdAt: video.vodTime.toISOString() // Use vodTime (video's original date)
       }
     })
 
-    // Count today's updates
+    // Count today's updates (by vodTime, not createdAt)
     const todayUpdates = await prisma.video.count({
       where: {
-        createdAt: { gte: today },
+        vodTime: { gte: today },
         ...dbCategoryFilter
       }
     })
