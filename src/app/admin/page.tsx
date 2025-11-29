@@ -54,7 +54,7 @@ function Tag({ selected, onClick, children }: {
     <button
       type="button"
       onClick={onClick}
-      className={`px-2.5 py-1 rounded text-xs transition-all ${
+      className={`px-3 py-1.5 rounded text-sm transition-all ${
         selected
           ? 'bg-purple-600 text-white'
           : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300'
@@ -556,7 +556,7 @@ export default function AdminDashboard() {
             </div>
 
             {/* All categories in grid */}
-            <div className="grid grid-cols-10 gap-1">
+            <div className="grid grid-cols-12 gap-1.5">
               {availableCategories.map(cat => (
                 <Tag
                   key={cat.id}
