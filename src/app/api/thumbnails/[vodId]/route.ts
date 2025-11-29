@@ -34,7 +34,7 @@ export async function GET(
     const isPng = header[0] === 0x89 && header[1] === 0x50 && header[2] === 0x4e && header[3] === 0x47
     const contentType = isPng ? 'image/png' : 'image/jpeg'
 
-    return new Response(buffer, {
+    return new Response(new Uint8Array(buffer), {
       headers: {
         'Content-Type': contentType,
         'Content-Length': buffer.length.toString(),
