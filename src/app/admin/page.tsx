@@ -54,7 +54,7 @@ function Tag({ selected, onClick, children }: {
     <button
       type="button"
       onClick={onClick}
-      className={`px-3 py-1.5 rounded text-sm transition-all ${
+      className={`px-3 py-1.5 rounded text-sm transition-all line-clamp-1 ${
         selected
           ? 'bg-purple-600 text-white'
           : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300'
