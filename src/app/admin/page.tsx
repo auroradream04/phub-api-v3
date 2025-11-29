@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react'
 import { useState, useEffect, useRef } from 'react'
 import { PlayCircle, RefreshCw, Trash2, Database, Languages, ChevronDown, ChevronUp, Grid, List as ListIcon, Eye, Check } from 'lucide-react'
 import { CONSOLIDATED_CATEGORIES, CONSOLIDATED_TO_CHINESE, CONSOLIDATED_TYPE_IDS, getVariantsForConsolidated } from '@/lib/maccms-mappings'
+import { ThumbnailMigration } from '@/components/admin/thumbnail-migration'
 
 interface Stats {
   totalVideos: number
@@ -811,6 +812,9 @@ export default function AdminDashboard() {
               </div>
             </div>
           </div>
+
+          {/* Thumbnail Migration */}
+          <ThumbnailMigration />
 
           {/* Main Actions */}
           <div className="bg-gradient-to-br from-card to-card/50 border border-border/50 rounded-2xl p-8 shadow-sm">

@@ -16,6 +16,7 @@ import { getRandomProxy } from '@/lib/proxy'
 import { createScraperCheckpoint, updateScraperCheckpoint, getScraperCheckpoint, parseViews, parseDuration, mergeCategories } from '@/lib/scraper-utils'
 import { isTranslationEnabled, translateBatch } from '@/lib/translate'
 import { getCanonicalCategory } from '@/lib/category-mapping'
+import { downloadThumbnail, getThumbnailApiUrl, ensureThumbnailDir } from '@/lib/thumbnail-downloader'
 
 const CUSTOM_CATEGORY_IDS: Record<string, number> = {
   'japanese': 9999,
@@ -223,6 +224,7 @@ async function processPageWithCache(
       vodRemarks: string
       vodPlayFrom: string
       vodPic?: string
+      vodPicOriginal?: string
       vodArea: string
       vodLang: string
       vodYear: string
@@ -291,7 +293,8 @@ async function processPageWithCache(
         vodTime: publishDate,
         vodRemarks: `HD ${video.cleanDuration}`,
         vodPlayFrom: 'dplayer',
-        vodPic: video.preview,
+        vodPic: video.preview, // Will be updated after thumbnail download
+        vodPicOriginal: video.preview, // Store original URL
         vodArea: 'CN',
         vodLang: 'zh',
         vodYear: year,
@@ -306,6 +309,27 @@ async function processPageWithCache(
         translationFailedAt: failed ? new Date() : null,
         translationRetryCount: 0,
       })
+    }
+
+    // Download thumbnails in parallel (10 concurrent)
+    if (videosToCreate.length > 0) {
+      await ensureThumbnailDir()
+      const THUMBNAIL_CONCURRENCY = 10
+
+      for (let i = 0; i < videosToCreate.length; i += THUMBNAIL_CONCURRENCY) {
+        const batch = videosToCreate.slice(i, i + THUMBNAIL_CONCURRENCY)
+        await Promise.all(
+          batch.map(async (video) => {
+            if (video.vodPicOriginal) {
+              const success = await downloadThumbnail(video.vodId, video.vodPicOriginal)
+              if (success) {
+                video.vodPic = getThumbnailApiUrl(video.vodId)
+              }
+              // If download fails, vodPic keeps the original remote URL as fallback
+            }
+          })
+        )
+      }
     }
 
     // Batch insert (single query!)

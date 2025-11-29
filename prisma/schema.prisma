@@ -132,6 +132,7 @@ model Video {
   vodRemarks            String?   @db.VarChar(100)
   vodPlayFrom           String    @default("YourAPI") @db.VarChar(100)
   vodPic                String?   @db.Text
+  vodPicOriginal        String?   @db.Text
   vodArea               String?   @db.VarChar(100)
   vodLang               String?   @db.VarChar(50)
   vodYear               String?   @db.VarChar(10)
