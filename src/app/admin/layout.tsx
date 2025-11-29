@@ -2,7 +2,6 @@
 
 import { signOut, useSession } from 'next-auth/react'
 import Link from 'next/link'
-import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 
@@ -15,15 +14,12 @@ export default function AdminLayout({
   const pathname = usePathname()
   const router = useRouter()
 
-  // Check if user is admin
   useEffect(() => {
     if (status === 'loading') return
-
     if (!session) {
       router.push('/login')
       return
     }
-
     const userRole = (session.user as { role?: string })?.role
     if (userRole !== 'admin') {
       router.push('/')
@@ -31,12 +27,11 @@ export default function AdminLayout({
     }
   }, [session, status, router])
 
-  // Show loading while checking auth
   const userRole = (session?.user as { role?: string })?.role
   if (status === 'loading' || !session || userRole !== 'admin') {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-muted-foreground">Loading...</div>
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <div className="text-zinc-500 text-sm">Loading...</div>
       </div>
     )
   }
@@ -50,54 +45,39 @@ export default function AdminLayout({
   ]
 
   return (
-    <div className="min-h-screen bg-background">
-      <nav className="bg-card border-b border-border">
-        <div className="px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 justify-between">
-            <div className="flex items-center gap-4">
-              <Link href="/admin" className="flex items-center gap-2 hover:opacity-80 transition-opacity flex-shrink-0">
-                <Image
-                  src="/logo.png"
-                  alt="MD8AV Logo"
-                  width={300}
-                  height={100}
-                  quality={100}
-                  className="h-10 w-auto"
-                  priority
-                />
-              </Link>
-              <div className="hidden sm:flex sm:space-x-2">
-                {navigation.map((item) => (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium transition-colors ${
-                      pathname === item.href
-                        ? 'border-primary text-primary'
-                        : 'border-transparent text-muted-foreground hover:border-primary/50 hover:text-foreground'
-                    }`}
-                  >
-                    {item.name}
-                  </Link>
-                ))}
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => signOut({ callbackUrl: '/login' })}
-                className="rounded-md bg-destructive px-3 py-2 text-sm font-semibold text-destructive-foreground hover:bg-destructive/90 transition-colors"
-              >
-                Sign out
-              </button>
+    <div className="min-h-screen bg-zinc-950 text-zinc-100">
+      {/* Minimal top bar */}
+      <nav className="border-b border-zinc-800/50">
+        <div className="flex h-12 items-center justify-between px-4">
+          <div className="flex items-center gap-6">
+            <Link href="/admin" className="text-sm font-medium text-zinc-100">
+              Admin
+            </Link>
+            <div className="flex gap-4">
+              {navigation.map((item) => (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`text-xs transition-colors ${
+                    pathname === item.href
+                      ? 'text-zinc-100'
+                      : 'text-zinc-500 hover:text-zinc-300'
+                  }`}
+                >
+                  {item.name}
+                </Link>
+              ))}
             </div>
           </div>
+          <button
+            onClick={() => signOut({ callbackUrl: '/login' })}
+            className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+          >
+            Sign out
+          </button>
         </div>
       </nav>
-      <main className="px-4 sm:px-6 lg:px-0">
-        <div className="max-w-[800px] mx-auto">
-          {children}
-        </div>
-      </main>
+      <main>{children}</main>
     </div>
   )
 }
