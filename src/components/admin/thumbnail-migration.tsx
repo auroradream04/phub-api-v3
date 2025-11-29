@@ -171,7 +171,7 @@ export function ThumbnailMigration() {
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <span className="text-sm font-medium text-zinc-200">Thumbnail Migration</span>
-        <button onClick={fetchStats} disabled={loading} className="text-zinc-500 hover:text-emerald-400 transition-colors">
+        <button onClick={fetchStats} disabled={loading} className="text-zinc-500 hover:text-purple-400 transition-colors">
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
         </button>
       </div>
@@ -184,7 +184,7 @@ export function ThumbnailMigration() {
         </div>
         <div>
           <span className="text-zinc-500">Migrated</span>
-          <span className="ml-2 text-emerald-400 font-medium">{stats?.migrated.toLocaleString() || '-'}</span>
+          <span className="ml-2 text-purple-400 font-medium">{stats?.migrated.toLocaleString() || '-'}</span>
         </div>
         <div>
           <span className="text-zinc-500">Pending</span>
@@ -200,12 +200,12 @@ export function ThumbnailMigration() {
       {stats && stats.total > 0 && (
         <div className="mb-5">
           <div className="flex justify-between text-sm text-zinc-500 mb-2">
-            <span className="text-emerald-400 font-medium">{stats.percentComplete.toFixed(1)}%</span>
+            <span className="text-purple-400 font-medium">{stats.percentComplete.toFixed(1)}%</span>
             <span>{disk?.totalSizeMB.toFixed(1)} MB / ~{estimatedTotalGB} GB</span>
           </div>
           <div className="h-2 bg-[#21262d] rounded-full overflow-hidden">
             <div
-              className="h-full bg-emerald-600 transition-all"
+              className="h-full bg-purple-600 transition-all"
               style={{ width: `${stats.percentComplete}%` }}
             />
           </div>
@@ -220,7 +220,7 @@ export function ThumbnailMigration() {
             type="number"
             value={batchSize}
             onChange={(e) => setBatchSize(Math.min(500, Math.max(10, parseInt(e.target.value) || 100)))}
-            className="w-20 px-3 py-1.5 bg-[#21262d] border border-[#30363d] rounded-lg text-zinc-100 focus:outline-none focus:border-emerald-500"
+            className="w-20 px-3 py-1.5 bg-[#21262d] border border-[#30363d] rounded-lg text-zinc-100 focus:outline-none focus:border-purple-500"
           />
         </div>
         <div className="flex items-center gap-2 text-sm">
@@ -229,7 +229,7 @@ export function ThumbnailMigration() {
             type="number"
             value={concurrency}
             onChange={(e) => setConcurrency(Math.min(20, Math.max(1, parseInt(e.target.value) || 10)))}
-            className="w-16 px-3 py-1.5 bg-[#21262d] border border-[#30363d] rounded-lg text-zinc-100 focus:outline-none focus:border-emerald-500"
+            className="w-16 px-3 py-1.5 bg-[#21262d] border border-[#30363d] rounded-lg text-zinc-100 focus:outline-none focus:border-purple-500"
           />
         </div>
         {message && <span className="text-sm text-zinc-400">{message}</span>}
@@ -242,7 +242,7 @@ export function ThumbnailMigration() {
             <button
               onClick={runMigrationBatch}
               disabled={migrating || !stats?.pending}
-              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:hover:bg-emerald-600 rounded-lg text-sm font-medium transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:hover:bg-purple-600 rounded-lg text-sm font-medium transition-colors"
             >
               <Play className="w-4 h-4" />
               Run Batch
@@ -313,7 +313,7 @@ export function ThumbnailMigration() {
 
       {/* Completion */}
       {stats?.pending === 0 && stats?.migrated > 0 && (
-        <div className="mt-5 text-sm text-emerald-400 font-medium">
+        <div className="mt-5 text-sm text-purple-400 font-medium">
           Migration complete - {stats.migrated.toLocaleString()} thumbnails
         </div>
       )}
