@@ -44,6 +44,36 @@ const STORAGE_KEY = 'scraper_progress'
 const JAPANESE_CATEGORY_ID = 9999
 const CHINESE_CATEGORY_ID = 9998
 
+// Custom checkbox component
+function Checkbox({ checked, onChange, label, hint }: {
+  checked: boolean
+  onChange: (checked: boolean) => void
+  label: string
+  hint?: string
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!checked)}
+      className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all ${
+        checked
+          ? 'bg-purple-600/20 text-purple-300 ring-1 ring-purple-500/50'
+          : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
+      }`}
+    >
+      <div className={`w-4 h-4 rounded flex items-center justify-center transition-all ${
+        checked
+          ? 'bg-purple-600'
+          : 'bg-zinc-700 border border-zinc-600'
+      }`}>
+        {checked && <Check className="w-3 h-3 text-white" />}
+      </div>
+      <span className="capitalize">{label}</span>
+      {hint && <span className="text-xs text-zinc-500">{hint}</span>}
+    </button>
+  )
+}
+
 export default function AdminDashboard() {
   const { data: session } = useSession()
 
@@ -51,7 +81,7 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [message, setMessage] = useState('')
   const [pagesPerCategory, setPagesPerCategory] = useState(5)
-  const [showCategoryFilter, setShowCategoryFilter] = useState(false)
+  const [showCategoryFilter, setShowCategoryFilter] = useState(true) // Open by default
   const [savedProgress, setSavedProgress] = useState<ScraperProgress | null>(null)
   const [currentProgress, setCurrentProgress] = useState<ScraperProgress | null>(null)
   const checkpointIdRef = useRef<string>('')
@@ -270,13 +300,19 @@ export default function AdminDashboard() {
     setSelectedCategory(category.typeName)
     setSelectedConsolidated(null)
     setVideoPage(1)
+    setCategoryVideos([])
     setLoadingCategoryVideos(true)
+
     try {
       const res = await fetch(`/api/admin/videos/by-category?typeId=${category.typeId}&page=1`)
       const data = await res.json()
       setCategoryVideos(data.list || [])
-    } catch { setCategoryVideos([]) }
-    finally { setLoadingCategoryVideos(false) }
+    } catch (err) {
+      console.error('Failed to fetch category videos:', err)
+      setCategoryVideos([])
+    } finally {
+      setLoadingCategoryVideos(false)
+    }
   }
 
   const handleSelectConsolidatedCategory = async (consolidated: string) => {
@@ -284,14 +320,20 @@ export default function AdminDashboard() {
     const variants = getVariantsForConsolidated(consolidated)
     setSelectedConsolidated({ name: consolidated, variants })
     setVideoPage(1)
+    setCategoryVideos([])
     setLoadingCategoryVideos(true)
+
     try {
       const variantParams = variants.map(v => `variants=${encodeURIComponent(v)}`).join('&')
       const res = await fetch(`/api/admin/videos/by-category?${variantParams}&page=1`)
       const data = await res.json()
       setCategoryVideos(data.list || [])
-    } catch { setCategoryVideos([]) }
-    finally { setLoadingCategoryVideos(false) }
+    } catch (err) {
+      console.error('Failed to fetch consolidated category videos:', err)
+      setCategoryVideos([])
+    } finally {
+      setLoadingCategoryVideos(false)
+    }
   }
 
   const handleGlobalSearch = async (query: string, page = 1) => {
@@ -347,6 +389,13 @@ export default function AdminDashboard() {
     } catch { /* ignore */ }
   }
 
+  const toggleCategorySelection = (id: number) => {
+    const newSet = new Set(selectedCategoryIds)
+    if (newSet.has(id)) newSet.delete(id)
+    else newSet.add(id)
+    setSelectedCategoryIds(newSet)
+  }
+
   const filteredCategories = stats?.categories.filter(cat =>
     cat.typeName.toLowerCase().includes(categorySearchQuery.toLowerCase())
   ) || []
@@ -361,11 +410,9 @@ export default function AdminDashboard() {
   // Check if any scraping is active
   const isAnyScraping = scraping || keywordJobs.japanese.running || keywordJobs.chinese.running
 
-  // Get selected special categories for display
-  const selectedSpecialCategories = {
-    japanese: selectedCategoryIds.has(JAPANESE_CATEGORY_ID),
-    chinese: selectedCategoryIds.has(CHINESE_CATEGORY_ID)
-  }
+  // Separate custom and regular categories
+  const customCategories = availableCategories.filter(c => c.isCustom)
+  const regularCategories = availableCategories.filter(c => !c.isCustom)
 
   if (!session) {
     return <div className="p-8 text-zinc-500">Please sign in.</div>
@@ -506,71 +553,40 @@ export default function AdminDashboard() {
           <div className="mb-5 p-4 bg-zinc-800/50 rounded-lg">
             {/* Special categories (Japanese/Chinese) - always on top */}
             <div className="mb-4 pb-4 border-b border-zinc-700">
-              <span className="text-xs text-zinc-500 uppercase tracking-wide mb-2 block">Keyword Search Categories</span>
-              <div className="flex gap-4">
-                {availableCategories.filter(c => c.isCustom).map(cat => (
-                  <label key={cat.id} className="flex items-center gap-2 text-sm text-zinc-300 hover:text-zinc-100 cursor-pointer py-1">
-                    <input
-                      type="checkbox"
-                      checked={selectedCategoryIds.has(cat.id)}
-                      onChange={e => {
-                        const newSet = new Set(selectedCategoryIds)
-                        if (e.target.checked) newSet.add(cat.id)
-                        else newSet.delete(cat.id)
-                        setSelectedCategoryIds(newSet)
-                      }}
-                      className="rounded border-zinc-600 bg-zinc-800 text-purple-500 focus:ring-purple-500"
-                    />
-                    <span className="capitalize">{cat.name}</span>
-                    <span className="text-xs text-zinc-500">(uses keyword search)</span>
-                  </label>
+              <span className="text-xs text-zinc-500 uppercase tracking-wide mb-3 block">Keyword Search Categories</span>
+              <div className="flex flex-wrap gap-2">
+                {customCategories.map(cat => (
+                  <Checkbox
+                    key={cat.id}
+                    checked={selectedCategoryIds.has(cat.id)}
+                    onChange={() => toggleCategorySelection(cat.id)}
+                    label={cat.name}
+                    hint="(keyword search)"
+                  />
                 ))}
               </div>
             </div>
 
-            {/* Regular categories */}
-            <div className="max-h-48 overflow-y-auto grid grid-cols-3 gap-x-4 gap-y-1">
-              {availableCategories.filter(c => !c.isCustom).map(cat => (
-                <label key={cat.id} className="flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-200 cursor-pointer py-1">
-                  <input
-                    type="checkbox"
-                    checked={selectedCategoryIds.has(cat.id)}
-                    onChange={e => {
-                      const newSet = new Set(selectedCategoryIds)
-                      if (e.target.checked) newSet.add(cat.id)
-                      else newSet.delete(cat.id)
-                      setSelectedCategoryIds(newSet)
-                    }}
-                    className="rounded border-zinc-600 bg-zinc-800 text-purple-500 focus:ring-purple-500"
-                  />
-                  {cat.name}
-                </label>
+            {/* Regular categories - 5 columns */}
+            <span className="text-xs text-zinc-500 uppercase tracking-wide mb-3 block">PornHub Categories</span>
+            <div className="grid grid-cols-5 xl:grid-cols-6 gap-2 max-h-64 overflow-y-auto">
+              {regularCategories.map(cat => (
+                <Checkbox
+                  key={cat.id}
+                  checked={selectedCategoryIds.has(cat.id)}
+                  onChange={() => toggleCategorySelection(cat.id)}
+                  label={cat.name}
+                />
               ))}
             </div>
 
             {selectedCategoryIds.size > 0 && (
               <button
                 onClick={() => setSelectedCategoryIds(new Set())}
-                className="mt-3 text-sm text-zinc-500 hover:text-zinc-300"
+                className="mt-4 text-sm text-zinc-500 hover:text-zinc-300"
               >
-                Clear selection
+                Clear selection ({selectedCategoryIds.size})
               </button>
-            )}
-          </div>
-        )}
-
-        {/* Selected categories indicator */}
-        {(selectedSpecialCategories.japanese || selectedSpecialCategories.chinese) && (
-          <div className="mb-4 flex gap-2">
-            {selectedSpecialCategories.japanese && (
-              <span className="px-3 py-1 bg-purple-600/20 text-purple-400 rounded-full text-sm">
-                Japanese (keyword search)
-              </span>
-            )}
-            {selectedSpecialCategories.chinese && (
-              <span className="px-3 py-1 bg-purple-600/20 text-purple-400 rounded-full text-sm">
-                Chinese (keyword search)
-              </span>
             )}
           </div>
         )}
@@ -652,33 +668,45 @@ export default function AdminDashboard() {
 
             <div className="max-h-[400px] overflow-y-auto">
               {categoryTab === 'database' ? (
-                filteredCategories.map(cat => (
-                  <button
-                    key={cat.typeId}
-                    onClick={() => handleSelectCategory(cat)}
-                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-800 transition-colors ${
-                      selectedCategory === cat.typeName
-                        ? 'bg-purple-600/20 text-purple-400'
-                        : 'text-zinc-400'
-                    }`}
-                  >
-                    {cat.typeName}
-                  </button>
-                ))
+                filteredCategories.length > 0 ? (
+                  filteredCategories.map(cat => (
+                    <button
+                      key={cat.typeId}
+                      onClick={() => handleSelectCategory(cat)}
+                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-800 transition-colors ${
+                        selectedCategory === cat.typeName
+                          ? 'bg-purple-600/20 text-purple-400'
+                          : 'text-zinc-400'
+                      }`}
+                    >
+                      {cat.typeName}
+                    </button>
+                  ))
+                ) : (
+                  <div className="px-4 py-8 text-sm text-zinc-600 text-center">
+                    No categories found
+                  </div>
+                )
               ) : (
-                filteredConsolidated.map(([name]) => (
-                  <button
-                    key={name}
-                    onClick={() => handleSelectConsolidatedCategory(name)}
-                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-800 transition-colors ${
-                      selectedConsolidated?.name === name
-                        ? 'bg-purple-600/20 text-purple-400'
-                        : 'text-zinc-400'
-                    }`}
-                  >
-                    {name.replace(/-/g, ' ')}
-                  </button>
-                ))
+                filteredConsolidated.length > 0 ? (
+                  filteredConsolidated.map(([name]) => (
+                    <button
+                      key={name}
+                      onClick={() => handleSelectConsolidatedCategory(name)}
+                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-800 transition-colors ${
+                        selectedConsolidated?.name === name
+                          ? 'bg-purple-600/20 text-purple-400'
+                          : 'text-zinc-400'
+                      }`}
+                    >
+                      {name.replace(/-/g, ' ')}
+                    </button>
+                  ))
+                ) : (
+                  <div className="px-4 py-8 text-sm text-zinc-600 text-center">
+                    No groups found
+                  </div>
+                )
               )}
             </div>
           </div>
@@ -724,12 +752,13 @@ export default function AdminDashboard() {
               <>
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-sm text-zinc-300">{selectedCategory}</span>
+                  <span className="text-sm text-zinc-500">{categoryVideos.length} videos</span>
                 </div>
                 {loadingCategoryVideos ? (
                   <div className="flex items-center justify-center py-12">
                     <RefreshCw className="w-5 h-5 animate-spin text-purple-400" />
                   </div>
-                ) : (
+                ) : categoryVideos.length > 0 ? (
                   <>
                     <div className="grid grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-3">
                       {paginatedVideos.map(video => (
@@ -738,7 +767,7 @@ export default function AdminDashboard() {
                     </div>
                     {totalPages > 1 && (
                       <div className="flex justify-center gap-2 mt-4">
-                        {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map(p => (
+                        {Array.from({ length: Math.min(totalPages, 10) }, (_, i) => i + 1).map(p => (
                           <button
                             key={p}
                             onClick={() => setVideoPage(p)}
@@ -754,6 +783,10 @@ export default function AdminDashboard() {
                       </div>
                     )}
                   </>
+                ) : (
+                  <div className="flex items-center justify-center h-64 text-zinc-600">
+                    No videos in this category
+                  </div>
                 )}
               </>
             ) : (
