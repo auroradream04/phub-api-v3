@@ -508,107 +508,109 @@ export default function AdminDashboard() {
       <div className="p-5 bg-zinc-900 rounded-lg border border-zinc-800">
         <div className="flex items-center justify-between mb-5">
           <span className="font-medium text-lg">Scraper</span>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-zinc-500">Pages per category</span>
-            <div className="flex gap-1">
-              {[3, 5, 10, 20].map(n => (
-                <button
-                  key={n}
-                  onClick={() => setPagesPerCategory(n)}
-                  className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                    pagesPerCategory === n
-                      ? 'bg-purple-600 text-white'
-                      : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'
-                  }`}
-                >
-                  {n}
-                </button>
-              ))}
-            </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-zinc-500">Pages</span>
+            <input
+              type="number"
+              min={1}
+              max={100}
+              value={pagesPerCategory}
+              onChange={e => setPagesPerCategory(Math.max(1, Math.min(100, parseInt(e.target.value) || 5)))}
+              className="w-16 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-sm text-center focus:border-purple-500 outline-none"
+            />
           </div>
         </div>
 
         {/* Category Selection */}
-        <div className="mb-5 space-y-3">
-          {/* Quick actions row */}
-          <div className="flex items-center gap-3">
+        <div className="mb-5 flex items-center gap-3">
+          <button
+            onClick={() => setSelectedCategoryIds(new Set())}
+            className={`px-3 py-1.5 rounded text-sm transition-colors ${
+              selectedCategoryIds.size === 0
+                ? 'bg-purple-600 text-white'
+                : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+            }`}
+          >
+            All
+          </button>
+
+          {customCategories.map(cat => (
             <button
+              key={cat.id}
               onClick={() => {
-                // Select all (regular + custom)
-                setSelectedCategoryIds(new Set(availableCategories.map(c => c.id)))
+                const newSet = new Set<number>()
+                newSet.add(cat.id)
+                setSelectedCategoryIds(newSet)
               }}
               className={`px-3 py-1.5 rounded text-sm transition-colors ${
-                selectedCategoryIds.size === availableCategories.length
+                selectedCategoryIds.size === 1 && selectedCategoryIds.has(cat.id)
                   ? 'bg-purple-600 text-white'
                   : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
               }`}
             >
-              All Categories
+              {cat.name} Only
             </button>
+          ))}
 
-            {customCategories.map(cat => (
-              <button
-                key={cat.id}
-                onClick={() => toggleCategorySelection(cat.id)}
-                className={`px-3 py-1.5 rounded text-sm transition-colors ${
-                  selectedCategoryIds.has(cat.id)
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
-                }`}
-              >
-                {cat.name}
-              </button>
-            ))}
-
-            {selectedCategoryIds.size > 0 && selectedCategoryIds.size < availableCategories.length && (
-              <span className="text-xs text-zinc-500">
-                {selectedCategoryIds.size} selected
-              </span>
-            )}
-
-            {selectedCategoryIds.size > 0 && (
-              <button
-                onClick={() => setSelectedCategoryIds(new Set())}
-                className="text-xs text-zinc-500 hover:text-zinc-300 ml-auto"
-              >
-                Clear
-              </button>
-            )}
-
+          <div className="relative ml-auto">
             <button
               onClick={() => setShowCategoryFilter(!showCategoryFilter)}
-              className="text-xs text-zinc-500 hover:text-zinc-300 flex items-center gap-1"
+              className="px-3 py-1.5 rounded text-sm bg-zinc-800 text-zinc-400 hover:bg-zinc-700 flex items-center gap-2"
             >
-              {showCategoryFilter ? 'Hide' : 'Customize'}
+              Custom
+              {selectedCategoryIds.size > 0 && selectedCategoryIds.size < availableCategories.length && !customCategories.some(c => selectedCategoryIds.size === 1 && selectedCategoryIds.has(c.id)) && (
+                <span className="px-1.5 py-0.5 bg-purple-600 text-white text-xs rounded">
+                  {selectedCategoryIds.size}
+                </span>
+              )}
               <ChevronDown className={`w-3 h-3 transition-transform ${showCategoryFilter ? 'rotate-180' : ''}`} />
             </button>
-          </div>
 
-          {/* Expanded category picker */}
-          {showCategoryFilter && (
-            <div className="p-3 bg-zinc-800/30 rounded-lg space-y-3">
-              <input
-                type="text"
-                placeholder="Filter categories..."
-                value={scraperCategoryFilter}
-                onChange={e => setScraperCategoryFilter(e.target.value)}
-                className="w-full px-3 py-1.5 bg-zinc-900 border border-zinc-700 rounded text-sm placeholder:text-zinc-600 focus:border-purple-500 outline-none"
-              />
-              <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
-                {regularCategories
-                  .filter(cat => cat.name.toLowerCase().includes(scraperCategoryFilter.toLowerCase()))
-                  .map(cat => (
-                    <Tag
-                      key={cat.id}
-                      selected={selectedCategoryIds.has(cat.id)}
-                      onClick={() => toggleCategorySelection(cat.id)}
-                    >
-                      {cat.name}
-                    </Tag>
-                  ))}
+            {/* Dropdown */}
+            {showCategoryFilter && (
+              <div className="absolute right-0 top-full mt-2 w-80 p-3 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 space-y-3">
+                <input
+                  type="text"
+                  placeholder="Search categories..."
+                  value={scraperCategoryFilter}
+                  onChange={e => setScraperCategoryFilter(e.target.value)}
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-sm placeholder:text-zinc-500 focus:border-purple-500 outline-none"
+                  autoFocus
+                />
+                <div className="flex gap-2 text-xs">
+                  <button
+                    onClick={() => setSelectedCategoryIds(new Set(regularCategories.map(c => c.id)))}
+                    className="text-zinc-400 hover:text-zinc-200"
+                  >
+                    Select all
+                  </button>
+                  <button
+                    onClick={() => setSelectedCategoryIds(new Set())}
+                    className="text-zinc-400 hover:text-zinc-200"
+                  >
+                    Clear
+                  </button>
+                </div>
+                <div className="max-h-48 overflow-y-auto space-y-1">
+                  {regularCategories
+                    .filter(cat => cat.name.toLowerCase().includes(scraperCategoryFilter.toLowerCase()))
+                    .map(cat => (
+                      <button
+                        key={cat.id}
+                        onClick={() => toggleCategorySelection(cat.id)}
+                        className={`w-full text-left px-3 py-1.5 rounded text-sm transition-colors ${
+                          selectedCategoryIds.has(cat.id)
+                            ? 'bg-purple-600/20 text-purple-400'
+                            : 'text-zinc-400 hover:bg-zinc-800'
+                        }`}
+                      >
+                        {cat.name}
+                      </button>
+                    ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         <button
