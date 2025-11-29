@@ -167,45 +167,45 @@ export function ThumbnailMigration() {
   const estimatedTotalGB = stats ? ((stats.pending * 15) / 1024 / 1024).toFixed(1) : '0'
 
   return (
-    <div className="p-4 bg-zinc-900/50 rounded border border-zinc-800/50">
+    <div className="p-5 bg-zinc-900/50 rounded-lg border border-zinc-800">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <span className="text-xs font-medium text-zinc-300">Thumbnail Migration</span>
-        <button onClick={fetchStats} disabled={loading} className="text-zinc-500 hover:text-zinc-300">
-          <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
+      <div className="flex items-center justify-between mb-5">
+        <span className="text-sm font-medium text-zinc-200">Thumbnail Migration</span>
+        <button onClick={fetchStats} disabled={loading} className="text-zinc-500 hover:text-purple-400 transition-colors">
+          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
         </button>
       </div>
 
       {/* Stats row */}
-      <div className="flex items-center gap-6 text-xs mb-4">
+      <div className="flex items-center gap-8 text-sm mb-5">
         <div>
           <span className="text-zinc-500">Total</span>
-          <span className="ml-2 text-zinc-100">{stats?.total.toLocaleString() || '-'}</span>
+          <span className="ml-2 text-zinc-100 font-medium">{stats?.total.toLocaleString() || '-'}</span>
         </div>
         <div>
           <span className="text-zinc-500">Migrated</span>
-          <span className="ml-2 text-emerald-400">{stats?.migrated.toLocaleString() || '-'}</span>
+          <span className="ml-2 text-purple-400 font-medium">{stats?.migrated.toLocaleString() || '-'}</span>
         </div>
         <div>
           <span className="text-zinc-500">Pending</span>
-          <span className="ml-2 text-zinc-100">{stats?.pending.toLocaleString() || '-'}</span>
+          <span className="ml-2 text-zinc-100 font-medium">{stats?.pending.toLocaleString() || '-'}</span>
         </div>
         <div>
           <span className="text-zinc-500">Failed</span>
-          <span className="ml-2 text-red-400">{stats?.failed || '-'}</span>
+          <span className="ml-2 text-red-400 font-medium">{stats?.failed || '-'}</span>
         </div>
       </div>
 
       {/* Progress bar */}
       {stats && stats.total > 0 && (
-        <div className="mb-4">
-          <div className="flex justify-between text-xs text-zinc-500 mb-1">
-            <span>{stats.percentComplete.toFixed(1)}%</span>
+        <div className="mb-5">
+          <div className="flex justify-between text-sm text-zinc-500 mb-2">
+            <span className="text-purple-400 font-medium">{stats.percentComplete.toFixed(1)}%</span>
             <span>{disk?.totalSizeMB.toFixed(1)} MB / ~{estimatedTotalGB} GB</span>
           </div>
-          <div className="h-1 bg-zinc-800 rounded-full overflow-hidden">
+          <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
             <div
-              className="h-full bg-zinc-500 transition-all"
+              className="h-full bg-purple-600 transition-all"
               style={{ width: `${stats.percentComplete}%` }}
             />
           </div>
@@ -213,55 +213,55 @@ export function ThumbnailMigration() {
       )}
 
       {/* Controls */}
-      <div className="flex items-center gap-4 mb-4">
-        <div className="flex items-center gap-2 text-xs">
+      <div className="flex items-center gap-5 mb-5">
+        <div className="flex items-center gap-2 text-sm">
           <span className="text-zinc-500">Batch</span>
           <input
             type="number"
             value={batchSize}
             onChange={(e) => setBatchSize(Math.min(500, Math.max(10, parseInt(e.target.value) || 100)))}
-            className="w-16 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-zinc-100"
+            className="w-20 px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 focus:outline-none focus:border-purple-500"
           />
         </div>
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex items-center gap-2 text-sm">
           <span className="text-zinc-500">Concurrency</span>
           <input
             type="number"
             value={concurrency}
             onChange={(e) => setConcurrency(Math.min(20, Math.max(1, parseInt(e.target.value) || 10)))}
-            className="w-12 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-zinc-100"
+            className="w-16 px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 focus:outline-none focus:border-purple-500"
           />
         </div>
-        {message && <span className="text-xs text-zinc-400">{message}</span>}
+        {message && <span className="text-sm text-zinc-400">{message}</span>}
       </div>
 
       {/* Actions */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-3">
         {!autoRun ? (
           <>
             <button
               onClick={runMigrationBatch}
               disabled={migrating || !stats?.pending}
-              className="flex items-center gap-1 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 rounded text-xs"
+              className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:hover:bg-purple-600 rounded-lg text-sm font-medium transition-colors"
             >
-              <Play className="w-3 h-3" />
+              <Play className="w-4 h-4" />
               Run Batch
             </button>
             <button
               onClick={startAutoRun}
               disabled={migrating || !stats?.pending}
-              className="flex items-center gap-1 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 rounded text-xs"
+              className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 rounded-lg text-sm transition-colors"
             >
-              <RefreshCw className="w-3 h-3" />
+              <RefreshCw className="w-4 h-4" />
               Auto-Run
             </button>
           </>
         ) : (
           <button
             onClick={stopAutoRun}
-            className="flex items-center gap-1 px-3 py-1.5 bg-red-900/50 hover:bg-red-900 rounded text-xs"
+            className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-medium transition-colors"
           >
-            <Square className="w-3 h-3" />
+            <Square className="w-4 h-4" />
             Stop
           </button>
         )}
@@ -271,15 +271,15 @@ export function ThumbnailMigration() {
             <button
               onClick={runRecovery}
               disabled={recovering}
-              className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 rounded text-xs"
+              className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 rounded-lg text-sm transition-colors"
             >
               {recovering ? 'Recovering...' : 'Recover Failed'}
             </button>
             <button
               onClick={() => setShowFailures(!showFailures)}
-              className="flex items-center gap-1 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded text-xs"
+              className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm transition-colors"
             >
-              <ChevronDown className={`w-3 h-3 transition-transform ${showFailures ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-4 h-4 transition-transform ${showFailures ? 'rotate-180' : ''}`} />
               Failures ({stats.failed})
             </button>
           </>
@@ -288,16 +288,16 @@ export function ThumbnailMigration() {
 
       {/* Failures list */}
       {showFailures && failures.length > 0 && (
-        <div className="mt-4 border-t border-zinc-800 pt-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-zinc-500">Failed thumbnails</span>
-            <button onClick={deleteUnrecoverable} className="text-xs text-red-400 hover:text-red-300">
+        <div className="mt-5 border-t border-zinc-800 pt-5">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm text-zinc-500">Failed thumbnails</span>
+            <button onClick={deleteUnrecoverable} className="text-sm text-red-400 hover:text-red-300 transition-colors">
               Delete unrecoverable
             </button>
           </div>
-          <div className="max-h-32 overflow-y-auto space-y-1 text-xs">
+          <div className="max-h-40 overflow-y-auto space-y-2 text-sm">
             {failures.slice(0, 20).map((f) => (
-              <div key={f.vodId} className="flex items-center justify-between py-1 text-zinc-400">
+              <div key={f.vodId} className="flex items-center justify-between py-1.5 text-zinc-400">
                 <span className="font-mono">{f.vodId}</span>
                 <span className={f.recoveryAttempted ? 'text-red-400' : 'text-zinc-500'}>
                   {f.recoveryAttempted ? 'unrecoverable' : 'pending'}
@@ -305,7 +305,7 @@ export function ThumbnailMigration() {
               </div>
             ))}
             {failures.length > 20 && (
-              <div className="text-zinc-600">+{failures.length - 20} more</div>
+              <div className="text-zinc-600 pt-1">+{failures.length - 20} more</div>
             )}
           </div>
         </div>
@@ -313,7 +313,7 @@ export function ThumbnailMigration() {
 
       {/* Completion */}
       {stats?.pending === 0 && stats?.migrated > 0 && (
-        <div className="mt-4 text-xs text-emerald-400">
+        <div className="mt-5 text-sm text-purple-400 font-medium">
           Migration complete - {stats.migrated.toLocaleString()} thumbnails
         </div>
       )}

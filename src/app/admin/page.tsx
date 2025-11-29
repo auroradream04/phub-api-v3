@@ -316,30 +316,30 @@ export default function AdminDashboard() {
   const totalPages = Math.ceil(categoryVideos.length / videosPerPage)
 
   if (!session) {
-    return <div className="p-8 text-zinc-500 text-sm">Please sign in.</div>
+    return <div className="p-8 text-zinc-500">Please sign in.</div>
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-8 space-y-6">
       {/* Stats */}
-      <div className="flex items-center gap-8 text-xs">
+      <div className="flex items-center gap-10 text-sm">
         <div>
           <span className="text-zinc-500">Videos</span>
-          <span className="ml-2 text-zinc-100 font-medium">{stats?.totalVideos.toLocaleString() || '0'}</span>
+          <span className="ml-2 text-zinc-100 font-semibold">{stats?.totalVideos.toLocaleString() || '0'}</span>
         </div>
         <div>
           <span className="text-zinc-500">Categories</span>
-          <span className="ml-2 text-zinc-100 font-medium">{stats?.categories.length || 0}</span>
+          <span className="ml-2 text-zinc-100 font-semibold">{stats?.categories.length || 0}</span>
         </div>
         {currentProgress && (
           <>
             <div>
               <span className="text-zinc-500">New</span>
-              <span className="ml-2 text-emerald-400 font-medium">{currentProgress.newVideosAdded?.toLocaleString() || 0}</span>
+              <span className="ml-2 text-purple-400 font-semibold">{currentProgress.newVideosAdded?.toLocaleString() || 0}</span>
             </div>
             <div>
               <span className="text-zinc-500">Speed</span>
-              <span className="ml-2 text-zinc-100 font-medium">{currentProgress.videosPerSecond}/s</span>
+              <span className="ml-2 text-zinc-100 font-semibold">{currentProgress.videosPerSecond}/s</span>
             </div>
           </>
         )}
@@ -348,12 +348,12 @@ export default function AdminDashboard() {
 
       {/* Resume banner */}
       {savedProgress && !scraping && (
-        <div className="flex items-center justify-between py-3 px-4 bg-zinc-900 rounded border border-zinc-800 text-xs">
-          <span className="text-zinc-400">
+        <div className="flex items-center justify-between py-4 px-5 bg-zinc-900 rounded-lg border border-zinc-800">
+          <span className="text-zinc-300">
             Saved: {savedProgress.categoriesCompleted}/{savedProgress.totalCategories} categories
           </span>
-          <div className="flex gap-2">
-            <button onClick={() => startScraping(savedProgress.checkpointId)} className="text-zinc-100 hover:text-white">
+          <div className="flex gap-3">
+            <button onClick={() => startScraping(savedProgress.checkpointId)} className="text-purple-400 hover:text-purple-300 font-medium">
               Resume
             </button>
             <button onClick={clearProgress} className="text-zinc-500 hover:text-zinc-300">
@@ -366,13 +366,13 @@ export default function AdminDashboard() {
       {/* Progress bar */}
       {scraping && currentProgress && (
         <div className="space-y-2">
-          <div className="flex justify-between text-xs text-zinc-500">
+          <div className="flex justify-between text-sm text-zinc-400">
             <span>Scraping {currentProgress.categoriesCompleted}/{currentProgress.totalCategories}</span>
             <span>{currentProgress.totalVideosScraped.toLocaleString()} videos</span>
           </div>
-          <div className="h-1 bg-zinc-800 rounded-full overflow-hidden">
+          <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
             <div
-              className="h-full bg-zinc-500 transition-all"
+              className="h-full bg-purple-500 transition-all"
               style={{ width: `${(currentProgress.categoriesCompleted / currentProgress.totalCategories) * 100}%` }}
             />
           </div>
@@ -380,17 +380,21 @@ export default function AdminDashboard() {
       )}
 
       {/* Scrapers */}
-      <div className="grid lg:grid-cols-2 gap-4">
+      <div className="grid lg:grid-cols-2 gap-6">
         {/* Category Scraper */}
-        <div className="p-4 bg-zinc-900/50 rounded border border-zinc-800/50">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-xs font-medium text-zinc-300">Category Scraper</span>
+        <div className="p-5 bg-zinc-900 rounded-lg border border-zinc-800">
+          <div className="flex items-center justify-between mb-5">
+            <span className="font-medium">Category Scraper</span>
             <div className="flex gap-1">
               {[3, 5, 10, 20].map(n => (
                 <button
                   key={n}
                   onClick={() => setPagesPerCategory(n)}
-                  className={`px-2 py-1 text-xs rounded ${pagesPerCategory === n ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+                  className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                    pagesPerCategory === n
+                      ? 'bg-purple-600 text-white'
+                      : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'
+                  }`}
                 >
                   {n}
                 </button>
@@ -400,16 +404,16 @@ export default function AdminDashboard() {
 
           <button
             onClick={() => setShowCategoryFilter(!showCategoryFilter)}
-            className="flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-300 mb-3"
+            className="flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-200 mb-4"
           >
-            <ChevronDown className={`w-3 h-3 transition-transform ${showCategoryFilter ? 'rotate-180' : ''}`} />
-            Filter
+            <ChevronDown className={`w-4 h-4 transition-transform ${showCategoryFilter ? 'rotate-180' : ''}`} />
+            Filter Categories
           </button>
 
           {showCategoryFilter && (
-            <div className="mb-3 max-h-32 overflow-y-auto space-y-1 text-xs">
+            <div className="mb-4 max-h-40 overflow-y-auto space-y-1">
               {availableCategories.map(cat => (
-                <label key={cat.id} className="flex items-center gap-2 text-zinc-400 hover:text-zinc-300 cursor-pointer">
+                <label key={cat.id} className="flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-200 cursor-pointer py-1">
                   <input
                     type="checkbox"
                     checked={selectedCategoryIds.has(cat.id)}
@@ -419,7 +423,7 @@ export default function AdminDashboard() {
                       else newSet.delete(cat.id)
                       setSelectedCategoryIds(newSet)
                     }}
-                    className="rounded border-zinc-600 bg-zinc-800"
+                    className="rounded border-zinc-600 bg-zinc-800 text-purple-500 focus:ring-purple-500"
                   />
                   {cat.name}
                 </label>
@@ -430,23 +434,27 @@ export default function AdminDashboard() {
           <button
             onClick={() => startScraping()}
             disabled={scraping}
-            className="w-full py-2 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 rounded text-xs font-medium flex items-center justify-center gap-2"
+            className="w-full py-2.5 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
           >
-            {scraping ? <Square className="w-3 h-3" /> : <Play className="w-3 h-3" />}
-            {scraping ? 'Running...' : 'Start'}
+            {scraping ? <Square className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+            {scraping ? 'Running...' : 'Start Scraping'}
           </button>
         </div>
 
         {/* Keyword Scraper */}
-        <div className="p-4 bg-zinc-900/50 rounded border border-zinc-800/50">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-xs font-medium text-zinc-300">Keyword Scraper</span>
+        <div className="p-5 bg-zinc-900 rounded-lg border border-zinc-800">
+          <div className="flex items-center justify-between mb-5">
+            <span className="font-medium">Keyword Scraper</span>
             <div className="flex gap-1">
               {[1, 3, 5, 10].map(n => (
                 <button
                   key={n}
                   onClick={() => setKeywordPagesPerKeyword(n)}
-                  className={`px-2 py-1 text-xs rounded ${keywordPagesPerKeyword === n ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+                  className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                    keywordPagesPerKeyword === n
+                      ? 'bg-purple-600 text-white'
+                      : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'
+                  }`}
                 >
                   {n}
                 </button>
@@ -454,18 +462,18 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-3">
             <button
               onClick={() => startKeywordScraping('japanese')}
               disabled={keywordScrapingJapanese}
-              className="py-2 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 rounded text-xs font-medium"
+              className="py-2.5 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 rounded-lg font-medium transition-colors"
             >
               {keywordScrapingJapanese ? `JP ${keywordJobJapanese?.keywordsCompleted || 0}/${keywordJobJapanese?.totalKeywords || 0}` : 'Japanese'}
             </button>
             <button
               onClick={() => startKeywordScraping('chinese')}
               disabled={keywordScrapingChinese}
-              className="py-2 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 rounded text-xs font-medium"
+              className="py-2.5 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 rounded-lg font-medium transition-colors"
             >
               {keywordScrapingChinese ? `CN ${keywordJobChinese?.keywordsCompleted || 0}/${keywordJobChinese?.totalKeywords || 0}` : 'Chinese'}
             </button>
@@ -477,66 +485,78 @@ export default function AdminDashboard() {
       <ThumbnailMigration />
 
       {/* Category Browser */}
-      <div className="bg-zinc-900/50 rounded border border-zinc-800/50 overflow-hidden">
+      <div className="bg-zinc-900 rounded-lg border border-zinc-800 overflow-hidden">
         {/* Search bar */}
-        <div className="p-3 border-b border-zinc-800/50">
-          <div className="flex gap-2">
+        <div className="p-4 border-b border-zinc-800">
+          <div className="flex gap-3">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-500" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
               <input
                 type="text"
                 placeholder="Search videos..."
                 value={globalVideoSearchQuery}
                 onChange={e => setGlobalVideoSearchQuery(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleGlobalSearch(globalVideoSearchQuery)}
-                className="w-full pl-8 pr-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-xs text-zinc-100 placeholder:text-zinc-500"
+                className="w-full pl-10 pr-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-sm placeholder:text-zinc-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-colors"
               />
             </div>
             <button
               onClick={() => handleGlobalSearch(globalVideoSearchQuery)}
               disabled={loadingGlobalSearch}
-              className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded text-xs"
+              className="px-5 py-2.5 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 rounded-lg font-medium transition-colors"
             >
               {loadingGlobalSearch ? '...' : 'Search'}
             </button>
           </div>
         </div>
 
-        <div className="grid md:grid-cols-4 min-h-[400px]">
+        <div className="grid md:grid-cols-4 min-h-[500px]">
           {/* Categories sidebar */}
-          <div className="border-r border-zinc-800/50">
-            <div className="p-2 border-b border-zinc-800/50 flex gap-1">
+          <div className="border-r border-zinc-800 bg-zinc-900/50">
+            <div className="p-3 border-b border-zinc-800 flex gap-2">
               <button
                 onClick={() => setCategoryTab('database')}
-                className={`flex-1 py-1 text-xs rounded ${categoryTab === 'database' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500'}`}
+                className={`flex-1 py-2 text-sm rounded-md transition-colors ${
+                  categoryTab === 'database'
+                    ? 'bg-purple-600 text-white'
+                    : 'text-zinc-400 hover:bg-zinc-800'
+                }`}
               >
-                DB
+                Database
               </button>
               <button
                 onClick={() => setCategoryTab('consolidated')}
-                className={`flex-1 py-1 text-xs rounded ${categoryTab === 'consolidated' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500'}`}
+                className={`flex-1 py-2 text-sm rounded-md transition-colors ${
+                  categoryTab === 'consolidated'
+                    ? 'bg-purple-600 text-white'
+                    : 'text-zinc-400 hover:bg-zinc-800'
+                }`}
               >
                 Groups
               </button>
             </div>
 
-            <div className="p-2">
+            <div className="p-3">
               <input
                 type="text"
                 placeholder="Filter..."
                 value={categorySearchQuery}
                 onChange={e => setCategorySearchQuery(e.target.value)}
-                className="w-full px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-xs text-zinc-100 placeholder:text-zinc-500"
+                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm placeholder:text-zinc-500 focus:border-purple-500 outline-none"
               />
             </div>
 
-            <div className="max-h-[320px] overflow-y-auto">
+            <div className="max-h-[400px] overflow-y-auto">
               {categoryTab === 'database' ? (
                 filteredCategories.map(cat => (
                   <button
                     key={cat.typeId}
                     onClick={() => handleSelectCategory(cat)}
-                    className={`w-full text-left px-3 py-2 text-xs hover:bg-zinc-800/50 ${selectedCategory === cat.typeName ? 'bg-zinc-800/50 text-zinc-100' : 'text-zinc-400'}`}
+                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-800 transition-colors ${
+                      selectedCategory === cat.typeName
+                        ? 'bg-purple-600/20 text-purple-400'
+                        : 'text-zinc-400'
+                    }`}
                   >
                     {cat.typeName}
                   </button>
@@ -546,7 +566,11 @@ export default function AdminDashboard() {
                   <button
                     key={name}
                     onClick={() => handleSelectConsolidatedCategory(name)}
-                    className={`w-full text-left px-3 py-2 text-xs hover:bg-zinc-800/50 ${selectedConsolidated?.name === name ? 'bg-zinc-800/50 text-zinc-100' : 'text-zinc-400'}`}
+                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-800 transition-colors ${
+                      selectedConsolidated?.name === name
+                        ? 'bg-purple-600/20 text-purple-400'
+                        : 'text-zinc-400'
+                    }`}
                   >
                     {name.replace(/-/g, ' ')}
                   </button>
@@ -556,18 +580,18 @@ export default function AdminDashboard() {
           </div>
 
           {/* Videos grid */}
-          <div className="md:col-span-3 p-3">
+          <div className="md:col-span-3 p-4">
             {globalSearchResults.length > 0 ? (
               <>
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs text-zinc-500">{globalSearchTotalCount.toLocaleString()} results</span>
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-sm text-zinc-400">{globalSearchTotalCount.toLocaleString()} results</span>
                   {selectedSearchVideoIds.size > 0 && (
-                    <button onClick={handleBulkDelete} className="text-xs text-red-400 hover:text-red-300">
-                      Delete {selectedSearchVideoIds.size}
+                    <button onClick={handleBulkDelete} className="text-sm text-red-400 hover:text-red-300 font-medium">
+                      Delete {selectedSearchVideoIds.size} selected
                     </button>
                   )}
                 </div>
-                <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+                <div className="grid grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-3">
                   {globalSearchResults.map(video => (
                     <VideoCard
                       key={video.vod_id}
@@ -586,7 +610,7 @@ export default function AdminDashboard() {
                 {globalSearchTotalCount > globalSearchResults.length && (
                   <button
                     onClick={() => handleGlobalSearch(globalVideoSearchQuery, globalSearchPage + 1)}
-                    className="w-full mt-3 py-2 text-xs text-zinc-500 hover:text-zinc-300"
+                    className="w-full mt-4 py-3 text-sm text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded-lg transition-colors"
                   >
                     Load more
                   </button>
@@ -594,27 +618,31 @@ export default function AdminDashboard() {
               </>
             ) : selectedCategory ? (
               <>
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs text-zinc-400">{selectedCategory}</span>
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-sm text-zinc-300">{selectedCategory}</span>
                 </div>
                 {loadingCategoryVideos ? (
-                  <div className="flex items-center justify-center py-8">
-                    <RefreshCw className="w-4 h-4 animate-spin text-zinc-500" />
+                  <div className="flex items-center justify-center py-12">
+                    <RefreshCw className="w-5 h-5 animate-spin text-purple-400" />
                   </div>
                 ) : (
                   <>
-                    <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+                    <div className="grid grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-3">
                       {paginatedVideos.map(video => (
                         <VideoCard key={video.vod_id} video={video} onDelete={() => handleDeleteVideo(video.vod_id)} />
                       ))}
                     </div>
                     {totalPages > 1 && (
-                      <div className="flex justify-center gap-1 mt-3">
+                      <div className="flex justify-center gap-2 mt-4">
                         {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map(p => (
                           <button
                             key={p}
                             onClick={() => setVideoPage(p)}
-                            className={`w-6 h-6 text-xs rounded ${videoPage === p ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+                            className={`w-8 h-8 text-sm rounded-md transition-colors ${
+                              videoPage === p
+                                ? 'bg-purple-600 text-white'
+                                : 'text-zinc-400 hover:bg-zinc-800'
+                            }`}
                           >
                             {p}
                           </button>
@@ -625,7 +653,7 @@ export default function AdminDashboard() {
                 )}
               </>
             ) : (
-              <div className="flex items-center justify-center h-full text-xs text-zinc-600">
+              <div className="flex items-center justify-center h-full text-zinc-600">
                 Select a category or search
               </div>
             )}
@@ -643,23 +671,23 @@ function VideoCard({ video, selected, onSelect, onDelete }: {
   onDelete: () => void
 }) {
   return (
-    <div className={`group relative rounded overflow-hidden ${selected ? 'ring-1 ring-zinc-500' : ''}`}>
+    <div className={`group relative rounded-lg overflow-hidden ${selected ? 'ring-2 ring-purple-500' : ''}`}>
       {video.vod_pic ? (
         <img src={video.vod_pic} alt="" className="w-full aspect-video object-cover bg-zinc-800" />
       ) : (
         <div className="w-full aspect-video bg-zinc-800" />
       )}
-      <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+      <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
         {onSelect && (
-          <button onClick={onSelect} className="p-1.5 bg-zinc-700/80 rounded hover:bg-zinc-600">
-            <Check className="w-3 h-3" />
+          <button onClick={onSelect} className="p-2 bg-zinc-700/80 rounded-lg hover:bg-purple-600 transition-colors">
+            <Check className="w-4 h-4" />
           </button>
         )}
-        <a href={`/watch/${video.vod_id}`} target="_blank" className="p-1.5 bg-zinc-700/80 rounded hover:bg-zinc-600">
-          <Eye className="w-3 h-3" />
+        <a href={`/watch/${video.vod_id}`} target="_blank" className="p-2 bg-zinc-700/80 rounded-lg hover:bg-zinc-600 transition-colors">
+          <Eye className="w-4 h-4" />
         </a>
-        <button onClick={onDelete} className="p-1.5 bg-red-900/80 rounded hover:bg-red-800">
-          <Trash2 className="w-3 h-3" />
+        <button onClick={onDelete} className="p-2 bg-red-600/80 rounded-lg hover:bg-red-500 transition-colors">
+          <Trash2 className="w-4 h-4" />
         </button>
       </div>
     </div>
