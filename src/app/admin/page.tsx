@@ -44,7 +44,7 @@ const STORAGE_KEY = 'scraper_progress'
 const JAPANESE_CATEGORY_ID = 9999
 const CHINESE_CATEGORY_ID = 9998
 
-// Custom checkbox component
+// Custom checkbox component - minimal dark style
 function Checkbox({ checked, onChange, label, hint }: {
   checked: boolean
   onChange: (checked: boolean) => void
@@ -55,21 +55,17 @@ function Checkbox({ checked, onChange, label, hint }: {
     <button
       type="button"
       onClick={() => onChange(!checked)}
-      className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all ${
-        checked
-          ? 'bg-purple-600/20 text-purple-300 ring-1 ring-purple-500/50'
-          : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
+      className={`flex items-center gap-2 text-sm transition-colors ${
+        checked ? 'text-purple-400' : 'text-zinc-500 hover:text-zinc-300'
       }`}
     >
-      <div className={`w-4 h-4 rounded flex items-center justify-center transition-all ${
-        checked
-          ? 'bg-purple-600'
-          : 'bg-zinc-700 border border-zinc-600'
+      <div className={`w-3.5 h-3.5 rounded-sm flex items-center justify-center transition-colors ${
+        checked ? 'bg-purple-600' : 'border border-zinc-600'
       }`}>
-        {checked && <Check className="w-3 h-3 text-white" />}
+        {checked && <Check className="w-2.5 h-2.5 text-white" />}
       </div>
       <span className="capitalize">{label}</span>
-      {hint && <span className="text-xs text-zinc-500">{hint}</span>}
+      {hint && <span className="text-xs text-zinc-600">{hint}</span>}
     </button>
   )
 }
@@ -550,26 +546,26 @@ export default function AdminDashboard() {
         </button>
 
         {showCategoryFilter && (
-          <div className="mb-5 p-4 bg-zinc-800/50 rounded-lg">
+          <div className="mb-5">
             {/* Special categories (Japanese/Chinese) - always on top */}
-            <div className="mb-4 pb-4 border-b border-zinc-700">
-              <span className="text-xs text-zinc-500 uppercase tracking-wide mb-3 block">Keyword Search Categories</span>
-              <div className="flex flex-wrap gap-2">
+            <div className="mb-4 pb-4 border-b border-zinc-800">
+              <span className="text-xs text-zinc-600 uppercase tracking-wide mb-3 block">Keyword Search</span>
+              <div className="flex flex-wrap gap-x-6 gap-y-2">
                 {customCategories.map(cat => (
                   <Checkbox
                     key={cat.id}
                     checked={selectedCategoryIds.has(cat.id)}
                     onChange={() => toggleCategorySelection(cat.id)}
                     label={cat.name}
-                    hint="(keyword search)"
+                    hint="(keyword)"
                   />
                 ))}
               </div>
             </div>
 
-            {/* Regular categories - 5 columns */}
-            <span className="text-xs text-zinc-500 uppercase tracking-wide mb-3 block">PornHub Categories</span>
-            <div className="grid grid-cols-5 xl:grid-cols-6 gap-2 max-h-64 overflow-y-auto">
+            {/* Regular categories - 6 columns */}
+            <span className="text-xs text-zinc-600 uppercase tracking-wide mb-3 block">Categories</span>
+            <div className="grid grid-cols-6 gap-x-4 gap-y-2 max-h-48 overflow-y-auto pr-2">
               {regularCategories.map(cat => (
                 <Checkbox
                   key={cat.id}
@@ -583,9 +579,9 @@ export default function AdminDashboard() {
             {selectedCategoryIds.size > 0 && (
               <button
                 onClick={() => setSelectedCategoryIds(new Set())}
-                className="mt-4 text-sm text-zinc-500 hover:text-zinc-300"
+                className="mt-3 text-xs text-zinc-600 hover:text-zinc-400"
               >
-                Clear selection ({selectedCategoryIds.size})
+                Clear ({selectedCategoryIds.size})
               </button>
             )}
           </div>
