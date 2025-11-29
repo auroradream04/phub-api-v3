@@ -44,28 +44,23 @@ const STORAGE_KEY = 'scraper_progress'
 const JAPANESE_CATEGORY_ID = 9999
 const CHINESE_CATEGORY_ID = 9998
 
-// Custom checkbox component - minimal dark style
-function Checkbox({ checked, onChange, label, hint }: {
-  checked: boolean
-  onChange: (checked: boolean) => void
-  label: string
-  hint?: string
+// Tag-style toggle
+function Tag({ selected, onClick, children }: {
+  selected: boolean
+  onClick: () => void
+  children: React.ReactNode
 }) {
   return (
     <button
       type="button"
-      onClick={() => onChange(!checked)}
-      className={`flex items-center gap-2 text-sm transition-colors ${
-        checked ? 'text-purple-400' : 'text-zinc-500 hover:text-zinc-300'
+      onClick={onClick}
+      className={`px-2.5 py-1 rounded text-xs transition-all ${
+        selected
+          ? 'bg-purple-600 text-white'
+          : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300'
       }`}
     >
-      <div className={`w-3.5 h-3.5 rounded-sm flex items-center justify-center transition-colors ${
-        checked ? 'bg-purple-600' : 'border border-zinc-600'
-      }`}>
-        {checked && <Check className="w-2.5 h-2.5 text-white" />}
-      </div>
-      <span className="capitalize">{label}</span>
-      {hint && <span className="text-xs text-zinc-600">{hint}</span>}
+      {children}
     </button>
   )
 }
@@ -546,40 +541,38 @@ export default function AdminDashboard() {
         </button>
 
         {showCategoryFilter && (
-          <div className="mb-5">
-            {/* Special categories (Japanese/Chinese) - always on top */}
-            <div className="mb-4 pb-4 border-b border-zinc-800">
-              <span className="text-xs text-zinc-600 uppercase tracking-wide mb-3 block">Keyword Search</span>
-              <div className="flex flex-wrap gap-x-6 gap-y-2">
-                {customCategories.map(cat => (
-                  <Checkbox
-                    key={cat.id}
-                    checked={selectedCategoryIds.has(cat.id)}
-                    onChange={() => toggleCategorySelection(cat.id)}
-                    label={cat.name}
-                    hint="(keyword)"
-                  />
-                ))}
-              </div>
+          <div className="mb-5 space-y-4">
+            {/* Special categories (Japanese/Chinese) */}
+            <div className="flex flex-wrap gap-2">
+              {customCategories.map(cat => (
+                <Tag
+                  key={cat.id}
+                  selected={selectedCategoryIds.has(cat.id)}
+                  onClick={() => toggleCategorySelection(cat.id)}
+                >
+                  {cat.name}
+                </Tag>
+              ))}
+              <span className="text-xs text-zinc-600 self-center ml-1">← keyword search</span>
             </div>
 
-            {/* Regular categories - 6 columns */}
-            <span className="text-xs text-zinc-600 uppercase tracking-wide mb-3 block">Categories</span>
-            <div className="grid grid-cols-6 gap-x-4 gap-y-2 max-h-48 overflow-y-auto pr-2">
+            {/* Regular categories */}
+            <div className="flex flex-wrap gap-1.5">
               {regularCategories.map(cat => (
-                <Checkbox
+                <Tag
                   key={cat.id}
-                  checked={selectedCategoryIds.has(cat.id)}
-                  onChange={() => toggleCategorySelection(cat.id)}
-                  label={cat.name}
-                />
+                  selected={selectedCategoryIds.has(cat.id)}
+                  onClick={() => toggleCategorySelection(cat.id)}
+                >
+                  {cat.name}
+                </Tag>
               ))}
             </div>
 
             {selectedCategoryIds.size > 0 && (
               <button
                 onClick={() => setSelectedCategoryIds(new Set())}
-                className="mt-3 text-xs text-zinc-600 hover:text-zinc-400"
+                className="text-xs text-zinc-500 hover:text-zinc-300"
               >
                 Clear ({selectedCategoryIds.size})
               </button>
