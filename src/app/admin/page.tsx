@@ -56,8 +56,8 @@ function Tag({ selected, onClick, children }: {
       onClick={onClick}
       className={`px-3 py-1.5 rounded text-sm transition-all line-clamp-1 ${
         selected
-          ? 'bg-purple-600 text-white'
-          : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300'
+          ? 'bg-emerald-600 text-white'
+          : 'bg-[#21262d] text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300'
       }`}
     >
       {children}
@@ -425,7 +425,7 @@ export default function AdminDashboard() {
           <>
             <div>
               <span className="text-zinc-500">New</span>
-              <span className="ml-2 text-purple-400 font-semibold">{currentProgress.newVideosAdded?.toLocaleString() || 0}</span>
+              <span className="ml-2 text-emerald-400 font-semibold">{currentProgress.newVideosAdded?.toLocaleString() || 0}</span>
             </div>
             <div>
               <span className="text-zinc-500">Speed</span>
@@ -438,12 +438,12 @@ export default function AdminDashboard() {
 
       {/* Resume banner */}
       {savedProgress && !scraping && (
-        <div className="flex items-center justify-between py-4 px-5 bg-zinc-900 rounded-lg border border-zinc-800">
+        <div className="flex items-center justify-between py-4 px-5 bg-[#161b22] rounded-lg border border-[#30363d]">
           <span className="text-zinc-300">
             Saved: {savedProgress.categoriesCompleted}/{savedProgress.totalCategories} categories
           </span>
           <div className="flex gap-3">
-            <button onClick={() => startScraping(savedProgress.checkpointId)} className="text-purple-400 hover:text-purple-300 font-medium">
+            <button onClick={() => startScraping(savedProgress.checkpointId)} className="text-emerald-400 hover:text-purple-300 font-medium">
               Resume
             </button>
             <button onClick={clearProgress} className="text-zinc-500 hover:text-zinc-300">
@@ -460,9 +460,9 @@ export default function AdminDashboard() {
             <span>Category Scraping {currentProgress.categoriesCompleted}/{currentProgress.totalCategories}</span>
             <span>{currentProgress.totalVideosScraped.toLocaleString()} videos</span>
           </div>
-          <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+          <div className="h-1.5 bg-[#21262d] rounded-full overflow-hidden">
             <div
-              className="h-full bg-purple-500 transition-all"
+              className="h-full bg-emerald-500 transition-all"
               style={{ width: `${(currentProgress.categoriesCompleted / currentProgress.totalCategories) * 100}%` }}
             />
           </div>
@@ -478,9 +478,9 @@ export default function AdminDashboard() {
                 <span>Japanese Keywords {keywordJobs.japanese.job.keywordsCompleted}/{keywordJobs.japanese.job.totalKeywords}</span>
                 <span>+{keywordJobs.japanese.job.totalScraped.toLocaleString()} new</span>
               </div>
-              <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+              <div className="h-1.5 bg-[#21262d] rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-purple-500 transition-all"
+                  className="h-full bg-emerald-500 transition-all"
                   style={{ width: `${(keywordJobs.japanese.job.keywordsCompleted / keywordJobs.japanese.job.totalKeywords) * 100}%` }}
                 />
               </div>
@@ -492,9 +492,9 @@ export default function AdminDashboard() {
                 <span>Chinese Keywords {keywordJobs.chinese.job.keywordsCompleted}/{keywordJobs.chinese.job.totalKeywords}</span>
                 <span>+{keywordJobs.chinese.job.totalScraped.toLocaleString()} new</span>
               </div>
-              <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+              <div className="h-1.5 bg-[#21262d] rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-purple-500 transition-all"
+                  className="h-full bg-emerald-500 transition-all"
                   style={{ width: `${(keywordJobs.chinese.job.keywordsCompleted / keywordJobs.chinese.job.totalKeywords) * 100}%` }}
                 />
               </div>
@@ -504,7 +504,7 @@ export default function AdminDashboard() {
       )}
 
       {/* Unified Scraper */}
-      <div className="p-5 bg-zinc-900 rounded-lg border border-zinc-800">
+      <div className="p-5 bg-[#161b22] rounded-lg border border-[#30363d]">
         <div className="flex items-center justify-between mb-5">
           <span className="font-medium text-lg">Scraper</span>
           <div className="flex items-center gap-2">
@@ -515,7 +515,7 @@ export default function AdminDashboard() {
               max={100}
               value={pagesPerCategory}
               onChange={e => setPagesPerCategory(Math.max(1, Math.min(100, parseInt(e.target.value) || 5)))}
-              className="w-16 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-sm text-center focus:border-purple-500 outline-none"
+              className="w-16 px-2 py-1 bg-[#21262d] border border-[#30363d] rounded text-sm text-center focus:border-emerald-500 outline-none"
             />
           </div>
         </div>
@@ -527,7 +527,7 @@ export default function AdminDashboard() {
           <ChevronDown className={`w-4 h-4 transition-transform ${showCategoryFilter ? 'rotate-180' : ''}`} />
           Filter Categories
           {selectedCategoryIds.size > 0 && (
-            <span className="ml-1 px-2 py-0.5 bg-purple-600/20 text-purple-400 rounded-full text-xs">
+            <span className="ml-1 px-2 py-0.5 bg-emerald-600/20 text-emerald-400 rounded-full text-xs">
               {selectedCategoryIds.size} selected
             </span>
           )}
@@ -573,7 +573,7 @@ export default function AdminDashboard() {
         <button
           onClick={() => startScraping()}
           disabled={isAnyScraping}
-          className="w-full py-3 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors text-base"
+          className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors text-base"
         >
           {isAnyScraping ? <Square className="w-5 h-5" /> : <Play className="w-5 h-5" />}
           {isAnyScraping ? 'Running...' : 'Start Scraping'}
@@ -584,9 +584,9 @@ export default function AdminDashboard() {
       <ThumbnailMigration />
 
       {/* Category Browser */}
-      <div className="bg-zinc-900 rounded-lg border border-zinc-800 overflow-hidden">
+      <div className="bg-[#161b22] rounded-lg border border-[#30363d] overflow-hidden">
         {/* Search bar */}
-        <div className="p-4 border-b border-zinc-800">
+        <div className="p-4 border-b border-[#30363d]">
           <div className="flex gap-3">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
@@ -596,13 +596,13 @@ export default function AdminDashboard() {
                 value={globalVideoSearchQuery}
                 onChange={e => setGlobalVideoSearchQuery(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleGlobalSearch(globalVideoSearchQuery)}
-                className="w-full pl-10 pr-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-sm placeholder:text-zinc-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-colors"
+                className="w-full pl-10 pr-4 py-2.5 bg-[#21262d] border border-[#30363d] rounded-lg text-sm placeholder:text-zinc-500 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-colors"
               />
             </div>
             <button
               onClick={() => handleGlobalSearch(globalVideoSearchQuery)}
               disabled={loadingGlobalSearch}
-              className="px-5 py-2.5 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 rounded-lg font-medium transition-colors"
+              className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 rounded-lg font-medium transition-colors"
             >
               {loadingGlobalSearch ? '...' : 'Search'}
             </button>
@@ -611,14 +611,14 @@ export default function AdminDashboard() {
 
         <div className="grid md:grid-cols-4 min-h-[500px]">
           {/* Categories sidebar */}
-          <div className="border-r border-zinc-800 bg-zinc-900/50">
-            <div className="p-3 border-b border-zinc-800 flex gap-2">
+          <div className="border-r border-[#30363d] bg-[#161b22]/50">
+            <div className="p-3 border-b border-[#30363d] flex gap-2">
               <button
                 onClick={() => setCategoryTab('database')}
                 className={`flex-1 py-2 text-sm rounded-md transition-colors ${
                   categoryTab === 'database'
-                    ? 'bg-purple-600 text-white'
-                    : 'text-zinc-400 hover:bg-zinc-800'
+                    ? 'bg-emerald-600 text-white'
+                    : 'text-zinc-400 hover:bg-[#21262d]'
                 }`}
               >
                 Database
@@ -627,8 +627,8 @@ export default function AdminDashboard() {
                 onClick={() => setCategoryTab('consolidated')}
                 className={`flex-1 py-2 text-sm rounded-md transition-colors ${
                   categoryTab === 'consolidated'
-                    ? 'bg-purple-600 text-white'
-                    : 'text-zinc-400 hover:bg-zinc-800'
+                    ? 'bg-emerald-600 text-white'
+                    : 'text-zinc-400 hover:bg-[#21262d]'
                 }`}
               >
                 Groups
@@ -641,7 +641,7 @@ export default function AdminDashboard() {
                 placeholder="Filter..."
                 value={categorySearchQuery}
                 onChange={e => setCategorySearchQuery(e.target.value)}
-                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm placeholder:text-zinc-500 focus:border-purple-500 outline-none"
+                className="w-full px-3 py-2 bg-[#21262d] border border-[#30363d] rounded-lg text-sm placeholder:text-zinc-500 focus:border-emerald-500 outline-none"
               />
             </div>
 
@@ -652,9 +652,9 @@ export default function AdminDashboard() {
                     <button
                       key={cat.typeId}
                       onClick={() => handleSelectCategory(cat)}
-                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-800 transition-colors ${
+                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-[#21262d] transition-colors ${
                         selectedCategory === cat.typeName
-                          ? 'bg-purple-600/20 text-purple-400'
+                          ? 'bg-emerald-600/20 text-emerald-400'
                           : 'text-zinc-400'
                       }`}
                     >
@@ -672,9 +672,9 @@ export default function AdminDashboard() {
                     <button
                       key={name}
                       onClick={() => handleSelectConsolidatedCategory(name)}
-                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-800 transition-colors ${
+                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-[#21262d] transition-colors ${
                         selectedConsolidated?.name === name
-                          ? 'bg-purple-600/20 text-purple-400'
+                          ? 'bg-emerald-600/20 text-emerald-400'
                           : 'text-zinc-400'
                       }`}
                     >
@@ -721,7 +721,7 @@ export default function AdminDashboard() {
                 {globalSearchTotalCount > globalSearchResults.length && (
                   <button
                     onClick={() => handleGlobalSearch(globalVideoSearchQuery, globalSearchPage + 1)}
-                    className="w-full mt-4 py-3 text-sm text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded-lg transition-colors"
+                    className="w-full mt-4 py-3 text-sm text-zinc-400 hover:text-zinc-200 hover:bg-[#21262d] rounded-lg transition-colors"
                   >
                     Load more
                   </button>
@@ -735,7 +735,7 @@ export default function AdminDashboard() {
                 </div>
                 {loadingCategoryVideos ? (
                   <div className="flex items-center justify-center py-12">
-                    <RefreshCw className="w-5 h-5 animate-spin text-purple-400" />
+                    <RefreshCw className="w-5 h-5 animate-spin text-emerald-400" />
                   </div>
                 ) : categoryVideos.length > 0 ? (
                   <>
@@ -752,8 +752,8 @@ export default function AdminDashboard() {
                             onClick={() => setVideoPage(p)}
                             className={`w-8 h-8 text-sm rounded-md transition-colors ${
                               videoPage === p
-                                ? 'bg-purple-600 text-white'
-                                : 'text-zinc-400 hover:bg-zinc-800'
+                                ? 'bg-emerald-600 text-white'
+                                : 'text-zinc-400 hover:bg-[#21262d]'
                             }`}
                           >
                             {p}
@@ -787,15 +787,15 @@ function VideoCard({ video, selected, onSelect, onDelete }: {
   onDelete: () => void
 }) {
   return (
-    <div className={`group relative rounded-lg overflow-hidden ${selected ? 'ring-2 ring-purple-500' : ''}`}>
+    <div className={`group relative rounded-lg overflow-hidden ${selected ? 'ring-2 ring-emerald-500' : ''}`}>
       {video.vod_pic ? (
-        <img src={video.vod_pic} alt="" className="w-full aspect-video object-cover bg-zinc-800" />
+        <img src={video.vod_pic} alt="" className="w-full aspect-video object-cover bg-[#21262d]" />
       ) : (
-        <div className="w-full aspect-video bg-zinc-800" />
+        <div className="w-full aspect-video bg-[#21262d]" />
       )}
       <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
         {onSelect && (
-          <button onClick={onSelect} className="p-2 bg-zinc-700/80 rounded-lg hover:bg-purple-600 transition-colors">
+          <button onClick={onSelect} className="p-2 bg-zinc-700/80 rounded-lg hover:bg-emerald-600 transition-colors">
             <Check className="w-4 h-4" />
           </button>
         )}

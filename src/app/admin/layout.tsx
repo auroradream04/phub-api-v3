@@ -31,7 +31,7 @@ export default function AdminLayout({
   const userRole = (session?.user as { role?: string })?.role
   if (status === 'loading' || !session || userRole !== 'admin') {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+      <div className="min-h-screen bg-[#0d1117] flex items-center justify-center">
         <div className="text-zinc-500 text-sm">Loading...</div>
       </div>
     )
@@ -46,11 +46,11 @@ export default function AdminLayout({
   ]
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex">
+    <div className="min-h-screen bg-[#0d1117] text-zinc-100 flex">
       {/* Sidebar */}
-      <aside className="w-64 border-r border-zinc-800 flex flex-col bg-zinc-900/50">
-        <div className="p-5 border-b border-zinc-800">
-          <span className="text-base font-semibold">Admin</span>
+      <aside className="w-64 border-r border-[#1c2128] flex flex-col bg-[#010409]">
+        <div className="p-5 border-b border-[#1c2128]">
+          <span className="text-base font-semibold text-zinc-100">Admin</span>
         </div>
 
         <nav className="flex-1 p-3 space-y-1">
@@ -62,21 +62,21 @@ export default function AdminLayout({
                 href={item.href}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
                   isActive
-                    ? 'bg-purple-600/20 text-purple-400'
-                    : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'
+                    ? 'bg-emerald-500/10 text-emerald-400'
+                    : 'text-zinc-400 hover:text-zinc-100 hover:bg-[#1c2128]'
                 }`}
               >
-                <item.icon className={`w-5 h-5 ${isActive ? 'text-purple-400' : ''}`} />
+                <item.icon className={`w-5 h-5 ${isActive ? 'text-emerald-400' : ''}`} />
                 {item.name}
               </Link>
             )
           })}
         </nav>
 
-        <div className="p-3 border-t border-zinc-800">
+        <div className="p-3 border-t border-[#1c2128]">
           <button
             onClick={() => signOut({ callbackUrl: '/login' })}
-            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
+            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm text-zinc-400 hover:text-zinc-100 hover:bg-[#1c2128] transition-colors"
           >
             <LogOut className="w-5 h-5" />
             Sign out
@@ -85,7 +85,7 @@ export default function AdminLayout({
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto bg-[#0d1117]">
         {children}
       </main>
     </div>
