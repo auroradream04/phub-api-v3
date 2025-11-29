@@ -72,13 +72,14 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [message, setMessage] = useState('')
   const [pagesPerCategory, setPagesPerCategory] = useState(5)
-  const [showCategoryFilter, setShowCategoryFilter] = useState(true) // Open by default
+  const [showCategoryFilter, setShowCategoryFilter] = useState(false)
   const [savedProgress, setSavedProgress] = useState<ScraperProgress | null>(null)
   const [currentProgress, setCurrentProgress] = useState<ScraperProgress | null>(null)
   const checkpointIdRef = useRef<string>('')
 
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<Set<number>>(new Set())
   const [availableCategories, setAvailableCategories] = useState<Array<{id: number; name: string; isCustom: boolean}>>([])
+  const [scraperCategoryFilter, setScraperCategoryFilter] = useState('')
 
   const [categoryTab, setCategoryTab] = useState<'database' | 'consolidated'>('database')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
@@ -527,58 +528,88 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <button
-          onClick={() => setShowCategoryFilter(!showCategoryFilter)}
-          className="flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-200 mb-4"
-        >
-          <ChevronDown className={`w-4 h-4 transition-transform ${showCategoryFilter ? 'rotate-180' : ''}`} />
-          Filter Categories
-          {selectedCategoryIds.size > 0 && (
-            <span className="ml-1 px-2 py-0.5 bg-purple-600/20 text-purple-400 rounded-full text-xs">
-              {selectedCategoryIds.size} selected
-            </span>
-          )}
-        </button>
+        {/* Category Selection */}
+        <div className="mb-5 space-y-3">
+          {/* Quick actions row */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => {
+                // Select all (regular + custom)
+                setSelectedCategoryIds(new Set(availableCategories.map(c => c.id)))
+              }}
+              className={`px-3 py-1.5 rounded text-sm transition-colors ${
+                selectedCategoryIds.size === availableCategories.length
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+              }`}
+            >
+              All Categories
+            </button>
 
-        {showCategoryFilter && (
-          <div className="mb-5 space-y-4">
-            {/* Special categories (Japanese/Chinese) */}
-            <div className="flex flex-wrap gap-2">
-              {customCategories.map(cat => (
-                <Tag
-                  key={cat.id}
-                  selected={selectedCategoryIds.has(cat.id)}
-                  onClick={() => toggleCategorySelection(cat.id)}
-                >
-                  {cat.name}
-                </Tag>
-              ))}
-              <span className="text-xs text-zinc-600 self-center ml-1">← keyword search</span>
-            </div>
+            {customCategories.map(cat => (
+              <button
+                key={cat.id}
+                onClick={() => toggleCategorySelection(cat.id)}
+                className={`px-3 py-1.5 rounded text-sm transition-colors ${
+                  selectedCategoryIds.has(cat.id)
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                }`}
+              >
+                {cat.name}
+              </button>
+            ))}
 
-            {/* Regular categories */}
-            <div className="flex flex-wrap gap-1.5">
-              {regularCategories.map(cat => (
-                <Tag
-                  key={cat.id}
-                  selected={selectedCategoryIds.has(cat.id)}
-                  onClick={() => toggleCategorySelection(cat.id)}
-                >
-                  {cat.name}
-                </Tag>
-              ))}
-            </div>
+            {selectedCategoryIds.size > 0 && selectedCategoryIds.size < availableCategories.length && (
+              <span className="text-xs text-zinc-500">
+                {selectedCategoryIds.size} selected
+              </span>
+            )}
 
             {selectedCategoryIds.size > 0 && (
               <button
                 onClick={() => setSelectedCategoryIds(new Set())}
-                className="text-xs text-zinc-500 hover:text-zinc-300"
+                className="text-xs text-zinc-500 hover:text-zinc-300 ml-auto"
               >
-                Clear ({selectedCategoryIds.size})
+                Clear
               </button>
             )}
+
+            <button
+              onClick={() => setShowCategoryFilter(!showCategoryFilter)}
+              className="text-xs text-zinc-500 hover:text-zinc-300 flex items-center gap-1"
+            >
+              {showCategoryFilter ? 'Hide' : 'Customize'}
+              <ChevronDown className={`w-3 h-3 transition-transform ${showCategoryFilter ? 'rotate-180' : ''}`} />
+            </button>
           </div>
-        )}
+
+          {/* Expanded category picker */}
+          {showCategoryFilter && (
+            <div className="p-3 bg-zinc-800/30 rounded-lg space-y-3">
+              <input
+                type="text"
+                placeholder="Filter categories..."
+                value={scraperCategoryFilter}
+                onChange={e => setScraperCategoryFilter(e.target.value)}
+                className="w-full px-3 py-1.5 bg-zinc-900 border border-zinc-700 rounded text-sm placeholder:text-zinc-600 focus:border-purple-500 outline-none"
+              />
+              <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
+                {regularCategories
+                  .filter(cat => cat.name.toLowerCase().includes(scraperCategoryFilter.toLowerCase()))
+                  .map(cat => (
+                    <Tag
+                      key={cat.id}
+                      selected={selectedCategoryIds.has(cat.id)}
+                      onClick={() => toggleCategorySelection(cat.id)}
+                    >
+                      {cat.name}
+                    </Tag>
+                  ))}
+              </div>
+            </div>
+          )}
+        </div>
 
         <button
           onClick={() => startScraping()}
