@@ -167,7 +167,7 @@ export function ThumbnailMigration() {
   const estimatedTotalGB = stats ? ((stats.pending * 15) / 1024 / 1024).toFixed(1) : '0'
 
   return (
-    <div className="p-5 bg-[#161b22]/50 rounded-lg border border-[#30363d]">
+    <div className="p-5 bg-[#18181b]/50 rounded-lg border border-[#27272a]">
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <span className="text-sm font-medium text-zinc-200">Thumbnail Migration</span>
@@ -203,7 +203,7 @@ export function ThumbnailMigration() {
             <span className="text-purple-400 font-medium">{stats.percentComplete.toFixed(1)}%</span>
             <span>{disk?.totalSizeMB.toFixed(1)} MB / ~{estimatedTotalGB} GB</span>
           </div>
-          <div className="h-2 bg-[#21262d] rounded-full overflow-hidden">
+          <div className="h-2 bg-[#1f1f23] rounded-full overflow-hidden">
             <div
               className="h-full bg-purple-600 transition-all"
               style={{ width: `${stats.percentComplete}%` }}
@@ -220,7 +220,7 @@ export function ThumbnailMigration() {
             type="number"
             value={batchSize}
             onChange={(e) => setBatchSize(Math.min(500, Math.max(10, parseInt(e.target.value) || 100)))}
-            className="w-20 px-3 py-1.5 bg-[#21262d] border border-[#30363d] rounded-lg text-zinc-100 focus:outline-none focus:border-purple-500"
+            className="w-20 px-3 py-1.5 bg-[#1f1f23] border border-[#27272a] rounded-lg text-zinc-100 focus:outline-none focus:border-purple-500"
           />
         </div>
         <div className="flex items-center gap-2 text-sm">
@@ -229,7 +229,7 @@ export function ThumbnailMigration() {
             type="number"
             value={concurrency}
             onChange={(e) => setConcurrency(Math.min(20, Math.max(1, parseInt(e.target.value) || 10)))}
-            className="w-16 px-3 py-1.5 bg-[#21262d] border border-[#30363d] rounded-lg text-zinc-100 focus:outline-none focus:border-purple-500"
+            className="w-16 px-3 py-1.5 bg-[#1f1f23] border border-[#27272a] rounded-lg text-zinc-100 focus:outline-none focus:border-purple-500"
           />
         </div>
         {message && <span className="text-sm text-zinc-400">{message}</span>}
@@ -250,7 +250,7 @@ export function ThumbnailMigration() {
             <button
               onClick={startAutoRun}
               disabled={migrating || !stats?.pending}
-              className="flex items-center gap-2 px-4 py-2 bg-[#21262d] hover:bg-zinc-700 disabled:opacity-50 rounded-lg text-sm transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-[#1f1f23] hover:bg-zinc-700 disabled:opacity-50 rounded-lg text-sm transition-colors"
             >
               <RefreshCw className="w-4 h-4" />
               Auto-Run
@@ -271,13 +271,13 @@ export function ThumbnailMigration() {
             <button
               onClick={runRecovery}
               disabled={recovering}
-              className="px-4 py-2 bg-[#21262d] hover:bg-zinc-700 disabled:opacity-50 rounded-lg text-sm transition-colors"
+              className="px-4 py-2 bg-[#1f1f23] hover:bg-zinc-700 disabled:opacity-50 rounded-lg text-sm transition-colors"
             >
               {recovering ? 'Recovering...' : 'Recover Failed'}
             </button>
             <button
               onClick={() => setShowFailures(!showFailures)}
-              className="flex items-center gap-2 px-4 py-2 bg-[#21262d] hover:bg-zinc-700 rounded-lg text-sm transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-[#1f1f23] hover:bg-zinc-700 rounded-lg text-sm transition-colors"
             >
               <ChevronDown className={`w-4 h-4 transition-transform ${showFailures ? 'rotate-180' : ''}`} />
               Failures ({stats.failed})
@@ -288,7 +288,7 @@ export function ThumbnailMigration() {
 
       {/* Failures list */}
       {showFailures && failures.length > 0 && (
-        <div className="mt-5 border-t border-[#30363d] pt-5">
+        <div className="mt-5 border-t border-[#27272a] pt-5">
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm text-zinc-500">Failed thumbnails</span>
             <button onClick={deleteUnrecoverable} className="text-sm text-red-400 hover:text-red-300 transition-colors">

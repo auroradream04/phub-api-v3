@@ -57,7 +57,7 @@ function Tag({ selected, onClick, children }: {
       className={`px-3 py-1.5 rounded text-sm transition-all line-clamp-1 ${
         selected
           ? 'bg-purple-600 text-white'
-          : 'bg-[#21262d] text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300'
+          : 'bg-[#1f1f23] text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300'
       }`}
     >
       {children}
@@ -438,7 +438,7 @@ export default function AdminDashboard() {
 
       {/* Resume banner */}
       {savedProgress && !scraping && (
-        <div className="flex items-center justify-between py-4 px-5 bg-[#161b22] rounded-lg border border-[#30363d]">
+        <div className="flex items-center justify-between py-4 px-5 bg-[#18181b] rounded-lg border border-[#27272a]">
           <span className="text-zinc-300">
             Saved: {savedProgress.categoriesCompleted}/{savedProgress.totalCategories} categories
           </span>
@@ -460,7 +460,7 @@ export default function AdminDashboard() {
             <span>Category Scraping {currentProgress.categoriesCompleted}/{currentProgress.totalCategories}</span>
             <span>{currentProgress.totalVideosScraped.toLocaleString()} videos</span>
           </div>
-          <div className="h-1.5 bg-[#21262d] rounded-full overflow-hidden">
+          <div className="h-1.5 bg-[#1f1f23] rounded-full overflow-hidden">
             <div
               className="h-full bg-purple-500 transition-all"
               style={{ width: `${(currentProgress.categoriesCompleted / currentProgress.totalCategories) * 100}%` }}
@@ -478,7 +478,7 @@ export default function AdminDashboard() {
                 <span>Japanese Keywords {keywordJobs.japanese.job.keywordsCompleted}/{keywordJobs.japanese.job.totalKeywords}</span>
                 <span>+{keywordJobs.japanese.job.totalScraped.toLocaleString()} new</span>
               </div>
-              <div className="h-1.5 bg-[#21262d] rounded-full overflow-hidden">
+              <div className="h-1.5 bg-[#1f1f23] rounded-full overflow-hidden">
                 <div
                   className="h-full bg-purple-500 transition-all"
                   style={{ width: `${(keywordJobs.japanese.job.keywordsCompleted / keywordJobs.japanese.job.totalKeywords) * 100}%` }}
@@ -492,7 +492,7 @@ export default function AdminDashboard() {
                 <span>Chinese Keywords {keywordJobs.chinese.job.keywordsCompleted}/{keywordJobs.chinese.job.totalKeywords}</span>
                 <span>+{keywordJobs.chinese.job.totalScraped.toLocaleString()} new</span>
               </div>
-              <div className="h-1.5 bg-[#21262d] rounded-full overflow-hidden">
+              <div className="h-1.5 bg-[#1f1f23] rounded-full overflow-hidden">
                 <div
                   className="h-full bg-purple-500 transition-all"
                   style={{ width: `${(keywordJobs.chinese.job.keywordsCompleted / keywordJobs.chinese.job.totalKeywords) * 100}%` }}
@@ -504,7 +504,7 @@ export default function AdminDashboard() {
       )}
 
       {/* Unified Scraper */}
-      <div className="p-5 bg-[#161b22] rounded-lg border border-[#30363d]">
+      <div className="p-5 bg-[#18181b] rounded-lg border border-[#27272a]">
         <div className="flex items-center justify-between mb-5">
           <span className="font-medium text-lg">Scraper</span>
           <div className="flex items-center gap-2">
@@ -515,7 +515,7 @@ export default function AdminDashboard() {
               max={100}
               value={pagesPerCategory}
               onChange={e => setPagesPerCategory(Math.max(1, Math.min(100, parseInt(e.target.value) || 5)))}
-              className="w-16 px-2 py-1 bg-[#21262d] border border-[#30363d] rounded text-sm text-center focus:border-purple-500 outline-none"
+              className="w-16 px-2 py-1 bg-[#1f1f23] border border-[#27272a] rounded text-sm text-center focus:border-purple-500 outline-none"
             />
           </div>
         </div>
@@ -584,9 +584,9 @@ export default function AdminDashboard() {
       <ThumbnailMigration />
 
       {/* Category Browser */}
-      <div className="bg-[#161b22] rounded-lg border border-[#30363d] overflow-hidden">
+      <div className="bg-[#18181b] rounded-lg border border-[#27272a] overflow-hidden">
         {/* Search bar */}
-        <div className="p-4 border-b border-[#30363d]">
+        <div className="p-4 border-b border-[#27272a]">
           <div className="flex gap-3">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
@@ -596,7 +596,7 @@ export default function AdminDashboard() {
                 value={globalVideoSearchQuery}
                 onChange={e => setGlobalVideoSearchQuery(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleGlobalSearch(globalVideoSearchQuery)}
-                className="w-full pl-10 pr-4 py-2.5 bg-[#21262d] border border-[#30363d] rounded-lg text-sm placeholder:text-zinc-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-colors"
+                className="w-full pl-10 pr-4 py-2.5 bg-[#1f1f23] border border-[#27272a] rounded-lg text-sm placeholder:text-zinc-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-colors"
               />
             </div>
             <button
@@ -611,14 +611,14 @@ export default function AdminDashboard() {
 
         <div className="grid md:grid-cols-4 min-h-[500px]">
           {/* Categories sidebar */}
-          <div className="border-r border-[#30363d] bg-[#161b22]/50">
-            <div className="p-3 border-b border-[#30363d] flex gap-2">
+          <div className="border-r border-[#27272a] bg-[#18181b]/50">
+            <div className="p-3 border-b border-[#27272a] flex gap-2">
               <button
                 onClick={() => setCategoryTab('database')}
                 className={`flex-1 py-2 text-sm rounded-md transition-colors ${
                   categoryTab === 'database'
                     ? 'bg-purple-600 text-white'
-                    : 'text-zinc-400 hover:bg-[#21262d]'
+                    : 'text-zinc-400 hover:bg-[#1f1f23]'
                 }`}
               >
                 Database
@@ -628,7 +628,7 @@ export default function AdminDashboard() {
                 className={`flex-1 py-2 text-sm rounded-md transition-colors ${
                   categoryTab === 'consolidated'
                     ? 'bg-purple-600 text-white'
-                    : 'text-zinc-400 hover:bg-[#21262d]'
+                    : 'text-zinc-400 hover:bg-[#1f1f23]'
                 }`}
               >
                 Groups
@@ -641,7 +641,7 @@ export default function AdminDashboard() {
                 placeholder="Filter..."
                 value={categorySearchQuery}
                 onChange={e => setCategorySearchQuery(e.target.value)}
-                className="w-full px-3 py-2 bg-[#21262d] border border-[#30363d] rounded-lg text-sm placeholder:text-zinc-500 focus:border-purple-500 outline-none"
+                className="w-full px-3 py-2 bg-[#1f1f23] border border-[#27272a] rounded-lg text-sm placeholder:text-zinc-500 focus:border-purple-500 outline-none"
               />
             </div>
 
@@ -652,7 +652,7 @@ export default function AdminDashboard() {
                     <button
                       key={cat.typeId}
                       onClick={() => handleSelectCategory(cat)}
-                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-[#21262d] transition-colors ${
+                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-[#1f1f23] transition-colors ${
                         selectedCategory === cat.typeName
                           ? 'bg-purple-600/20 text-purple-400'
                           : 'text-zinc-400'
@@ -672,7 +672,7 @@ export default function AdminDashboard() {
                     <button
                       key={name}
                       onClick={() => handleSelectConsolidatedCategory(name)}
-                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-[#21262d] transition-colors ${
+                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-[#1f1f23] transition-colors ${
                         selectedConsolidated?.name === name
                           ? 'bg-purple-600/20 text-purple-400'
                           : 'text-zinc-400'
@@ -721,7 +721,7 @@ export default function AdminDashboard() {
                 {globalSearchTotalCount > globalSearchResults.length && (
                   <button
                     onClick={() => handleGlobalSearch(globalVideoSearchQuery, globalSearchPage + 1)}
-                    className="w-full mt-4 py-3 text-sm text-zinc-400 hover:text-zinc-200 hover:bg-[#21262d] rounded-lg transition-colors"
+                    className="w-full mt-4 py-3 text-sm text-zinc-400 hover:text-zinc-200 hover:bg-[#1f1f23] rounded-lg transition-colors"
                   >
                     Load more
                   </button>
@@ -753,7 +753,7 @@ export default function AdminDashboard() {
                             className={`w-8 h-8 text-sm rounded-md transition-colors ${
                               videoPage === p
                                 ? 'bg-purple-600 text-white'
-                                : 'text-zinc-400 hover:bg-[#21262d]'
+                                : 'text-zinc-400 hover:bg-[#1f1f23]'
                             }`}
                           >
                             {p}
@@ -789,9 +789,9 @@ function VideoCard({ video, selected, onSelect, onDelete }: {
   return (
     <div className={`group relative rounded-lg overflow-hidden ${selected ? 'ring-2 ring-purple-500' : ''}`}>
       {video.vod_pic ? (
-        <img src={video.vod_pic} alt="" className="w-full aspect-video object-cover bg-[#21262d]" />
+        <img src={video.vod_pic} alt="" className="w-full aspect-video object-cover bg-[#1f1f23]" />
       ) : (
-        <div className="w-full aspect-video bg-[#21262d]" />
+        <div className="w-full aspect-video bg-[#1f1f23]" />
       )}
       <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
         {onSelect && (

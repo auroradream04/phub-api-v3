@@ -31,7 +31,7 @@ export default function AdminLayout({
   const userRole = (session?.user as { role?: string })?.role
   if (status === 'loading' || !session || userRole !== 'admin') {
     return (
-      <div className="min-h-screen bg-[#0d1117] flex items-center justify-center">
+      <div className="min-h-screen bg-[#111113] flex items-center justify-center">
         <div className="text-zinc-500 text-sm">Loading...</div>
       </div>
     )
@@ -46,10 +46,10 @@ export default function AdminLayout({
   ]
 
   return (
-    <div className="min-h-screen bg-[#0d1117] text-zinc-100 flex">
+    <div className="min-h-screen bg-[#111113] text-zinc-100 flex">
       {/* Sidebar */}
-      <aside className="w-64 border-r border-[#1c2128] flex flex-col bg-[#010409]">
-        <div className="p-5 border-b border-[#1c2128]">
+      <aside className="w-64 border-r border-[#1f1f22] flex flex-col bg-[#0c0c0e]">
+        <div className="p-5 border-b border-[#1f1f22]">
           <span className="text-base font-semibold text-zinc-100">Admin</span>
         </div>
 
@@ -63,7 +63,7 @@ export default function AdminLayout({
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
                   isActive
                     ? 'bg-purple-500/10 text-purple-400'
-                    : 'text-zinc-400 hover:text-zinc-100 hover:bg-[#1c2128]'
+                    : 'text-zinc-400 hover:text-zinc-100 hover:bg-[#1a1a1c]'
                 }`}
               >
                 <item.icon className={`w-5 h-5 ${isActive ? 'text-purple-400' : ''}`} />
@@ -73,10 +73,10 @@ export default function AdminLayout({
           })}
         </nav>
 
-        <div className="p-3 border-t border-[#1c2128]">
+        <div className="p-3 border-t border-[#1f1f22]">
           <button
             onClick={() => signOut({ callbackUrl: '/login' })}
-            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm text-zinc-400 hover:text-zinc-100 hover:bg-[#1c2128] transition-colors"
+            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm text-zinc-400 hover:text-zinc-100 hover:bg-[#1a1a1c] transition-colors"
           >
             <LogOut className="w-5 h-5" />
             Sign out
@@ -85,7 +85,7 @@ export default function AdminLayout({
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 overflow-auto bg-[#0d1117]">
+      <main className="flex-1 overflow-auto bg-[#111113]">
         {children}
       </main>
     </div>
