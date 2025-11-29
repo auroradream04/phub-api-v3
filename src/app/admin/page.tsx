@@ -33,11 +33,16 @@ interface MaccmsVideo {
 interface KeywordJob {
   status: string
   totalScraped: number
+  totalDuplicates?: number
   keywordsCompleted: number
   totalKeywords: number
 }
 
 const STORAGE_KEY = 'scraper_progress'
+
+// Custom category IDs for keyword-based scraping
+const JAPANESE_CATEGORY_ID = 9999
+const CHINESE_CATEGORY_ID = 9998
 
 export default function AdminDashboard() {
   const { data: session } = useSession()
@@ -69,11 +74,14 @@ export default function AdminDashboard() {
   const [globalSearchTotalCount, setGlobalSearchTotalCount] = useState(0)
   const [selectedSearchVideoIds, setSelectedSearchVideoIds] = useState<Set<string>>(new Set())
 
-  const [keywordScrapingJapanese, setKeywordScrapingJapanese] = useState(false)
-  const [keywordScrapingChinese, setKeywordScrapingChinese] = useState(false)
-  const [keywordJobJapanese, setKeywordJobJapanese] = useState<KeywordJob | null>(null)
-  const [keywordJobChinese, setKeywordJobChinese] = useState<KeywordJob | null>(null)
-  const [keywordPagesPerKeyword, setKeywordPagesPerKeyword] = useState(3)
+  // Keyword scraper state (for japanese/chinese)
+  const [keywordJobs, setKeywordJobs] = useState<{
+    japanese: { running: boolean; job: KeywordJob | null }
+    chinese: { running: boolean; job: KeywordJob | null }
+  }>({
+    japanese: { running: false, job: null },
+    chinese: { running: false, job: null }
+  })
 
   const videosPerPage = 18
 
@@ -152,14 +160,81 @@ export default function AdminDashboard() {
     return null
   }
 
+  // Start keyword scraping for japanese or chinese
+  const startKeywordScraping = async (category: 'japanese' | 'chinese') => {
+    setKeywordJobs(prev => ({
+      ...prev,
+      [category]: { running: true, job: null }
+    }))
+
+    try {
+      const res = await fetch('/api/scraper/keyword-search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ category, pagesPerKeyword: pagesPerCategory })
+      })
+      const data = await res.json()
+
+      if (data.success) {
+        const pollInterval = setInterval(async () => {
+          const statusRes = await fetch(`/api/scraper/keyword-search?jobId=${data.jobId}`)
+          const statusData = await statusRes.json()
+          if (statusData.success && statusData.job) {
+            setKeywordJobs(prev => ({
+              ...prev,
+              [category]: { running: statusData.job.status === 'running', job: statusData.job }
+            }))
+            if (statusData.job.status === 'completed' || statusData.job.status === 'failed') {
+              clearInterval(pollInterval)
+              fetchStats()
+            }
+          }
+        }, 2000)
+      } else {
+        setKeywordJobs(prev => ({
+          ...prev,
+          [category]: { running: false, job: null }
+        }))
+      }
+    } catch {
+      setKeywordJobs(prev => ({
+        ...prev,
+        [category]: { running: false, job: null }
+      }))
+    }
+  }
+
   const startScraping = async (resumeId?: string) => {
+    // Check if japanese or chinese categories are selected
+    const hasJapanese = selectedCategoryIds.has(JAPANESE_CATEGORY_ID)
+    const hasChinese = selectedCategoryIds.has(CHINESE_CATEGORY_ID)
+    const regularCategoryIds = Array.from(selectedCategoryIds).filter(
+      id => id !== JAPANESE_CATEGORY_ID && id !== CHINESE_CATEGORY_ID
+    )
+
+    // Start keyword scrapers for special categories
+    if (hasJapanese && !keywordJobs.japanese.running) {
+      startKeywordScraping('japanese')
+    }
+    if (hasChinese && !keywordJobs.chinese.running) {
+      startKeywordScraping('chinese')
+    }
+
+    // Only start regular scraper if there are regular categories selected, or no filter (scrape all)
+    const shouldScrapeRegular = regularCategoryIds.length > 0 || selectedCategoryIds.size === 0
+
+    if (!shouldScrapeRegular) {
+      // Only keyword categories selected, no regular scraping needed
+      return
+    }
+
     setScraping(true)
     setMessage('Starting...')
 
     try {
       const body: Record<string, unknown> = { pagesPerCategory }
       if (resumeId) body.resumeCheckpointId = resumeId
-      if (selectedCategoryIds.size > 0) body.categoryIds = Array.from(selectedCategoryIds)
+      if (regularCategoryIds.length > 0) body.categoryIds = regularCategoryIds
 
       const res = await fetch('/api/scraper/categories-with-recovery', {
         method: 'POST',
@@ -189,38 +264,6 @@ export default function AdminDashboard() {
       setMessage(`Error: ${e instanceof Error ? e.message : 'Unknown'}`)
       setScraping(false)
     }
-  }
-
-  const startKeywordScraping = async (category: 'japanese' | 'chinese') => {
-    const setLoading = category === 'japanese' ? setKeywordScrapingJapanese : setKeywordScrapingChinese
-    const setJob = category === 'japanese' ? setKeywordJobJapanese : setKeywordJobChinese
-
-    setLoading(true)
-    try {
-      const res = await fetch('/api/scraper/keyword-search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ category, pagesPerKeyword: keywordPagesPerKeyword })
-      })
-      const data = await res.json()
-
-      if (data.success) {
-        const pollInterval = setInterval(async () => {
-          const statusRes = await fetch(`/api/scraper/keyword-search?jobId=${data.jobId}`)
-          const statusData = await statusRes.json()
-          if (statusData.success) {
-            setJob(statusData.job)
-            if (statusData.job.status === 'completed' || statusData.job.status === 'failed') {
-              clearInterval(pollInterval)
-              setLoading(false)
-              fetchStats()
-            }
-          }
-        }, 2000)
-      } else {
-        setLoading(false)
-      }
-    } catch { setLoading(false) }
   }
 
   const handleSelectCategory = async (category: { typeId: number; typeName: string }) => {
@@ -315,6 +358,15 @@ export default function AdminDashboard() {
   const paginatedVideos = categoryVideos.slice((videoPage - 1) * videosPerPage, videoPage * videosPerPage)
   const totalPages = Math.ceil(categoryVideos.length / videosPerPage)
 
+  // Check if any scraping is active
+  const isAnyScraping = scraping || keywordJobs.japanese.running || keywordJobs.chinese.running
+
+  // Get selected special categories for display
+  const selectedSpecialCategories = {
+    japanese: selectedCategoryIds.has(JAPANESE_CATEGORY_ID),
+    chinese: selectedCategoryIds.has(CHINESE_CATEGORY_ID)
+  }
+
   if (!session) {
     return <div className="p-8 text-zinc-500">Please sign in.</div>
   }
@@ -363,11 +415,11 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* Progress bar */}
-      {scraping && currentProgress && (
+      {/* Progress bars */}
+      {(scraping && currentProgress) && (
         <div className="space-y-2">
           <div className="flex justify-between text-sm text-zinc-400">
-            <span>Scraping {currentProgress.categoriesCompleted}/{currentProgress.totalCategories}</span>
+            <span>Category Scraping {currentProgress.categoriesCompleted}/{currentProgress.totalCategories}</span>
             <span>{currentProgress.totalVideosScraped.toLocaleString()} videos</span>
           </div>
           <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
@@ -379,12 +431,46 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* Scrapers */}
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Category Scraper */}
-        <div className="p-5 bg-zinc-900 rounded-lg border border-zinc-800">
-          <div className="flex items-center justify-between mb-5">
-            <span className="font-medium">Category Scraper</span>
+      {/* Keyword scraper progress */}
+      {(keywordJobs.japanese.running || keywordJobs.chinese.running) && (
+        <div className="space-y-3">
+          {keywordJobs.japanese.running && keywordJobs.japanese.job && (
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm text-zinc-400">
+                <span>Japanese Keywords {keywordJobs.japanese.job.keywordsCompleted}/{keywordJobs.japanese.job.totalKeywords}</span>
+                <span>+{keywordJobs.japanese.job.totalScraped.toLocaleString()} new</span>
+              </div>
+              <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-purple-500 transition-all"
+                  style={{ width: `${(keywordJobs.japanese.job.keywordsCompleted / keywordJobs.japanese.job.totalKeywords) * 100}%` }}
+                />
+              </div>
+            </div>
+          )}
+          {keywordJobs.chinese.running && keywordJobs.chinese.job && (
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm text-zinc-400">
+                <span>Chinese Keywords {keywordJobs.chinese.job.keywordsCompleted}/{keywordJobs.chinese.job.totalKeywords}</span>
+                <span>+{keywordJobs.chinese.job.totalScraped.toLocaleString()} new</span>
+              </div>
+              <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-purple-500 transition-all"
+                  style={{ width: `${(keywordJobs.chinese.job.keywordsCompleted / keywordJobs.chinese.job.totalKeywords) * 100}%` }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Unified Scraper */}
+      <div className="p-5 bg-zinc-900 rounded-lg border border-zinc-800">
+        <div className="flex items-center justify-between mb-5">
+          <span className="font-medium text-lg">Scraper</span>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-zinc-500">Pages per category</span>
             <div className="flex gap-1">
               {[3, 5, 10, 20].map(n => (
                 <button
@@ -401,18 +487,50 @@ export default function AdminDashboard() {
               ))}
             </div>
           </div>
+        </div>
 
-          <button
-            onClick={() => setShowCategoryFilter(!showCategoryFilter)}
-            className="flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-200 mb-4"
-          >
-            <ChevronDown className={`w-4 h-4 transition-transform ${showCategoryFilter ? 'rotate-180' : ''}`} />
-            Filter Categories
-          </button>
+        <button
+          onClick={() => setShowCategoryFilter(!showCategoryFilter)}
+          className="flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-200 mb-4"
+        >
+          <ChevronDown className={`w-4 h-4 transition-transform ${showCategoryFilter ? 'rotate-180' : ''}`} />
+          Filter Categories
+          {selectedCategoryIds.size > 0 && (
+            <span className="ml-1 px-2 py-0.5 bg-purple-600/20 text-purple-400 rounded-full text-xs">
+              {selectedCategoryIds.size} selected
+            </span>
+          )}
+        </button>
 
-          {showCategoryFilter && (
-            <div className="mb-4 max-h-40 overflow-y-auto space-y-1">
-              {availableCategories.map(cat => (
+        {showCategoryFilter && (
+          <div className="mb-5 p-4 bg-zinc-800/50 rounded-lg">
+            {/* Special categories (Japanese/Chinese) - always on top */}
+            <div className="mb-4 pb-4 border-b border-zinc-700">
+              <span className="text-xs text-zinc-500 uppercase tracking-wide mb-2 block">Keyword Search Categories</span>
+              <div className="flex gap-4">
+                {availableCategories.filter(c => c.isCustom).map(cat => (
+                  <label key={cat.id} className="flex items-center gap-2 text-sm text-zinc-300 hover:text-zinc-100 cursor-pointer py-1">
+                    <input
+                      type="checkbox"
+                      checked={selectedCategoryIds.has(cat.id)}
+                      onChange={e => {
+                        const newSet = new Set(selectedCategoryIds)
+                        if (e.target.checked) newSet.add(cat.id)
+                        else newSet.delete(cat.id)
+                        setSelectedCategoryIds(newSet)
+                      }}
+                      className="rounded border-zinc-600 bg-zinc-800 text-purple-500 focus:ring-purple-500"
+                    />
+                    <span className="capitalize">{cat.name}</span>
+                    <span className="text-xs text-zinc-500">(uses keyword search)</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Regular categories */}
+            <div className="max-h-48 overflow-y-auto grid grid-cols-3 gap-x-4 gap-y-1">
+              {availableCategories.filter(c => !c.isCustom).map(cat => (
                 <label key={cat.id} className="flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-200 cursor-pointer py-1">
                   <input
                     type="checkbox"
@@ -429,56 +547,42 @@ export default function AdminDashboard() {
                 </label>
               ))}
             </div>
-          )}
 
-          <button
-            onClick={() => startScraping()}
-            disabled={scraping}
-            className="w-full py-2.5 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
-          >
-            {scraping ? <Square className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-            {scraping ? 'Running...' : 'Start Scraping'}
-          </button>
-        </div>
-
-        {/* Keyword Scraper */}
-        <div className="p-5 bg-zinc-900 rounded-lg border border-zinc-800">
-          <div className="flex items-center justify-between mb-5">
-            <span className="font-medium">Keyword Scraper</span>
-            <div className="flex gap-1">
-              {[1, 3, 5, 10].map(n => (
-                <button
-                  key={n}
-                  onClick={() => setKeywordPagesPerKeyword(n)}
-                  className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                    keywordPagesPerKeyword === n
-                      ? 'bg-purple-600 text-white'
-                      : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'
-                  }`}
-                >
-                  {n}
-                </button>
-              ))}
-            </div>
+            {selectedCategoryIds.size > 0 && (
+              <button
+                onClick={() => setSelectedCategoryIds(new Set())}
+                className="mt-3 text-sm text-zinc-500 hover:text-zinc-300"
+              >
+                Clear selection
+              </button>
+            )}
           </div>
+        )}
 
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={() => startKeywordScraping('japanese')}
-              disabled={keywordScrapingJapanese}
-              className="py-2.5 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 rounded-lg font-medium transition-colors"
-            >
-              {keywordScrapingJapanese ? `JP ${keywordJobJapanese?.keywordsCompleted || 0}/${keywordJobJapanese?.totalKeywords || 0}` : 'Japanese'}
-            </button>
-            <button
-              onClick={() => startKeywordScraping('chinese')}
-              disabled={keywordScrapingChinese}
-              className="py-2.5 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 rounded-lg font-medium transition-colors"
-            >
-              {keywordScrapingChinese ? `CN ${keywordJobChinese?.keywordsCompleted || 0}/${keywordJobChinese?.totalKeywords || 0}` : 'Chinese'}
-            </button>
+        {/* Selected categories indicator */}
+        {(selectedSpecialCategories.japanese || selectedSpecialCategories.chinese) && (
+          <div className="mb-4 flex gap-2">
+            {selectedSpecialCategories.japanese && (
+              <span className="px-3 py-1 bg-purple-600/20 text-purple-400 rounded-full text-sm">
+                Japanese (keyword search)
+              </span>
+            )}
+            {selectedSpecialCategories.chinese && (
+              <span className="px-3 py-1 bg-purple-600/20 text-purple-400 rounded-full text-sm">
+                Chinese (keyword search)
+              </span>
+            )}
           </div>
-        </div>
+        )}
+
+        <button
+          onClick={() => startScraping()}
+          disabled={isAnyScraping}
+          className="w-full py-3 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors text-base"
+        >
+          {isAnyScraping ? <Square className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+          {isAnyScraping ? 'Running...' : 'Start Scraping'}
+        </button>
       </div>
 
       {/* Thumbnail Migration */}
