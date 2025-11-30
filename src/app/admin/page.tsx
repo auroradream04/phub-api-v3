@@ -760,9 +760,9 @@ export default function AdminDashboard() {
                     </button>
                   )}
                 </div>
-                <div className="grid grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                <div className="space-y-1">
                   {globalSearchResults.map(video => (
-                    <VideoCard
+                    <VideoRow
                       key={video.vod_id}
                       video={video}
                       selected={selectedSearchVideoIds.has(video.vod_id)}
@@ -797,9 +797,9 @@ export default function AdminDashboard() {
                   </div>
                 ) : categoryVideos.length > 0 ? (
                   <>
-                    <div className="grid grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                    <div className="space-y-1">
                       {paginatedVideos.map(video => (
-                        <VideoCard key={video.vod_id} video={video} onDelete={() => handleDeleteVideo(video.vod_id)} />
+                        <VideoRow key={video.vod_id} video={video} onDelete={() => handleDeleteVideo(video.vod_id)} />
                       ))}
                     </div>
                     {totalPages > 1 && (
@@ -839,29 +839,43 @@ export default function AdminDashboard() {
   )
 }
 
-function VideoCard({ video, selected, onSelect, onDelete }: {
+function VideoRow({ video, selected, onSelect, onDelete }: {
   video: MaccmsVideo
   selected?: boolean
   onSelect?: () => void
   onDelete: () => void
 }) {
   return (
-    <div className={`group relative rounded-lg overflow-hidden ${selected ? 'ring-2 ring-purple-500' : ''}`}>
-      {video.vod_pic ? (
-        <img src={video.vod_pic} alt="" className="w-full aspect-video object-cover bg-[#1f1f23]" />
-      ) : (
-        <div className="w-full aspect-video bg-[#1f1f23]" />
+    <div className={`flex items-center gap-3 px-3 py-2 hover:bg-[#1f1f23] rounded-lg transition-colors ${selected ? 'bg-purple-600/10' : ''}`}>
+      {onSelect && (
+        <button
+          onClick={onSelect}
+          className={`w-5 h-5 rounded border flex-shrink-0 flex items-center justify-center transition-colors ${
+            selected ? 'bg-purple-600 border-purple-600' : 'border-zinc-600 hover:border-zinc-400'
+          }`}
+        >
+          {selected && <Check className="w-3 h-3" />}
+        </button>
       )}
-      <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-        {onSelect && (
-          <button onClick={onSelect} className="p-2 bg-zinc-700/80 rounded-lg hover:bg-purple-600 transition-colors">
-            <Check className="w-4 h-4" />
-          </button>
-        )}
-        <a href={`/watch/${video.vod_id}`} target="_blank" className="p-2 bg-zinc-700/80 rounded-lg hover:bg-zinc-600 transition-colors">
+      {video.vod_pic && (
+        <img src={video.vod_pic} alt="" className="w-16 h-9 object-cover rounded bg-[#1f1f23] flex-shrink-0" />
+      )}
+      <span className="flex-1 text-sm text-zinc-300 truncate">{video.vod_name}</span>
+      <span className="text-xs text-zinc-600 flex-shrink-0">{video.type_name}</span>
+      <div className="flex items-center gap-1 flex-shrink-0">
+        <a
+          href={`/watch/${video.vod_id}`}
+          target="_blank"
+          className="p-1.5 text-zinc-500 hover:text-zinc-300 hover:bg-[#27272a] rounded transition-colors"
+          title="View"
+        >
           <Eye className="w-4 h-4" />
         </a>
-        <button onClick={onDelete} className="p-2 bg-red-600/80 rounded-lg hover:bg-red-500 transition-colors">
+        <button
+          onClick={onDelete}
+          className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-[#27272a] rounded transition-colors"
+          title="Delete"
+        >
           <Trash2 className="w-4 h-4" />
         </button>
       </div>
