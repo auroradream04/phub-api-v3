@@ -52,10 +52,17 @@ export async function GET() {
     const [totalCount, migratedCount, pendingCount] = await Promise.all([
       prisma.video.count(),
       prisma.video.count({
-        where: { vodPic: { startsWith: '/api/thumbnails/' } },
+        where: { vodPic: { contains: '/api/thumbnails/' } },
       }),
       prisma.video.count({
-        where: { vodPic: { startsWith: 'https://' } },
+        where: {
+          vodPic: {
+            startsWith: 'https://'
+          },
+          NOT: {
+            vodPic: { contains: '/api/thumbnails/' }
+          }
+        },
       }),
     ])
 
@@ -116,6 +123,9 @@ export async function POST(request: NextRequest) {
     const videos = await prisma.video.findMany({
       where: {
         vodPic: { startsWith: 'https://' },
+        NOT: {
+          vodPic: { contains: '/api/thumbnails/' }
+        }
       },
       select: {
         id: true,
@@ -206,7 +216,12 @@ export async function POST(request: NextRequest) {
 
     // Get updated stats
     const pendingCount = await prisma.video.count({
-      where: { vodPic: { startsWith: 'https://' } },
+      where: {
+        vodPic: { startsWith: 'https://' },
+        NOT: {
+          vodPic: { contains: '/api/thumbnails/' }
+        }
+      },
     })
 
     return NextResponse.json({
