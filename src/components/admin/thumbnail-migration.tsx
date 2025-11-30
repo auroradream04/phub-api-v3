@@ -301,7 +301,7 @@ export function ThumbnailMigration() {
           {stats.failed > 0 && (
             <button
               onClick={() => setShowDeleteModal('failed')}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-medium transition-colors"
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-medium transition-colors whitespace-nowrap"
             >
               Delete Failed ({stats.failed})
             </button>
@@ -309,7 +309,7 @@ export function ThumbnailMigration() {
           {stats.pending > 0 && (
             <button
               onClick={() => setShowDeleteModal('pending')}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-medium transition-colors"
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-medium transition-colors whitespace-nowrap"
             >
               Delete Pending ({stats.pending.toLocaleString()})
             </button>
