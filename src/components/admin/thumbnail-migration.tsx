@@ -356,7 +356,7 @@ export function ThumbnailMigration() {
               {' '}from the database. This action cannot be undone.
             </p>
             <p className="text-sm text-red-400 font-medium mb-4">
-              Type "I UNDERSTAND" to confirm:
+              Type &quot;I UNDERSTAND&quot; to confirm:
             </p>
             <input
               type="text"
