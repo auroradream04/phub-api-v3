@@ -677,7 +677,7 @@ export default function AdminDashboard() {
 
         <div className="grid md:grid-cols-4" style={{ height: 'calc(100vh - 280px)', minHeight: '400px' }}>
           {/* Categories sidebar */}
-          <div className="border-r border-[#27272a] bg-[#18181b]/50 flex flex-col">
+          <div className="border-r border-[#27272a] bg-[#18181b]/50 flex flex-col overflow-hidden">
             <div className="p-3 border-b border-[#27272a] flex gap-2">
               <button
                 onClick={() => setCategoryTab('database')}
