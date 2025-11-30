@@ -410,7 +410,7 @@ export default function AdminDashboard() {
     cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase())
   )
 
-  const filteredConsolidated = Object.entries(CONSOLIDATED_CATEGORIES).filter(([name]) =>
+  const filteredConsolidated = CONSOLIDATED_CATEGORIES.filter(name =>
     name.toLowerCase().includes(categorySearchQuery.toLowerCase())
   )
 
@@ -734,7 +734,7 @@ export default function AdminDashboard() {
                 )
               ) : (
                 filteredConsolidated.length > 0 ? (
-                  filteredConsolidated.map(([name]) => (
+                  filteredConsolidated.map(name => (
                     <button
                       key={name}
                       onClick={() => handleSelectConsolidatedCategory(name)}
@@ -744,7 +744,7 @@ export default function AdminDashboard() {
                           : 'text-zinc-400'
                       }`}
                     >
-                      {name.replace(/-/g, ' ')}
+                      {name.replace(/-/g, ' ')} <span className="text-zinc-600">({CONSOLIDATED_TO_CHINESE[name]})</span>
                     </button>
                   ))
                 ) : (
