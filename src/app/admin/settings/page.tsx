@@ -23,15 +23,15 @@ const SettingInput = ({
     return (
       <button
         onClick={() => onUpdate(setting.value === 'true' ? 'false' : 'true')}
-        className={`relative inline-flex h-8 w-14 items-center rounded-full transition-all duration-200 ${
+        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all ${
           setting.value === 'true'
-            ? 'bg-primary shadow-md shadow-primary/30'
-            : 'bg-muted'
+            ? 'bg-purple-600'
+            : 'bg-[#27272a]'
         }`}
       >
         <span
-          className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform duration-200 ${
-            setting.value === 'true' ? 'translate-x-7' : 'translate-x-1'
+          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+            setting.value === 'true' ? 'translate-x-6' : 'translate-x-1'
           }`}
         />
       </button>
@@ -43,7 +43,7 @@ const SettingInput = ({
       type={isNumber ? 'number' : 'text'}
       value={setting.value}
       onChange={(e) => onUpdate(e.target.value)}
-      className="w-full px-4 py-3 border border-border/50 bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground/50 text-sm"
+      className="w-full px-3 py-2.5 border border-[#27272a] bg-[#1f1f23] text-zinc-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all placeholder:text-zinc-600 outline-none text-sm"
       min={isNumber ? "0" : undefined}
     />
   )
@@ -63,13 +63,13 @@ const SettingsSection = ({
   if (settings.length === 0) return null
 
   return (
-    <div className="border border-border/50 rounded-lg bg-card/50 p-8">
+    <div className="bg-[#18181b] border border-[#27272a] rounded-lg p-6">
       {/* Section Header */}
-      <h3 className="text-sm font-semibold text-foreground mb-1">{title}</h3>
-      <p className="text-xs text-muted-foreground mb-8">{description}</p>
+      <h3 className="text-base font-medium text-zinc-100 mb-1">{title}</h3>
+      <p className="text-sm text-zinc-500 mb-6">{description}</p>
 
       {/* Settings Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {settings.map((setting) => {
           const isBooleanSetting = setting.key === 'AD_ALWAYS_PREROLL' ||
             setting.key === 'AD_PREROLL_ENABLED' ||
@@ -91,7 +91,7 @@ const SettingsSection = ({
 
           return (
             <div key={setting.id}>
-              <label className="block text-sm font-medium text-foreground mb-2">
+              <label className="block text-sm font-medium text-zinc-300 mb-2">
                 {label}
               </label>
               {isBooleanSetting ? (
@@ -118,6 +118,7 @@ const SettingsSection = ({
 }
 
 export default function AdminSettingsPage() {
+  const [activeTab, setActiveTab] = useState<'ads' | 'video' | 'scraper' | 'other'>('ads')
   const [settings, setSettings] = useState<Setting[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -167,7 +168,7 @@ export default function AdminSettingsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="text-muted-foreground">Loading settings...</div>
+        <div className="text-zinc-500">Loading settings...</div>
       </div>
     )
   }
@@ -188,19 +189,67 @@ export default function AdminSettingsPage() {
   )
 
   return (
-    <div className="pb-8">
+    <div className="p-8 space-y-6">
       {/* Header */}
-      <div className="mb-8 mt-8">
-        <h1 className="text-4xl font-bold text-primary">Site Settings</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Configure global site settings for ads, video streaming, and content processing.</p>
+      <div>
+        <h1 className="text-2xl font-semibold text-zinc-100">Site Settings</h1>
+        <p className="text-zinc-500 mt-1">Configure global site settings for ads, video streaming, and content processing.</p>
+      </div>
+
+      {/* Tabs */}
+      <div className="border-b border-[#27272a]">
+        <nav className="-mb-px flex space-x-8">
+          <button
+            onClick={() => setActiveTab('ads')}
+            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'ads'
+                ? 'border-purple-500 text-purple-400'
+                : 'border-transparent text-zinc-500 hover:border-zinc-600 hover:text-zinc-300'
+            }`}
+          >
+            Advertisements
+          </button>
+          <button
+            onClick={() => setActiveTab('video')}
+            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'video'
+                ? 'border-purple-500 text-purple-400'
+                : 'border-transparent text-zinc-500 hover:border-zinc-600 hover:text-zinc-300'
+            }`}
+          >
+            Video Streaming
+          </button>
+          <button
+            onClick={() => setActiveTab('scraper')}
+            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'scraper'
+                ? 'border-purple-500 text-purple-400'
+                : 'border-transparent text-zinc-500 hover:border-zinc-600 hover:text-zinc-300'
+            }`}
+          >
+            Scraper
+          </button>
+          {otherSettings.length > 0 && (
+            <button
+              onClick={() => setActiveTab('other')}
+              className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'other'
+                  ? 'border-purple-500 text-purple-400'
+                  : 'border-transparent text-zinc-500 hover:border-zinc-600 hover:text-zinc-300'
+              }`}
+            >
+              Other
+            </button>
+          )}
+        </nav>
       </div>
 
       {/* Message Alert */}
       {message && (
-        <div className={`mb-6 rounded-lg border p-4 flex items-start gap-3 ${
+        <div className={`rounded-lg border p-4 flex items-start gap-3 ${
           message.type === 'success'
-            ? 'bg-primary/10 text-primary border-primary/30'
-            : 'bg-destructive/10 text-destructive border-destructive/30'
+            ? 'bg-green-500/10 text-green-400 border-green-500/30'
+            : 'bg-red-500/10 text-red-400 border-red-500/30'
         }`}>
           <div className="flex-shrink-0 mt-0.5">
             {message.type === 'success' ? (
@@ -219,28 +268,34 @@ export default function AdminSettingsPage() {
 
       {/* Settings Sections */}
       <div className="space-y-6">
-        <SettingsSection
-          title="Advertisement Settings"
-          description="Configure how ads are displayed to users"
-          settings={adSettings}
-          onUpdate={updateSetting}
-        />
+        {activeTab === 'ads' && (
+          <SettingsSection
+            title="Advertisement Settings"
+            description="Configure how ads are displayed to users"
+            settings={adSettings}
+            onUpdate={updateSetting}
+          />
+        )}
 
-        <SettingsSection
-          title="Video Streaming Settings"
-          description="Configure CORS proxy and video delivery"
-          settings={videoSettings}
-          onUpdate={updateSetting}
-        />
+        {activeTab === 'video' && (
+          <SettingsSection
+            title="Video Streaming Settings"
+            description="Configure CORS proxy and video delivery"
+            settings={videoSettings}
+            onUpdate={updateSetting}
+          />
+        )}
 
-        <SettingsSection
-          title="Scraper Settings"
-          description="Configure video scraping and content processing"
-          settings={scraperSettings}
-          onUpdate={updateSetting}
-        />
+        {activeTab === 'scraper' && (
+          <SettingsSection
+            title="Scraper Settings"
+            description="Configure video scraping and content processing"
+            settings={scraperSettings}
+            onUpdate={updateSetting}
+          />
+        )}
 
-        {otherSettings.length > 0 && (
+        {activeTab === 'other' && otherSettings.length > 0 && (
           <SettingsSection
             title="Other Settings"
             description="Miscellaneous configuration"
@@ -251,11 +306,11 @@ export default function AdminSettingsPage() {
       </div>
 
       {/* Save Button */}
-      <div className="mt-8 flex justify-end">
+      <div className="flex justify-end">
         <button
           onClick={handleSave}
           disabled={saving}
-          className="px-6 py-2.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 font-medium flex items-center justify-center gap-2 text-sm"
+          className="px-6 py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium flex items-center gap-2 text-sm"
         >
           {saving ? (
             <>
@@ -277,4 +332,3 @@ export default function AdminSettingsPage() {
     </div>
   )
 }
-

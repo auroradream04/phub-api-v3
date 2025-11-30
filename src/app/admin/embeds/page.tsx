@@ -8,15 +8,13 @@ export const metadata = {
 
 export default function EmbedsPage() {
   return (
-    <div className="py-8">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-          Video Embeds
-        </h1>
-        <p className="text-muted-foreground mt-2">Create and manage embeddable video widgets</p>
+    <div className="p-8 space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold text-zinc-100">Video Embeds</h1>
+        <p className="text-zinc-500 mt-1">Create and manage embeddable video widgets</p>
       </div>
 
-      <Suspense fallback={<div className="text-muted-foreground">Loading...</div>}>
+      <Suspense fallback={<div className="text-zinc-500">Loading...</div>}>
         <EmbedsClient />
       </Suspense>
     </div>

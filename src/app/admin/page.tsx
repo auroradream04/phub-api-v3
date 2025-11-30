@@ -88,6 +88,7 @@ export default function AdminDashboard() {
   const [loadingCategoryVideos, setLoadingCategoryVideos] = useState(false)
   const [videoPage, setVideoPage] = useState(1)
   const [categorySearchQuery, setCategorySearchQuery] = useState('')
+  const [databaseCategories, setDatabaseCategories] = useState<Array<{name: string; count: number}>>([])  // Actual DB categories
 
   const [globalVideoSearchQuery, setGlobalVideoSearchQuery] = useState('')
   const [globalSearchResults, setGlobalSearchResults] = useState<MaccmsVideo[]>([])
@@ -110,6 +111,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     fetchStats()
     fetchCategories()
+    fetchDatabaseCategories()
     const saved = localStorage.getItem(STORAGE_KEY)
     if (saved) {
       try { setSavedProgress(JSON.parse(saved)) } catch { /* ignore */ }
@@ -134,6 +136,14 @@ export default function AdminDashboard() {
       const res = await fetch('/api/categories')
       const data = await res.json()
       setAvailableCategories(data.categories || [])
+    } catch (e) { console.error(e) }
+  }
+
+  const fetchDatabaseCategories = async () => {
+    try {
+      const res = await fetch('/api/admin/categories')
+      const data = await res.json()
+      setDatabaseCategories(data.categories || [])
     } catch (e) { console.error(e) }
   }
 
@@ -288,15 +298,15 @@ export default function AdminDashboard() {
     }
   }
 
-  const handleSelectCategory = async (category: { typeId: number; typeName: string }) => {
-    setSelectedCategory(category.typeName)
+  const handleSelectCategory = async (categoryName: string) => {
+    setSelectedCategory(categoryName)
     setSelectedConsolidated(null)
     setVideoPage(1)
     setCategoryVideos([])
     setLoadingCategoryVideos(true)
 
     try {
-      const res = await fetch(`/api/admin/videos/by-category?category=${encodeURIComponent(category.typeName)}&page=1`)
+      const res = await fetch(`/api/admin/videos/by-category?category=${encodeURIComponent(categoryName)}&page=1`)
       const data = await res.json()
       setCategoryVideos(data.list || [])
     } catch (err) {
@@ -388,9 +398,9 @@ export default function AdminDashboard() {
     setSelectedCategoryIds(newSet)
   }
 
-  const filteredCategories = stats?.categories.filter(cat =>
-    cat.typeName.toLowerCase().includes(categorySearchQuery.toLowerCase())
-  ) || []
+  const filteredCategories = databaseCategories.filter(cat =>
+    cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase())
+  )
 
   const filteredConsolidated = Object.entries(CONSOLIDATED_CATEGORIES).filter(([name]) =>
     name.toLowerCase().includes(categorySearchQuery.toLowerCase())
@@ -698,15 +708,15 @@ export default function AdminDashboard() {
                 filteredCategories.length > 0 ? (
                   filteredCategories.map(cat => (
                     <button
-                      key={cat.typeId}
-                      onClick={() => handleSelectCategory(cat)}
+                      key={cat.name}
+                      onClick={() => handleSelectCategory(cat.name)}
                       className={`w-full text-left px-4 py-2.5 text-sm hover:bg-[#1f1f23] transition-colors ${
-                        selectedCategory === cat.typeName
+                        selectedCategory === cat.name
                           ? 'bg-purple-600/20 text-purple-400'
                           : 'text-zinc-400'
                       }`}
                     >
-                      {cat.typeName}
+                      {cat.name} <span className="text-zinc-600">({cat.count.toLocaleString()})</span>
                     </button>
                   ))
                 ) : (
