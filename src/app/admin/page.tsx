@@ -85,6 +85,7 @@ export default function AdminDashboard() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [selectedConsolidated, setSelectedConsolidated] = useState<{ name: string; variants: string[] } | null>(null)
   const [categoryVideos, setCategoryVideos] = useState<MaccmsVideo[]>([])
+  const [categoryVideoTotal, setCategoryVideoTotal] = useState(0)
   const [loadingCategoryVideos, setLoadingCategoryVideos] = useState(false)
   const [videoPage, setVideoPage] = useState(1)
   const [categorySearchQuery, setCategorySearchQuery] = useState('')
@@ -105,8 +106,6 @@ export default function AdminDashboard() {
     japanese: { running: false, job: null },
     chinese: { running: false, job: null }
   })
-
-  const videosPerPage = 18
 
   useEffect(() => {
     fetchStats()
@@ -298,23 +297,35 @@ export default function AdminDashboard() {
     }
   }
 
+  const fetchCategoryVideos = async (categoryName: string, page: number, variants?: string[]) => {
+    setLoadingCategoryVideos(true)
+    try {
+      let url: string
+      if (variants && variants.length > 0) {
+        const variantParams = variants.map(v => `variants=${encodeURIComponent(v)}`).join('&')
+        url = `/api/admin/videos/by-category?${variantParams}&page=${page}`
+      } else {
+        url = `/api/admin/videos/by-category?category=${encodeURIComponent(categoryName)}&page=${page}`
+      }
+      const res = await fetch(url)
+      const data = await res.json()
+      setCategoryVideos(data.list || [])
+      setCategoryVideoTotal(data.total || 0)
+    } catch (err) {
+      console.error('Failed to fetch category videos:', err)
+      setCategoryVideos([])
+      setCategoryVideoTotal(0)
+    } finally {
+      setLoadingCategoryVideos(false)
+    }
+  }
+
   const handleSelectCategory = async (categoryName: string) => {
     setSelectedCategory(categoryName)
     setSelectedConsolidated(null)
     setVideoPage(1)
     setCategoryVideos([])
-    setLoadingCategoryVideos(true)
-
-    try {
-      const res = await fetch(`/api/admin/videos/by-category?category=${encodeURIComponent(categoryName)}&page=1`)
-      const data = await res.json()
-      setCategoryVideos(data.list || [])
-    } catch (err) {
-      console.error('Failed to fetch category videos:', err)
-      setCategoryVideos([])
-    } finally {
-      setLoadingCategoryVideos(false)
-    }
+    await fetchCategoryVideos(categoryName, 1)
   }
 
   const handleSelectConsolidatedCategory = async (consolidated: string) => {
@@ -323,18 +334,15 @@ export default function AdminDashboard() {
     setSelectedConsolidated({ name: consolidated, variants })
     setVideoPage(1)
     setCategoryVideos([])
-    setLoadingCategoryVideos(true)
+    await fetchCategoryVideos(consolidated, 1, variants)
+  }
 
-    try {
-      const variantParams = variants.map(v => `variants=${encodeURIComponent(v)}`).join('&')
-      const res = await fetch(`/api/admin/videos/by-category?${variantParams}&page=1`)
-      const data = await res.json()
-      setCategoryVideos(data.list || [])
-    } catch (err) {
-      console.error('Failed to fetch consolidated category videos:', err)
-      setCategoryVideos([])
-    } finally {
-      setLoadingCategoryVideos(false)
+  const handleCategoryPageChange = (page: number) => {
+    setVideoPage(page)
+    if (selectedConsolidated) {
+      fetchCategoryVideos(selectedConsolidated.name, page, selectedConsolidated.variants)
+    } else if (selectedCategory) {
+      fetchCategoryVideos(selectedCategory, page)
     }
   }
 
@@ -406,8 +414,8 @@ export default function AdminDashboard() {
     name.toLowerCase().includes(categorySearchQuery.toLowerCase())
   )
 
-  const paginatedVideos = categoryVideos.slice((videoPage - 1) * videosPerPage, videoPage * videosPerPage)
-  const totalPages = Math.ceil(categoryVideos.length / videosPerPage)
+  const videosPerApiPage = 20 // API returns 20 per page
+  const totalPages = Math.ceil(categoryVideoTotal / videosPerApiPage)
 
   // Check if any scraping is active
   const isAnyScraping = scraping || keywordJobs.japanese.running || keywordJobs.chinese.running
@@ -789,7 +797,7 @@ export default function AdminDashboard() {
               <>
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-sm text-zinc-300">{selectedCategory}</span>
-                  <span className="text-sm text-zinc-500">{categoryVideos.length} videos</span>
+                  <span className="text-sm text-zinc-500">{categoryVideoTotal.toLocaleString()} videos</span>
                 </div>
                 {loadingCategoryVideos ? (
                   <div className="flex items-center justify-center py-12">
@@ -798,25 +806,29 @@ export default function AdminDashboard() {
                 ) : categoryVideos.length > 0 ? (
                   <>
                     <div className="space-y-1">
-                      {paginatedVideos.map(video => (
+                      {categoryVideos.map(video => (
                         <VideoRow key={video.vod_id} video={video} onDelete={() => handleDeleteVideo(video.vod_id)} />
                       ))}
                     </div>
                     {totalPages > 1 && (
-                      <div className="flex justify-center gap-2 mt-4">
-                        {Array.from({ length: Math.min(totalPages, 10) }, (_, i) => i + 1).map(p => (
-                          <button
-                            key={p}
-                            onClick={() => setVideoPage(p)}
-                            className={`w-8 h-8 text-sm rounded-md transition-colors ${
-                              videoPage === p
-                                ? 'bg-purple-600 text-white'
-                                : 'text-zinc-400 hover:bg-[#1f1f23]'
-                            }`}
-                          >
-                            {p}
-                          </button>
-                        ))}
+                      <div className="flex items-center justify-center gap-2 mt-4">
+                        <button
+                          onClick={() => handleCategoryPageChange(Math.max(1, videoPage - 1))}
+                          disabled={videoPage === 1}
+                          className="px-3 py-1.5 text-sm rounded-md text-zinc-400 hover:bg-[#1f1f23] disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          Prev
+                        </button>
+                        <span className="text-sm text-zinc-500">
+                          Page {videoPage} of {totalPages.toLocaleString()}
+                        </span>
+                        <button
+                          onClick={() => handleCategoryPageChange(Math.min(totalPages, videoPage + 1))}
+                          disabled={videoPage === totalPages}
+                          className="px-3 py-1.5 text-sm rounded-md text-zinc-400 hover:bg-[#1f1f23] disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          Next
+                        </button>
                       </div>
                     )}
                   </>
