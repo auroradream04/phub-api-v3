@@ -25,10 +25,11 @@ export function getThumbnailPath(vodId: string): string {
 }
 
 /**
- * Get the API URL for a thumbnail
+ * Get the API URL for a thumbnail (absolute URL)
  */
 export function getThumbnailApiUrl(vodId: string): string {
-  return `/api/thumbnails/${vodId}`
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || ''
+  return `${baseUrl}/api/thumbnails/${vodId}`
 }
 
 /**
