@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useTransition } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import Hls from 'hls.js'
 import { AreaChart } from '@/components/ui/area-chart'
+import { StatsDetailModal, StatsType, getBrowserIcon, getDeviceIcon, getOSIcon } from '@/components/ui/stats-detail-modal'
 
 interface Ad {
   id: string
@@ -110,6 +111,7 @@ export default function AdDetailPage() {
     weight: 1,
     forceDisplay: false
   })
+  const [detailModal, setDetailModal] = useState<{ type: StatsType; title: string } | null>(null)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -388,11 +390,11 @@ export default function AdDetailPage() {
             {/* Two Column Layout */}
             <div className="grid lg:grid-cols-2 gap-6">
               {/* Top Sources */}
-              <div className="bg-[#18181b] rounded-lg border border-[#27272a] p-5">
+              <div className="bg-[#18181b] rounded-lg border border-[#27272a] p-5 flex flex-col">
                 <h2 className="text-base font-semibold text-zinc-100 mb-4">Top Sources</h2>
                 {data.topSources.length > 0 ? (
-                  <div className="space-y-3">
-                    {data.topSources.map((source, i) => {
+                  <div className="space-y-3 flex-1">
+                    {data.topSources.slice(0, 10).map((source, i) => {
                       const maxSourceCount = data.topSources[0]?.count || 1
                       const width = (source.count / maxSourceCount) * 100
 
@@ -413,15 +415,26 @@ export default function AdDetailPage() {
                     })}
                   </div>
                 ) : (
-                  <p className="text-sm text-zinc-500">No data</p>
+                  <p className="text-sm text-zinc-500 flex-1">No data</p>
+                )}
+                {data.topSources.length > 10 && (
+                  <button
+                    onClick={() => setDetailModal({ type: 'sources', title: 'Top Sources' })}
+                    className="mt-4 pt-3 border-t border-[#27272a] text-xs text-zinc-500 hover:text-zinc-300 transition-colors flex items-center justify-center gap-1"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                    </svg>
+                    DETAILS
+                  </button>
                 )}
               </div>
 
               {/* Top Videos */}
-              <div className="bg-[#18181b] rounded-lg border border-[#27272a] p-5">
+              <div className="bg-[#18181b] rounded-lg border border-[#27272a] p-5 flex flex-col">
                 <h2 className="text-base font-semibold text-zinc-100 mb-4">Top Videos</h2>
                 {data.topVideos.length > 0 ? (
-                  <div className="space-y-3">
+                  <div className="space-y-3 flex-1">
                     {data.topVideos.slice(0, 10).map((video, i) => {
                       const maxVideoCount = data.topVideos[0]?.count || 1
                       const width = (video.count / maxVideoCount) * 100
@@ -450,7 +463,18 @@ export default function AdDetailPage() {
                     })}
                   </div>
                 ) : (
-                  <p className="text-sm text-zinc-500">No data</p>
+                  <p className="text-sm text-zinc-500 flex-1">No data</p>
+                )}
+                {data.topVideos.length > 10 && (
+                  <button
+                    onClick={() => setDetailModal({ type: 'videos', title: 'Top Videos' })}
+                    className="mt-4 pt-3 border-t border-[#27272a] text-xs text-zinc-500 hover:text-zinc-300 transition-colors flex items-center justify-center gap-1"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                    </svg>
+                    DETAILS
+                  </button>
                 )}
               </div>
             </div>
@@ -458,70 +482,123 @@ export default function AdDetailPage() {
             {/* Two Column Grid */}
             <div className="grid grid-cols-2 gap-4">
               {/* Devices */}
-              <div className="bg-[#18181b] rounded-lg border border-[#27272a] p-4">
+              <div className="bg-[#18181b] rounded-lg border border-[#27272a] p-4 flex flex-col">
                 <h3 className="text-sm font-semibold text-zinc-100 mb-3">Devices</h3>
                 {data.devices.length > 0 ? (
-                  <div className="space-y-2">
-                    {data.devices.map((device, i) => (
+                  <div className="space-y-2 flex-1">
+                    {data.devices.slice(0, 5).map((device, i) => (
                       <div key={i} className="flex items-center justify-between text-sm">
-                        <span className="text-zinc-500">{device.device}</span>
+                        <span className="flex items-center gap-2 text-zinc-400">
+                          {getDeviceIcon(device.device)}
+                          <span>{device.device}</span>
+                        </span>
                         <span className="text-zinc-100 font-medium">{device.percentage}%</span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-zinc-500">No data</p>
+                  <p className="text-sm text-zinc-500 flex-1">No data</p>
+                )}
+                {data.devices.length > 0 && (
+                  <button
+                    onClick={() => setDetailModal({ type: 'devices', title: 'Devices' })}
+                    className="mt-3 pt-3 border-t border-[#27272a] text-xs text-zinc-500 hover:text-zinc-300 transition-colors flex items-center justify-center gap-1"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                    </svg>
+                    DETAILS
+                  </button>
                 )}
               </div>
 
               {/* Browsers */}
-              <div className="bg-[#18181b] rounded-lg border border-[#27272a] p-4">
+              <div className="bg-[#18181b] rounded-lg border border-[#27272a] p-4 flex flex-col">
                 <h3 className="text-sm font-semibold text-zinc-100 mb-3">Browsers</h3>
                 {data.browsers.length > 0 ? (
-                  <div className="space-y-2">
-                    {data.browsers.map((browser, i) => (
+                  <div className="space-y-2 flex-1">
+                    {data.browsers.slice(0, 5).map((browser, i) => (
                       <div key={i} className="flex items-center justify-between text-sm">
-                        <span className="text-zinc-500">{browser.browser}</span>
+                        <span className="flex items-center gap-2 text-zinc-400">
+                          {getBrowserIcon(browser.browser)}
+                          <span>{browser.browser}</span>
+                        </span>
                         <span className="text-zinc-100 font-medium">{browser.percentage}%</span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-zinc-500">No data</p>
+                  <p className="text-sm text-zinc-500 flex-1">No data</p>
+                )}
+                {data.browsers.length > 0 && (
+                  <button
+                    onClick={() => setDetailModal({ type: 'browsers', title: 'Browsers' })}
+                    className="mt-3 pt-3 border-t border-[#27272a] text-xs text-zinc-500 hover:text-zinc-300 transition-colors flex items-center justify-center gap-1"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                    </svg>
+                    DETAILS
+                  </button>
                 )}
               </div>
 
               {/* Operating Systems */}
-              <div className="bg-[#18181b] rounded-lg border border-[#27272a] p-4">
+              <div className="bg-[#18181b] rounded-lg border border-[#27272a] p-4 flex flex-col">
                 <h3 className="text-sm font-semibold text-zinc-100 mb-3">OS</h3>
                 {data.operatingSystems.length > 0 ? (
-                  <div className="space-y-2">
-                    {data.operatingSystems.map((os, i) => (
+                  <div className="space-y-2 flex-1">
+                    {data.operatingSystems.slice(0, 5).map((os, i) => (
                       <div key={i} className="flex items-center justify-between text-sm">
-                        <span className="text-zinc-500">{os.os}</span>
+                        <span className="flex items-center gap-2 text-zinc-400">
+                          {getOSIcon(os.os)}
+                          <span>{os.os}</span>
+                        </span>
                         <span className="text-zinc-100 font-medium">{os.percentage}%</span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-zinc-500">No data</p>
+                  <p className="text-sm text-zinc-500 flex-1">No data</p>
+                )}
+                {data.operatingSystems.length > 0 && (
+                  <button
+                    onClick={() => setDetailModal({ type: 'os', title: 'Operating Systems' })}
+                    className="mt-3 pt-3 border-t border-[#27272a] text-xs text-zinc-500 hover:text-zinc-300 transition-colors flex items-center justify-center gap-1"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                    </svg>
+                    DETAILS
+                  </button>
                 )}
               </div>
 
               {/* Countries */}
-              <div className="bg-[#18181b] rounded-lg border border-[#27272a] p-4">
+              <div className="bg-[#18181b] rounded-lg border border-[#27272a] p-4 flex flex-col">
                 <h3 className="text-sm font-semibold text-zinc-100 mb-3">Countries</h3>
                 {data.countries.length > 0 ? (
-                  <div className="space-y-2">
+                  <div className="space-y-2 flex-1">
                     {data.countries.slice(0, 5).map((country, i) => (
                       <div key={i} className="flex items-center justify-between text-sm">
-                        <span className="text-zinc-500">{country.country}</span>
+                        <span className="text-zinc-400">{country.country}</span>
                         <span className="text-zinc-100 font-medium">{country.percentage}%</span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-zinc-500">No data</p>
+                  <p className="text-sm text-zinc-500 flex-1">No data</p>
+                )}
+                {data.countries.length > 0 && (
+                  <button
+                    onClick={() => setDetailModal({ type: 'countries', title: 'Countries' })}
+                    className="mt-3 pt-3 border-t border-[#27272a] text-xs text-zinc-500 hover:text-zinc-300 transition-colors flex items-center justify-center gap-1"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                    </svg>
+                    DETAILS
+                  </button>
                 )}
               </div>
             </div>
@@ -630,6 +707,30 @@ export default function AdDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Stats Detail Modal */}
+      {detailModal && data && (
+        <StatsDetailModal
+          isOpen={!!detailModal}
+          onClose={() => setDetailModal(null)}
+          title={detailModal.title}
+          type={detailModal.type}
+          data={
+            detailModal.type === 'sources'
+              ? data.topSources.map(s => ({ name: s.source, count: s.count }))
+              : detailModal.type === 'videos'
+              ? data.topVideos.map(v => ({ name: v.videoId, count: v.count }))
+              : detailModal.type === 'browsers'
+              ? data.browsers.map(b => ({ name: b.browser, count: b.count, percentage: b.percentage }))
+              : detailModal.type === 'devices'
+              ? data.devices.map(d => ({ name: d.device, count: d.count, percentage: d.percentage }))
+              : detailModal.type === 'os'
+              ? data.operatingSystems.map(o => ({ name: o.os, count: o.count, percentage: o.percentage }))
+              : data.countries.map(c => ({ name: c.country, count: c.count, percentage: c.percentage }))
+          }
+          totalCount={data.stats.impressionsInPeriod}
+        />
+      )}
     </div>
   )
 }
