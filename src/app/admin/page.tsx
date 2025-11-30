@@ -780,7 +780,7 @@ export default function AdminDashboard() {
                 </>
               ) : selectedCategory ? (
                 <>
-                  <span className="text-sm text-zinc-300">{selectedCategory}</span>
+                  <span className="text-sm text-zinc-300">{selectedCategory?.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</span>
                   <span className="text-sm text-zinc-500">{categoryVideoTotal.toLocaleString()} videos</span>
                 </>
               ) : (
