@@ -37,6 +37,8 @@ export function ThumbnailMigration() {
   const [autoRun, setAutoRun] = useState(false)
   const [failures, setFailures] = useState<Failure[]>([])
   const [showFailures, setShowFailures] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const autoRunRef = useRef(false)
 
   const fetchStats = async () => {
@@ -133,9 +135,12 @@ export function ThumbnailMigration() {
   }
 
   const deleteUnrecoverable = async () => {
-    if (!confirm('Delete videos with unrecoverable thumbnails?')) return
+    if (deleteConfirmText !== 'I UNDERSTAND') return
 
     setMessage('Deleting...')
+    setShowDeleteModal(false)
+    setDeleteConfirmText('')
+
     try {
       const res = await fetch('/api/admin/recover-thumbnails', {
         method: 'DELETE',
@@ -291,7 +296,7 @@ export function ThumbnailMigration() {
         <div className="mt-5 border-t border-[#27272a] pt-5">
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm text-zinc-500">Failed thumbnails</span>
-            <button onClick={deleteUnrecoverable} className="text-sm text-red-400 hover:text-red-300 transition-colors">
+            <button onClick={() => setShowDeleteModal(true)} className="text-sm text-red-400 hover:text-red-300 transition-colors">
               Delete unrecoverable
             </button>
           </div>
@@ -315,6 +320,46 @@ export function ThumbnailMigration() {
       {stats?.pending === 0 && stats?.migrated > 0 && (
         <div className="mt-5 text-sm text-purple-400 font-medium">
           Migration complete - {stats.migrated.toLocaleString()} thumbnails
+        </div>
+      )}
+
+      {/* Delete confirmation modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-[#18181b] border border-[#27272a] rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-zinc-100 mb-2">Delete Failed Thumbnails</h3>
+            <p className="text-sm text-zinc-400 mb-4">
+              This will delete {stats?.failed} videos with unrecoverable thumbnails from the database. This action cannot be undone.
+            </p>
+            <p className="text-sm text-red-400 font-medium mb-4">
+              Type "I UNDERSTAND" to confirm:
+            </p>
+            <input
+              type="text"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder="I UNDERSTAND"
+              className="w-full px-3 py-2 bg-[#1f1f23] border border-[#27272a] rounded-lg text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-red-500 focus:outline-none mb-4"
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false)
+                  setDeleteConfirmText('')
+                }}
+                className="flex-1 px-4 py-2 bg-[#1f1f23] hover:bg-zinc-700 rounded-lg text-sm transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={deleteUnrecoverable}
+                disabled={deleteConfirmText !== 'I UNDERSTAND'}
+                className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm font-medium transition-colors"
+              >
+                Delete {stats?.failed} videos
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
