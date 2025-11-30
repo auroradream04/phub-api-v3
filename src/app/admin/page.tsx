@@ -410,8 +410,17 @@ export default function AdminDashboard() {
     cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase())
   )
 
-  const filteredConsolidated = CONSOLIDATED_CATEGORIES.filter(name =>
-    name.toLowerCase().includes(categorySearchQuery.toLowerCase())
+  // Calculate counts for each consolidated category by summing database categories
+  const consolidatedWithCounts = CONSOLIDATED_CATEGORIES.map(consolidated => {
+    const variants = getVariantsForConsolidated(consolidated)
+    const count = databaseCategories
+      .filter(cat => variants.includes(cat.name.toLowerCase()))
+      .reduce((sum, cat) => sum + cat.count, 0)
+    return { name: consolidated, count }
+  })
+
+  const filteredConsolidated = consolidatedWithCounts.filter(cat =>
+    cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase())
   )
 
   const videosPerApiPage = 100 // API returns 100 per page
@@ -734,17 +743,17 @@ export default function AdminDashboard() {
                 )
               ) : (
                 filteredConsolidated.length > 0 ? (
-                  filteredConsolidated.map(name => (
+                  filteredConsolidated.map(cat => (
                     <button
-                      key={name}
-                      onClick={() => handleSelectConsolidatedCategory(name)}
+                      key={cat.name}
+                      onClick={() => handleSelectConsolidatedCategory(cat.name)}
                       className={`w-full text-left px-4 py-2.5 text-sm hover:bg-[#1f1f23] transition-colors ${
-                        selectedConsolidated?.name === name
+                        selectedConsolidated?.name === cat.name
                           ? 'bg-purple-600/20 text-purple-400'
                           : 'text-zinc-400'
                       }`}
                     >
-                      {name.replace(/-/g, ' ')} <span className="text-zinc-600">({CONSOLIDATED_TO_CHINESE[name]})</span>
+                      {cat.name.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} <span className="text-zinc-600">({cat.count.toLocaleString()})</span>
                     </button>
                   ))
                 ) : (
