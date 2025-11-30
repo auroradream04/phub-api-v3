@@ -293,29 +293,24 @@ export function ThumbnailMigration() {
             </button>
           </>
         )}
-      </div>
 
-      {/* Delete buttons */}
-      {stats && (stats.failed > 0 || stats.pending > 0) && (
-        <div className="flex gap-3 mt-5">
-          {stats.failed > 0 && (
-            <button
-              onClick={() => setShowDeleteModal('failed')}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-medium transition-colors whitespace-nowrap"
-            >
-              Delete Failed ({stats.failed})
-            </button>
-          )}
-          {stats.pending > 0 && (
-            <button
-              onClick={() => setShowDeleteModal('pending')}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-medium transition-colors whitespace-nowrap"
-            >
-              Delete Pending ({stats.pending.toLocaleString()})
-            </button>
-          )}
-        </div>
-      )}
+        {stats && stats.failed > 0 && (
+          <button
+            onClick={() => setShowDeleteModal('failed')}
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-medium transition-colors"
+          >
+            Delete Failed ({stats.failed})
+          </button>
+        )}
+        {stats && stats.pending > 0 && (
+          <button
+            onClick={() => setShowDeleteModal('pending')}
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-medium transition-colors"
+          >
+            Delete Pending ({stats.pending.toLocaleString()})
+          </button>
+        )}
+      </div>
 
       {/* Failures list */}
       {showFailures && failures.length > 0 && (
