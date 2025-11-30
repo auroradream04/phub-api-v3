@@ -118,7 +118,7 @@ export default function AdminDashboard() {
 
   const fetchStats = async () => {
     try {
-      const res = await fetch('/api/provide/vod?ac=detail&pg=1&limit=1')
+      const res = await fetch('/api/provide/vod?ac=list&pg=1')
       const data = await res.json()
       if (data.class) {
         const categories = data.class.map((cat: { type_id: number; type_name: string }) => ({
@@ -296,7 +296,7 @@ export default function AdminDashboard() {
     setLoadingCategoryVideos(true)
 
     try {
-      const res = await fetch(`/api/admin/videos/by-category?typeId=${category.typeId}&page=1`)
+      const res = await fetch(`/api/admin/videos/by-category?category=${encodeURIComponent(category.typeName)}&page=1`)
       const data = await res.json()
       setCategoryVideos(data.list || [])
     } catch (err) {
@@ -336,7 +336,7 @@ export default function AdminDashboard() {
     }
     setLoadingGlobalSearch(true)
     try {
-      const res = await fetch(`/api/provide/vod?ac=detail&wd=${encodeURIComponent(query)}&pg=${page}`)
+      const res = await fetch(`/api/provide/vod?ac=list&wd=${encodeURIComponent(query)}&pg=${page}`)
       const data = await res.json()
       const videos = (data.list || []).map((v: { vod_id: string; vod_name: string; vod_pic: string; type_name: string }) => ({
         vod_id: v.vod_id, vod_name: v.vod_name, vod_pic: v.vod_pic, type_name: v.type_name
