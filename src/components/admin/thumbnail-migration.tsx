@@ -37,7 +37,7 @@ export function ThumbnailMigration() {
   const [autoRun, setAutoRun] = useState(false)
   const [failures, setFailures] = useState<Failure[]>([])
   const [showFailures, setShowFailures] = useState(false)
-  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState<'failed' | 'pending' | null>(null)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const autoRunRef = useRef(false)
 
@@ -134,18 +134,22 @@ export function ThumbnailMigration() {
     }
   }
 
-  const deleteUnrecoverable = async () => {
+  const handleDelete = async (type: 'failed' | 'pending') => {
     if (deleteConfirmText !== 'I UNDERSTAND') return
 
     setMessage('Deleting...')
-    setShowDeleteModal(false)
+    setShowDeleteModal(null)
     setDeleteConfirmText('')
 
     try {
       const res = await fetch('/api/admin/recover-thumbnails', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ confirm: true, deleteFromDb: true }),
+        body: JSON.stringify({
+          confirm: true,
+          deleteFromDb: true,
+          deleteType: type, // 'failed' or 'pending'
+        }),
       })
       const data = await res.json()
 
@@ -291,14 +295,31 @@ export function ThumbnailMigration() {
         )}
       </div>
 
+      {/* Delete buttons */}
+      <div className="flex gap-3 flex-wrap mt-5">
+        {stats && stats.failed > 0 && (
+          <button
+            onClick={() => setShowDeleteModal('failed')}
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-medium transition-colors"
+          >
+            Delete Failed ({stats.failed})
+          </button>
+        )}
+        {stats && stats.pending > 0 && (
+          <button
+            onClick={() => setShowDeleteModal('pending')}
+            className="px-4 py-2 bg-orange-600 hover:bg-orange-700 rounded-lg text-sm font-medium transition-colors"
+          >
+            Delete Pending ({stats.pending.toLocaleString()})
+          </button>
+        )}
+      </div>
+
       {/* Failures list */}
       {showFailures && failures.length > 0 && (
         <div className="mt-5 border-t border-[#27272a] pt-5">
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm text-zinc-500">Failed thumbnails</span>
-            <button onClick={() => setShowDeleteModal(true)} className="text-sm text-red-400 hover:text-red-300 transition-colors">
-              Delete unrecoverable
-            </button>
           </div>
           <div className="max-h-40 overflow-y-auto space-y-2 text-sm">
             {failures.slice(0, 20).map((f) => (
@@ -327,9 +348,15 @@ export function ThumbnailMigration() {
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-[#18181b] border border-[#27272a] rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold text-zinc-100 mb-2">Delete Failed Thumbnails</h3>
+            <h3 className="text-lg font-semibold text-zinc-100 mb-2">
+              Delete {showDeleteModal === 'failed' ? 'Failed' : 'Pending'} Thumbnails
+            </h3>
             <p className="text-sm text-zinc-400 mb-4">
-              This will delete {stats?.failed} videos with unrecoverable thumbnails from the database. This action cannot be undone.
+              This will delete{' '}
+              {showDeleteModal === 'failed'
+                ? `${stats?.failed} videos with unrecoverable thumbnails`
+                : `${stats?.pending.toLocaleString()} pending migration videos`}
+              {' '}from the database. This action cannot be undone.
             </p>
             <p className="text-sm text-red-400 font-medium mb-4">
               Type "I UNDERSTAND" to confirm:
@@ -344,7 +371,7 @@ export function ThumbnailMigration() {
             <div className="flex gap-3">
               <button
                 onClick={() => {
-                  setShowDeleteModal(false)
+                  setShowDeleteModal(null)
                   setDeleteConfirmText('')
                 }}
                 className="flex-1 px-4 py-2 bg-[#1f1f23] hover:bg-zinc-700 rounded-lg text-sm transition-colors"
@@ -352,11 +379,11 @@ export function ThumbnailMigration() {
                 Cancel
               </button>
               <button
-                onClick={deleteUnrecoverable}
+                onClick={() => handleDelete(showDeleteModal)}
                 disabled={deleteConfirmText !== 'I UNDERSTAND'}
                 className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm font-medium transition-colors"
               >
-                Delete {stats?.failed} videos
+                Delete {showDeleteModal === 'failed' ? stats?.failed : stats?.pending.toLocaleString()} videos
               </button>
             </div>
           </div>
