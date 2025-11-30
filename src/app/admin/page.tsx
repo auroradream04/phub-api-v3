@@ -68,6 +68,7 @@ function Tag({ selected, onClick, children }: {
 export default function AdminDashboard() {
   const { data: session } = useSession()
 
+  const [activeTab, setActiveTab] = useState<'scraper' | 'videos' | 'thumbnails'>('scraper')
   const [scraping, setScraping] = useState(false)
   const [stats, setStats] = useState<Stats | null>(null)
   const [message, setMessage] = useState('')
@@ -411,179 +412,226 @@ export default function AdminDashboard() {
 
   return (
     <div className="p-8 space-y-6">
-      {/* Stats */}
-      <div className="flex items-center gap-10 text-sm">
-        <div>
-          <span className="text-zinc-500">Videos</span>
-          <span className="ml-2 text-zinc-100 font-semibold">{stats?.totalVideos.toLocaleString() || '0'}</span>
-        </div>
-        <div>
-          <span className="text-zinc-500">Categories</span>
-          <span className="ml-2 text-zinc-100 font-semibold">{stats?.categories.length || 0}</span>
-        </div>
-        {currentProgress && (
-          <>
-            <div>
-              <span className="text-zinc-500">New</span>
-              <span className="ml-2 text-purple-400 font-semibold">{currentProgress.newVideosAdded?.toLocaleString() || 0}</span>
-            </div>
-            <div>
-              <span className="text-zinc-500">Speed</span>
-              <span className="ml-2 text-zinc-100 font-semibold">{currentProgress.videosPerSecond}/s</span>
-            </div>
-          </>
-        )}
-        {message && <span className="text-zinc-400">{message}</span>}
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-semibold text-zinc-100">Dashboard</h1>
+        <p className="text-zinc-500 mt-1">Manage scraping, categories, and video content</p>
       </div>
 
-      {/* Resume banner */}
-      {savedProgress && !scraping && (
-        <div className="flex items-center justify-between py-4 px-5 bg-[#18181b] rounded-lg border border-[#27272a]">
-          <span className="text-zinc-300">
-            Saved: {savedProgress.categoriesCompleted}/{savedProgress.totalCategories} categories
-          </span>
-          <div className="flex gap-3">
-            <button onClick={() => startScraping(savedProgress.checkpointId)} className="text-purple-400 hover:text-purple-300 font-medium">
-              Resume
-            </button>
-            <button onClick={clearProgress} className="text-zinc-500 hover:text-zinc-300">
-              Clear
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Tabs */}
+      <div className="border-b border-[#27272a]">
+        <nav className="-mb-px flex space-x-8">
+          <button
+            onClick={() => setActiveTab('scraper')}
+            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'scraper'
+                ? 'border-purple-500 text-purple-400'
+                : 'border-transparent text-zinc-500 hover:border-zinc-600 hover:text-zinc-300'
+            }`}
+          >
+            Scraper
+          </button>
+          <button
+            onClick={() => setActiveTab('videos')}
+            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'videos'
+                ? 'border-purple-500 text-purple-400'
+                : 'border-transparent text-zinc-500 hover:border-zinc-600 hover:text-zinc-300'
+            }`}
+          >
+            Videos
+          </button>
+          <button
+            onClick={() => setActiveTab('thumbnails')}
+            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'thumbnails'
+                ? 'border-purple-500 text-purple-400'
+                : 'border-transparent text-zinc-500 hover:border-zinc-600 hover:text-zinc-300'
+            }`}
+          >
+            Thumbnails
+          </button>
+        </nav>
+      </div>
 
-      {/* Progress bars */}
-      {(scraping && currentProgress) && (
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm text-zinc-400">
-            <span>Category Scraping {currentProgress.categoriesCompleted}/{currentProgress.totalCategories}</span>
-            <span>{currentProgress.totalVideosScraped.toLocaleString()} videos</span>
+      {/* Scraper Tab */}
+      {activeTab === 'scraper' && (
+        <>
+          {/* Stats */}
+          <div className="flex items-center gap-10 text-sm">
+            <div>
+              <span className="text-zinc-500">Videos</span>
+              <span className="ml-2 text-zinc-100 font-semibold">{stats?.totalVideos.toLocaleString() || '0'}</span>
+            </div>
+            <div>
+              <span className="text-zinc-500">Categories</span>
+              <span className="ml-2 text-zinc-100 font-semibold">{stats?.categories.length || 0}</span>
+            </div>
+            {currentProgress && (
+              <>
+                <div>
+                  <span className="text-zinc-500">New</span>
+                  <span className="ml-2 text-purple-400 font-semibold">{currentProgress.newVideosAdded?.toLocaleString() || 0}</span>
+                </div>
+                <div>
+                  <span className="text-zinc-500">Speed</span>
+                  <span className="ml-2 text-zinc-100 font-semibold">{currentProgress.videosPerSecond}/s</span>
+                </div>
+              </>
+            )}
+            {message && <span className="text-zinc-400">{message}</span>}
           </div>
-          <div className="h-1.5 bg-[#1f1f23] rounded-full overflow-hidden">
-            <div
-              className="h-full bg-purple-500 transition-all"
-              style={{ width: `${(currentProgress.categoriesCompleted / currentProgress.totalCategories) * 100}%` }}
-            />
-          </div>
-        </div>
-      )}
 
-      {/* Keyword scraper progress */}
-      {(keywordJobs.japanese.running || keywordJobs.chinese.running) && (
-        <div className="space-y-3">
-          {keywordJobs.japanese.running && keywordJobs.japanese.job && (
+          {/* Resume banner */}
+          {savedProgress && !scraping && (
+            <div className="flex items-center justify-between py-4 px-5 bg-[#18181b] rounded-lg border border-[#27272a]">
+              <span className="text-zinc-300">
+                Saved: {savedProgress.categoriesCompleted}/{savedProgress.totalCategories} categories
+              </span>
+              <div className="flex gap-3">
+                <button onClick={() => startScraping(savedProgress.checkpointId)} className="text-purple-400 hover:text-purple-300 font-medium">
+                  Resume
+                </button>
+                <button onClick={clearProgress} className="text-zinc-500 hover:text-zinc-300">
+                  Clear
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Progress bars */}
+          {(scraping && currentProgress) && (
             <div className="space-y-2">
               <div className="flex justify-between text-sm text-zinc-400">
-                <span>Japanese Keywords {keywordJobs.japanese.job.keywordsCompleted}/{keywordJobs.japanese.job.totalKeywords}</span>
-                <span>+{keywordJobs.japanese.job.totalScraped.toLocaleString()} new</span>
+                <span>Category Scraping {currentProgress.categoriesCompleted}/{currentProgress.totalCategories}</span>
+                <span>{currentProgress.totalVideosScraped.toLocaleString()} videos</span>
               </div>
               <div className="h-1.5 bg-[#1f1f23] rounded-full overflow-hidden">
                 <div
                   className="h-full bg-purple-500 transition-all"
-                  style={{ width: `${(keywordJobs.japanese.job.keywordsCompleted / keywordJobs.japanese.job.totalKeywords) * 100}%` }}
+                  style={{ width: `${(currentProgress.categoriesCompleted / currentProgress.totalCategories) * 100}%` }}
                 />
               </div>
             </div>
           )}
-          {keywordJobs.chinese.running && keywordJobs.chinese.job && (
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm text-zinc-400">
-                <span>Chinese Keywords {keywordJobs.chinese.job.keywordsCompleted}/{keywordJobs.chinese.job.totalKeywords}</span>
-                <span>+{keywordJobs.chinese.job.totalScraped.toLocaleString()} new</span>
-              </div>
-              <div className="h-1.5 bg-[#1f1f23] rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-purple-500 transition-all"
-                  style={{ width: `${(keywordJobs.chinese.job.keywordsCompleted / keywordJobs.chinese.job.totalKeywords) * 100}%` }}
-                />
-              </div>
-            </div>
-          )}
-        </div>
-      )}
 
-      {/* Unified Scraper */}
-      <div className="p-5 bg-[#18181b] rounded-lg border border-[#27272a]">
-        <div className="flex items-center justify-between mb-5">
-          <span className="font-medium text-lg">Scraper</span>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-zinc-500">Pages</span>
-            <input
-              type="number"
-              min={1}
-              max={100}
-              value={pagesPerCategory}
-              onChange={e => setPagesPerCategory(Math.max(1, Math.min(100, parseInt(e.target.value) || 5)))}
-              className="w-16 px-2 py-1 bg-[#1f1f23] border border-[#27272a] rounded text-sm text-center focus:border-purple-500 outline-none"
-            />
-          </div>
-        </div>
-
-        <button
-          onClick={() => setShowCategoryFilter(!showCategoryFilter)}
-          className="flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-200 mb-4"
-        >
-          <ChevronDown className={`w-4 h-4 transition-transform ${showCategoryFilter ? 'rotate-180' : ''}`} />
-          Filter Categories
-          {selectedCategoryIds.size > 0 && (
-            <span className="ml-1 px-2 py-0.5 bg-purple-600/20 text-purple-400 rounded-full text-xs">
-              {selectedCategoryIds.size} selected
-            </span>
-          )}
-        </button>
-
-        {showCategoryFilter && (
-          <div className="mb-5 space-y-3">
-            {/* Quick actions */}
-            <div className="flex items-center gap-2 text-xs">
-              <button
-                onClick={() => setSelectedCategoryIds(new Set(availableCategories.map(c => c.id)))}
-                className="text-zinc-500 hover:text-zinc-300"
-              >
-                Select all
-              </button>
-              <span className="text-zinc-700">|</span>
-              <button
-                onClick={() => setSelectedCategoryIds(new Set())}
-                className="text-zinc-500 hover:text-zinc-300"
-              >
-                Clear
-              </button>
-              {selectedCategoryIds.size > 0 && (
-                <span className="text-zinc-600 ml-2">{selectedCategoryIds.size} selected</span>
+          {/* Keyword scraper progress */}
+          {(keywordJobs.japanese.running || keywordJobs.chinese.running) && (
+            <div className="space-y-3">
+              {keywordJobs.japanese.running && keywordJobs.japanese.job && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm text-zinc-400">
+                    <span>Japanese Keywords {keywordJobs.japanese.job.keywordsCompleted}/{keywordJobs.japanese.job.totalKeywords}</span>
+                    <span>+{keywordJobs.japanese.job.totalScraped.toLocaleString()} new</span>
+                  </div>
+                  <div className="h-1.5 bg-[#1f1f23] rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-purple-500 transition-all"
+                      style={{ width: `${(keywordJobs.japanese.job.keywordsCompleted / keywordJobs.japanese.job.totalKeywords) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+              {keywordJobs.chinese.running && keywordJobs.chinese.job && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm text-zinc-400">
+                    <span>Chinese Keywords {keywordJobs.chinese.job.keywordsCompleted}/{keywordJobs.chinese.job.totalKeywords}</span>
+                    <span>+{keywordJobs.chinese.job.totalScraped.toLocaleString()} new</span>
+                  </div>
+                  <div className="h-1.5 bg-[#1f1f23] rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-purple-500 transition-all"
+                      style={{ width: `${(keywordJobs.chinese.job.keywordsCompleted / keywordJobs.chinese.job.totalKeywords) * 100}%` }}
+                    />
+                  </div>
+                </div>
               )}
             </div>
+          )}
 
-            {/* All categories in grid */}
-            <div className="grid grid-cols-12 gap-1.5">
-              {availableCategories.map(cat => (
-                <Tag
-                  key={cat.id}
-                  selected={selectedCategoryIds.has(cat.id)}
-                  onClick={() => toggleCategorySelection(cat.id)}
-                >
-                  {cat.name}
-                </Tag>
-              ))}
+          <div className="p-5 bg-[#18181b] rounded-lg border border-[#27272a]">
+            <div className="flex items-center justify-between mb-5">
+              <span className="font-medium text-lg">Scraper</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-zinc-500">Pages</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={pagesPerCategory}
+                  onChange={e => setPagesPerCategory(Math.max(1, Math.min(100, parseInt(e.target.value) || 5)))}
+                  className="w-16 px-2 py-1 bg-[#1f1f23] border border-[#27272a] rounded text-sm text-center focus:border-purple-500 outline-none"
+                />
+              </div>
             </div>
+
+            <button
+              onClick={() => setShowCategoryFilter(!showCategoryFilter)}
+              className="flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-200 mb-4"
+            >
+              <ChevronDown className={`w-4 h-4 transition-transform ${showCategoryFilter ? 'rotate-180' : ''}`} />
+              Filter Categories
+              {selectedCategoryIds.size > 0 && (
+                <span className="ml-1 px-2 py-0.5 bg-purple-600/20 text-purple-400 rounded-full text-xs">
+                  {selectedCategoryIds.size} selected
+                </span>
+              )}
+            </button>
+
+            {showCategoryFilter && (
+              <div className="mb-5 space-y-3">
+                {/* Quick actions */}
+                <div className="flex items-center gap-2 text-xs">
+                  <button
+                    onClick={() => setSelectedCategoryIds(new Set(availableCategories.map(c => c.id)))}
+                    className="text-zinc-500 hover:text-zinc-300"
+                  >
+                    Select all
+                  </button>
+                  <span className="text-zinc-700">|</span>
+                  <button
+                    onClick={() => setSelectedCategoryIds(new Set())}
+                    className="text-zinc-500 hover:text-zinc-300"
+                  >
+                    Clear
+                  </button>
+                  {selectedCategoryIds.size > 0 && (
+                    <span className="text-zinc-600 ml-2">{selectedCategoryIds.size} selected</span>
+                  )}
+                </div>
+
+                {/* All categories in grid */}
+                <div className="grid grid-cols-12 gap-1.5">
+                  {availableCategories.map(cat => (
+                    <Tag
+                      key={cat.id}
+                      selected={selectedCategoryIds.has(cat.id)}
+                      onClick={() => toggleCategorySelection(cat.id)}
+                    >
+                      {cat.name}
+                    </Tag>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <button
+              onClick={() => startScraping()}
+              disabled={isAnyScraping}
+              className="w-full py-3 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors text-base"
+            >
+              {isAnyScraping ? <Square className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+              {isAnyScraping ? 'Running...' : 'Start Scraping'}
+            </button>
           </div>
-        )}
+        </>
+      )}
 
-        <button
-          onClick={() => startScraping()}
-          disabled={isAnyScraping}
-          className="w-full py-3 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors text-base"
-        >
-          {isAnyScraping ? <Square className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-          {isAnyScraping ? 'Running...' : 'Start Scraping'}
-        </button>
-      </div>
+      {/* Thumbnails Tab */}
+      {activeTab === 'thumbnails' && <ThumbnailMigration />}
 
-      {/* Thumbnail Migration */}
-      <ThumbnailMigration />
-
-      {/* Category Browser */}
+      {/* Videos Tab */}
+      {activeTab === 'videos' && (
       <div className="bg-[#18181b] rounded-lg border border-[#27272a] overflow-hidden">
         {/* Search bar */}
         <div className="p-4 border-b border-[#27272a]">
@@ -776,6 +824,7 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
+      )}
     </div>
   )
 }
