@@ -328,63 +328,57 @@ export default function AdDetailPage() {
       <div className={`max-w-7xl mx-auto p-6 transition-opacity duration-200 ${isPending ? 'opacity-60' : ''}`}>
         {activeTab === 'analytics' ? (
           <div className="space-y-6">
-            {/* Stats Row */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-[#18181b] rounded-lg border border-[#27272a] p-4">
-                <div className="text-sm text-zinc-500 mb-1">Period Impressions</div>
-                <div className="text-2xl font-semibold text-zinc-100">
-                  {data.stats.impressionsInPeriod.toLocaleString()}
+            {/* Combined Stats + Chart Card (Plausible style) */}
+            <div className="bg-[#18181b] rounded-lg border border-[#27272a]">
+              {/* Stats Row */}
+              <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-[#27272a] border-b border-[#27272a]">
+                <div className="p-4">
+                  <div className="text-xs text-zinc-500 uppercase tracking-wide mb-1">Period Impressions</div>
+                  <div className="text-2xl font-bold text-zinc-100">
+                    {data.stats.impressionsInPeriod.toLocaleString()}
+                  </div>
+                  <div className={`text-sm mt-0.5 ${isPositiveGrowth ? 'text-green-400' : 'text-red-400'}`}>
+                    {isPositiveGrowth ? '↑' : '↓'} {Math.abs(growthNum).toFixed(1)}%
+                  </div>
                 </div>
-                <div className={`text-sm mt-1 ${isPositiveGrowth ? 'text-green-400' : 'text-red-400'}`}>
-                  {isPositiveGrowth ? '↑' : '↓'} {Math.abs(growthNum).toFixed(1)}% vs previous
+
+                <div className="p-4">
+                  <div className="text-xs text-zinc-500 uppercase tracking-wide mb-1">Total Impressions</div>
+                  <div className="text-2xl font-bold text-zinc-100">
+                    {data.stats.totalImpressions.toLocaleString()}
+                  </div>
+                  <div className="text-sm text-zinc-500 mt-0.5">All time</div>
+                </div>
+
+                <div className="p-4">
+                  <div className="text-xs text-zinc-500 uppercase tracking-wide mb-1">Unique Videos</div>
+                  <div className="text-2xl font-bold text-zinc-100">
+                    {data.topVideos.length}
+                  </div>
+                  <div className="text-sm text-zinc-500 mt-0.5">In period</div>
+                </div>
+
+                <div className="p-4">
+                  <div className="text-xs text-zinc-500 uppercase tracking-wide mb-1">Top Source</div>
+                  <div className="text-lg font-bold text-zinc-100 truncate">
+                    {data.topSources[0]?.source || 'N/A'}
+                  </div>
+                  <div className="text-sm text-zinc-500 mt-0.5">
+                    {data.topSources[0]?.count.toLocaleString() || 0} views
+                  </div>
                 </div>
               </div>
 
-              <div className="bg-[#18181b] rounded-lg border border-[#27272a] p-4">
-                <div className="text-sm text-zinc-500 mb-1">Total Impressions</div>
-                <div className="text-2xl font-semibold text-zinc-100">
-                  {data.stats.totalImpressions.toLocaleString()}
-                </div>
-                <div className="text-sm text-zinc-500 mt-1">All time</div>
+              {/* Chart */}
+              <div className="p-5">
+                <AreaChart
+                  data={data.chartData}
+                  height={256}
+                  formatLabel={formatChartLabel}
+                  formatTooltipDate={formatTooltipDate}
+                  valueLabel="IMPRESSIONS"
+                />
               </div>
-
-              <div className="bg-[#18181b] rounded-lg border border-[#27272a] p-4">
-                <div className="text-sm text-zinc-500 mb-1">Unique Videos</div>
-                <div className="text-2xl font-semibold text-zinc-100">
-                  {data.topVideos.length}
-                </div>
-                <div className="text-sm text-zinc-500 mt-1">In period</div>
-              </div>
-
-              <div className="bg-[#18181b] rounded-lg border border-[#27272a] p-4">
-                <div className="text-sm text-zinc-500 mb-1">Top Source</div>
-                <div className="text-lg font-semibold text-zinc-100 truncate">
-                  {data.topSources[0]?.source || 'N/A'}
-                </div>
-                <div className="text-sm text-zinc-500 mt-1">
-                  {data.topSources[0]?.count.toLocaleString() || 0} views
-                </div>
-              </div>
-            </div>
-
-            {/* Chart */}
-            <div className="bg-[#18181b] rounded-lg border border-[#27272a] p-5">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-base font-semibold text-zinc-100">
-                  {timeRange <= 1 ? 'Hourly' : 'Daily'} Views
-                </h2>
-                <span className="text-sm text-zinc-500">
-                  {new Date(data.period.startDate).toLocaleDateString()} - {new Date(data.period.endDate).toLocaleDateString()}
-                </span>
-              </div>
-
-              <AreaChart
-                data={data.chartData}
-                height={256}
-                formatLabel={formatChartLabel}
-                formatTooltipDate={formatTooltipDate}
-                valueLabel="IMPRESSIONS"
-              />
             </div>
 
             {/* Two Column Layout */}
