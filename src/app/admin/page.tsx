@@ -414,7 +414,7 @@ export default function AdminDashboard() {
     name.toLowerCase().includes(categorySearchQuery.toLowerCase())
   )
 
-  const videosPerApiPage = 20 // API returns 20 per page
+  const videosPerApiPage = 100 // API returns 100 per page
   const totalPages = Math.ceil(categoryVideoTotal / videosPerApiPage)
 
   // Check if any scraping is active
@@ -675,9 +675,9 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="grid md:grid-cols-4 min-h-[500px]">
+        <div className="grid md:grid-cols-4" style={{ height: 'calc(100vh - 280px)', minHeight: '400px' }}>
           {/* Categories sidebar */}
-          <div className="border-r border-[#27272a] bg-[#18181b]/50">
+          <div className="border-r border-[#27272a] bg-[#18181b]/50 flex flex-col">
             <div className="p-3 border-b border-[#27272a] flex gap-2">
               <button
                 onClick={() => setCategoryTab('database')}
@@ -711,7 +711,7 @@ export default function AdminDashboard() {
               />
             </div>
 
-            <div className="max-h-[400px] overflow-y-auto">
+            <div className="flex-1 overflow-y-auto">
               {categoryTab === 'database' ? (
                 filteredCategories.length > 0 ? (
                   filteredCategories.map(cat => (
@@ -756,8 +756,8 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* Videos grid */}
-          <div className="md:col-span-3 p-4">
+          {/* Videos list */}
+          <div className="md:col-span-3 p-4 overflow-y-auto">
             {globalSearchResults.length > 0 ? (
               <>
                 <div className="flex items-center justify-between mb-4">
