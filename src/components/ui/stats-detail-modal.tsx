@@ -3,93 +3,97 @@
 import { useState, useMemo } from 'react'
 import { X, Search } from 'lucide-react'
 
-// Browser icons as SVG components
+// Browser icons as SVG components - using simple recognizable designs
 const BrowserIcons: Record<string, React.ReactNode> = {
   chrome: (
-    <svg viewBox="0 0 100 100" className="w-4 h-4">
-      <circle cx="50" cy="50" r="46" fill="#EA4335"/>
-      <path d="M50 4 A46 46 0 0 1 93.3 73 L50 50 Z" fill="#FBBC05"/>
-      <path d="M93.3 73 A46 46 0 0 1 6.7 73 L50 50 Z" fill="#34A853"/>
-      <path d="M6.7 73 A46 46 0 0 1 50 4 L50 50 Z" fill="#EA4335"/>
-      <circle cx="50" cy="50" r="20" fill="white"/>
-      <circle cx="50" cy="50" r="16" fill="#4285F4"/>
+    <svg viewBox="0 0 24 24" className="w-4 h-4">
+      <circle cx="12" cy="12" r="11" fill="#4285F4"/>
+      <path d="M12 2a10 10 0 0 1 8.66 5H12V12l8.66 5A10 10 0 1 1 12 2z" fill="#EA4335"/>
+      <path d="M12 7l8.66 5H12l-5 8.66A10 10 0 0 1 2.34 7H12z" fill="#FBBC05"/>
+      <path d="M7 18.66L12 12v7a10 10 0 0 1-5-0.34z" fill="#34A853"/>
+      <path d="M3.34 17A10 10 0 0 1 2 12a10 10 0 0 1 .34-2.66L12 12l-8.66 5z" fill="#34A853"/>
+      <circle cx="12" cy="12" r="4.5" fill="white"/>
+      <circle cx="12" cy="12" r="3.5" fill="#4285F4"/>
     </svg>
   ),
   safari: (
     <svg viewBox="0 0 24 24" className="w-4 h-4">
-      <circle cx="12" cy="12" r="10" fill="url(#safari-gradient)"/>
-      <defs>
-        <linearGradient id="safari-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#5AC8FA"/>
-          <stop offset="100%" stopColor="#007AFF"/>
-        </linearGradient>
-      </defs>
-      <path d="M12 4 L13 11 L12 12 L11 11 Z" fill="white"/>
-      <path d="M12 20 L11 13 L12 12 L13 13 Z" fill="white" opacity="0.7"/>
-      <polygon points="12,6 15,12 12,18 9,12" fill="none" stroke="white" strokeWidth="0.5"/>
-      <polygon points="7,9 12,12 7,15" fill="#EA4335"/>
-      <polygon points="17,9 12,12 17,15" fill="white"/>
+      <circle cx="12" cy="12" r="11" fill="#006CFF"/>
+      <circle cx="12" cy="12" r="9" fill="white"/>
+      <circle cx="12" cy="12" r="8" fill="#006CFF"/>
+      <polygon points="12,5 13,11.5 12,12 11,11.5" fill="white"/>
+      <polygon points="12,19 11,12.5 12,12 13,12.5" fill="#FF3B30"/>
+      <polygon points="5,12 11.5,11 12,12 11.5,13" fill="white"/>
+      <polygon points="19,12 12.5,13 12,12 12.5,11" fill="#FF3B30"/>
     </svg>
   ),
   firefox: (
     <svg viewBox="0 0 24 24" className="w-4 h-4">
-      <circle cx="12" cy="12" r="10" fill="#FF9500"/>
-      <path d="M12 2 C6.48 2 2 6.48 2 12 C2 17.52 6.48 22 12 22 C17.52 22 22 17.52 22 12" fill="#FF6611"/>
-      <circle cx="12" cy="12" r="6" fill="#FFDD44"/>
+      <circle cx="12" cy="12" r="11" fill="#FF9500"/>
+      <circle cx="12" cy="13" r="7" fill="#FFBD4F"/>
+      <path d="M19 8c-1-3-4-5-7-5s-6 2-7 5c0 0 2-2 5-2 2 0 4 1 5 3l4-1z" fill="#FF4500"/>
+      <circle cx="12" cy="13" r="4" fill="#3366CC"/>
     </svg>
   ),
   edge: (
     <svg viewBox="0 0 24 24" className="w-4 h-4">
-      <circle cx="12" cy="12" r="10" fill="url(#edge-gradient)"/>
-      <defs>
-        <linearGradient id="edge-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#0078D4"/>
-          <stop offset="100%" stopColor="#00BCF2"/>
-        </linearGradient>
-      </defs>
-      <path d="M8 16 Q12 20 18 14 Q16 18 10 18 Q6 18 8 16" fill="#50E6FF"/>
+      <circle cx="12" cy="12" r="11" fill="#0078D4"/>
+      <path d="M5 14c0-4 3-7 7-7 3 0 5.5 1.5 6.5 4-1-.5-2-.8-3.5-.8-4 0-6.5 3-6.5 6 0 1.5.5 3 1.5 4-3-1-5-4-5-6.2z" fill="#50E6FF"/>
+      <circle cx="15" cy="16" r="4" fill="#1DB954" fillOpacity="0"/>
+      <path d="M12 19c2 0 4-1 5-2.5-.5.3-1.5.5-2.5.5-2.5 0-4.5-2-4.5-4.5S12 8 14.5 8c1 0 2 .3 2.8.8C16 6 14 4.5 12 4.5 7.5 4.5 4 8 4 12.5c0 3 2 6 5 7 1 .3 2 .5 3-.5z" fill="white"/>
     </svg>
   ),
   opera: (
     <svg viewBox="0 0 24 24" className="w-4 h-4">
-      <circle cx="12" cy="12" r="10" fill="#FF1B2D"/>
-      <ellipse cx="12" cy="12" rx="4" ry="7" fill="white"/>
+      <circle cx="12" cy="12" r="11" fill="#FF1B2D"/>
+      <ellipse cx="12" cy="12" rx="4" ry="8" fill="#FF1B2D" stroke="white" strokeWidth="2"/>
     </svg>
   ),
   brave: (
     <svg viewBox="0 0 24 24" className="w-4 h-4">
-      <path d="M12 2 L20 6 L20 14 L12 22 L4 14 L4 6 Z" fill="#FB542B"/>
-      <path d="M12 6 L16 8 L16 14 L12 18 L8 14 L8 8 Z" fill="white"/>
+      <path d="M12 2L3 6v6c0 5.5 3.8 10.7 9 12 5.2-1.3 9-6.5 9-12V6l-9-4z" fill="#FB542B"/>
+      <path d="M12 5L6 8v5c0 4 2.7 7.6 6 8.5V5z" fill="#FF7139"/>
     </svg>
   ),
   samsung: (
     <svg viewBox="0 0 24 24" className="w-4 h-4">
-      <circle cx="12" cy="12" r="10" fill="#1428A0"/>
-      <text x="12" y="16" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold">S</text>
+      <circle cx="12" cy="12" r="11" fill="#1428A0"/>
+      <ellipse cx="12" cy="12" rx="8" ry="4" fill="none" stroke="white" strokeWidth="1.5" transform="rotate(-35 12 12)"/>
+      <circle cx="17" cy="8" r="2" fill="white"/>
     </svg>
   ),
   uc: (
     <svg viewBox="0 0 24 24" className="w-4 h-4">
-      <circle cx="12" cy="12" r="10" fill="#FF6600"/>
-      <text x="12" y="16" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold">UC</text>
+      <circle cx="12" cy="12" r="11" fill="#FF6600"/>
+      <path d="M8 10c0-2 2-4 4-4s4 2 4 4v4c0 2-2 4-4 4s-4-2-4-4v-4z" fill="none" stroke="white" strokeWidth="2"/>
     </svg>
   ),
   yandex: (
     <svg viewBox="0 0 24 24" className="w-4 h-4">
-      <circle cx="12" cy="12" r="10" fill="#FF0000"/>
-      <text x="12" y="16" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold">Y</text>
+      <circle cx="12" cy="12" r="11" fill="#FC3F1D"/>
+      <path d="M13 6h-2l-3 6 3 6v-5l2-3v8h2V6z" fill="white"/>
     </svg>
   ),
   quark: (
     <svg viewBox="0 0 24 24" className="w-4 h-4">
-      <circle cx="12" cy="12" r="10" fill="#6366F1"/>
-      <text x="12" y="16" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold">Q</text>
+      <circle cx="12" cy="12" r="11" fill="#6366F1"/>
+      <circle cx="12" cy="12" r="6" fill="none" stroke="white" strokeWidth="2"/>
+      <circle cx="12" cy="6" r="2" fill="white"/>
+      <circle cx="17" cy="15" r="2" fill="white"/>
+      <circle cx="7" cy="15" r="2" fill="white"/>
     </svg>
   ),
   huawei: (
     <svg viewBox="0 0 24 24" className="w-4 h-4">
-      <circle cx="12" cy="12" r="10" fill="#CF0A2C"/>
-      <text x="12" y="16" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold">HW</text>
+      <circle cx="12" cy="12" r="11" fill="#CF0A2C"/>
+      <path d="M12 5l2 5h5l-4 3 2 5-5-3-5 3 2-5-4-3h5l2-5z" fill="white"/>
+    </svg>
+  ),
+  other: (
+    <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="12" r="10"/>
+      <circle cx="12" cy="12" r="4"/>
+      <path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
     </svg>
   ),
 }
@@ -147,25 +151,20 @@ const OSIcons: Record<string, React.ReactNode> = {
 
 function getBrowserIcon(browser: string): React.ReactNode {
   const name = browser.toLowerCase()
-  if (name.includes('chrome')) return BrowserIcons.chrome
-  if (name.includes('safari')) return BrowserIcons.safari
+  if (name.includes('chrome') && !name.includes('headless')) return BrowserIcons.chrome
+  if (name.includes('safari') && !name.includes('mobile')) return BrowserIcons.safari
   if (name.includes('firefox')) return BrowserIcons.firefox
   if (name.includes('edge')) return BrowserIcons.edge
   if (name.includes('opera')) return BrowserIcons.opera
   if (name.includes('brave')) return BrowserIcons.brave
   if (name.includes('samsung')) return BrowserIcons.samsung
-  if (name.includes('uc')) return BrowserIcons.uc
+  if (name.includes('uc browser') || name === 'uc') return BrowserIcons.uc
   if (name.includes('yandex')) return BrowserIcons.yandex
   if (name.includes('quark')) return BrowserIcons.quark
   if (name.includes('huawei')) return BrowserIcons.huawei
+  if (name === 'other' || name === 'unknown') return BrowserIcons.other
   // Default browser icon
-  return (
-    <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="12" cy="12" r="10"/>
-      <circle cx="12" cy="12" r="4"/>
-      <path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
-    </svg>
-  )
+  return BrowserIcons.other
 }
 
 function getDeviceIcon(device: string): React.ReactNode {

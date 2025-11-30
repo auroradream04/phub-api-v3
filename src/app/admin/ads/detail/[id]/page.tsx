@@ -411,7 +411,7 @@ export default function AdDetailPage() {
                 ) : (
                   <p className="text-sm text-zinc-500 flex-1">No data</p>
                 )}
-                {data.topSources.length > 10 && (
+                {data.topSources.length > 0 && (
                   <button
                     onClick={() => setDetailModal({ type: 'sources', title: 'Top Sources' })}
                     className="mt-4 pt-3 border-t border-[#27272a] text-xs text-zinc-500 hover:text-zinc-300 transition-colors flex items-center justify-center gap-1"
@@ -459,7 +459,7 @@ export default function AdDetailPage() {
                 ) : (
                   <p className="text-sm text-zinc-500 flex-1">No data</p>
                 )}
-                {data.topVideos.length > 10 && (
+                {data.topVideos.length > 0 && (
                   <button
                     onClick={() => setDetailModal({ type: 'videos', title: 'Top Videos' })}
                     className="mt-4 pt-3 border-t border-[#27272a] text-xs text-zinc-500 hover:text-zinc-300 transition-colors flex items-center justify-center gap-1"
