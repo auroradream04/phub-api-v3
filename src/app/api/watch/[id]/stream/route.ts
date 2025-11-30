@@ -80,15 +80,32 @@ export async function GET(
       throw new Error('Failed to fetch video information')
     }
 
-    const mediaDefinition = videoInfo.mediaDefinitions.find(
-      (md) => md.quality.toString() === quality
-    )
+    // Quality priority: 720p -> 480p -> 240p
+    const qualityPriority = ['720', '480', '240']
+    const availableQualities = videoInfo.mediaDefinitions.map(md => md.quality).join(', ')
+
+    let mediaDefinition = null
+    let selectedQuality = null
+
+    for (const q of qualityPriority) {
+      mediaDefinition = videoInfo.mediaDefinitions.find(
+        (md) => md.quality.toString() === q
+      )
+      if (mediaDefinition) {
+        selectedQuality = q
+        break
+      }
+    }
+
+    if (mediaDefinition && selectedQuality !== quality) {
+      console.log(`[Stream API] Quality ${quality}p not available, using ${selectedQuality}p instead. Available: ${availableQualities}`)
+    }
 
     if (!mediaDefinition) {
       await domainCheck.logRequest(404, Date.now() - requestStart)
-      console.warn(`[Stream API] Quality ${quality}p not found for video ${id}. Available qualities: ${videoInfo.mediaDefinitions.map(md => md.quality).join(', ')}`)
+      console.warn(`[Stream API] No qualities available for video ${id}. Available: ${availableQualities}`)
       return NextResponse.json(
-        { error: `Quality ${quality} not found` },
+        { error: 'No video qualities available' },
         { status: 404 }
       )
     }
