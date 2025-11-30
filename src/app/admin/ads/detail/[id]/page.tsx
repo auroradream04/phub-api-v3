@@ -485,14 +485,20 @@ export default function AdDetailPage() {
               <div className="bg-[#18181b] rounded-lg border border-[#27272a] p-4 flex flex-col">
                 <h3 className="text-sm font-semibold text-zinc-100 mb-3">Devices</h3>
                 {data.devices.length > 0 ? (
-                  <div className="space-y-2 flex-1">
+                  <div className="space-y-1 flex-1">
                     {data.devices.slice(0, 5).map((device, i) => (
-                      <div key={i} className="flex items-center justify-between text-sm">
-                        <span className="flex items-center gap-2 text-zinc-400">
-                          {getDeviceIcon(device.device)}
-                          <span>{device.device}</span>
-                        </span>
-                        <span className="text-zinc-100 font-medium">{device.percentage}%</span>
+                      <div key={i} className="relative py-1.5 px-2 -mx-2 rounded">
+                        <div
+                          className="absolute inset-y-0 left-0 bg-purple-500/10 rounded"
+                          style={{ width: `${parseFloat(device.percentage)}%` }}
+                        />
+                        <div className="relative flex items-center justify-between text-sm">
+                          <span className="flex items-center gap-2 text-zinc-300">
+                            {getDeviceIcon(device.device)}
+                            <span>{device.device}</span>
+                          </span>
+                          <span className="text-zinc-100 font-medium">{device.percentage}%</span>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -516,14 +522,20 @@ export default function AdDetailPage() {
               <div className="bg-[#18181b] rounded-lg border border-[#27272a] p-4 flex flex-col">
                 <h3 className="text-sm font-semibold text-zinc-100 mb-3">Browsers</h3>
                 {data.browsers.length > 0 ? (
-                  <div className="space-y-2 flex-1">
+                  <div className="space-y-1 flex-1">
                     {data.browsers.slice(0, 5).map((browser, i) => (
-                      <div key={i} className="flex items-center justify-between text-sm">
-                        <span className="flex items-center gap-2 text-zinc-400">
-                          {getBrowserIcon(browser.browser)}
-                          <span>{browser.browser}</span>
-                        </span>
-                        <span className="text-zinc-100 font-medium">{browser.percentage}%</span>
+                      <div key={i} className="relative py-1.5 px-2 -mx-2 rounded">
+                        <div
+                          className="absolute inset-y-0 left-0 bg-purple-500/10 rounded"
+                          style={{ width: `${parseFloat(browser.percentage)}%` }}
+                        />
+                        <div className="relative flex items-center justify-between text-sm">
+                          <span className="flex items-center gap-2 text-zinc-300">
+                            {getBrowserIcon(browser.browser)}
+                            <span>{browser.browser}</span>
+                          </span>
+                          <span className="text-zinc-100 font-medium">{browser.percentage}%</span>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -547,14 +559,20 @@ export default function AdDetailPage() {
               <div className="bg-[#18181b] rounded-lg border border-[#27272a] p-4 flex flex-col">
                 <h3 className="text-sm font-semibold text-zinc-100 mb-3">OS</h3>
                 {data.operatingSystems.length > 0 ? (
-                  <div className="space-y-2 flex-1">
+                  <div className="space-y-1 flex-1">
                     {data.operatingSystems.slice(0, 5).map((os, i) => (
-                      <div key={i} className="flex items-center justify-between text-sm">
-                        <span className="flex items-center gap-2 text-zinc-400">
-                          {getOSIcon(os.os)}
-                          <span>{os.os}</span>
-                        </span>
-                        <span className="text-zinc-100 font-medium">{os.percentage}%</span>
+                      <div key={i} className="relative py-1.5 px-2 -mx-2 rounded">
+                        <div
+                          className="absolute inset-y-0 left-0 bg-purple-500/10 rounded"
+                          style={{ width: `${parseFloat(os.percentage)}%` }}
+                        />
+                        <div className="relative flex items-center justify-between text-sm">
+                          <span className="flex items-center gap-2 text-zinc-300">
+                            {getOSIcon(os.os)}
+                            <span>{os.os}</span>
+                          </span>
+                          <span className="text-zinc-100 font-medium">{os.percentage}%</span>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -578,11 +596,17 @@ export default function AdDetailPage() {
               <div className="bg-[#18181b] rounded-lg border border-[#27272a] p-4 flex flex-col">
                 <h3 className="text-sm font-semibold text-zinc-100 mb-3">Countries</h3>
                 {data.countries.length > 0 ? (
-                  <div className="space-y-2 flex-1">
+                  <div className="space-y-1 flex-1">
                     {data.countries.slice(0, 5).map((country, i) => (
-                      <div key={i} className="flex items-center justify-between text-sm">
-                        <span className="text-zinc-400">{country.country}</span>
-                        <span className="text-zinc-100 font-medium">{country.percentage}%</span>
+                      <div key={i} className="relative py-1.5 px-2 -mx-2 rounded">
+                        <div
+                          className="absolute inset-y-0 left-0 bg-purple-500/10 rounded"
+                          style={{ width: `${parseFloat(country.percentage)}%` }}
+                        />
+                        <div className="relative flex items-center justify-between text-sm">
+                          <span className="text-zinc-300">{country.country}</span>
+                          <span className="text-zinc-100 font-medium">{country.percentage}%</span>
+                        </div>
                       </div>
                     ))}
                   </div>

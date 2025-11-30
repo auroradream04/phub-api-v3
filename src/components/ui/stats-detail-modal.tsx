@@ -6,14 +6,13 @@ import { X, Search } from 'lucide-react'
 // Browser icons as SVG components
 const BrowserIcons: Record<string, React.ReactNode> = {
   chrome: (
-    <svg viewBox="0 0 24 24" className="w-4 h-4">
-      <circle cx="12" cy="12" r="10" fill="#4285F4"/>
-      <circle cx="12" cy="12" r="4" fill="white"/>
-      <path d="M12 6 L21.5 18 L2.5 18 Z" fill="#34A853" clipPath="url(#chrome-clip)"/>
-      <path d="M6 12 L12 22 L18 12 Z" fill="#FBBC05" clipPath="url(#chrome-clip2)"/>
-      <path d="M12 6 L2.5 18 L12 12 Z" fill="#EA4335" clipPath="url(#chrome-clip3)"/>
-      <circle cx="12" cy="12" r="4" fill="white"/>
-      <circle cx="12" cy="12" r="3" fill="#4285F4"/>
+    <svg viewBox="0 0 100 100" className="w-4 h-4">
+      <circle cx="50" cy="50" r="46" fill="#EA4335"/>
+      <path d="M50 4 A46 46 0 0 1 93.3 73 L50 50 Z" fill="#FBBC05"/>
+      <path d="M93.3 73 A46 46 0 0 1 6.7 73 L50 50 Z" fill="#34A853"/>
+      <path d="M6.7 73 A46 46 0 0 1 50 4 L50 50 Z" fill="#EA4335"/>
+      <circle cx="50" cy="50" r="20" fill="white"/>
+      <circle cx="50" cy="50" r="16" fill="#4285F4"/>
     </svg>
   ),
   safari: (
