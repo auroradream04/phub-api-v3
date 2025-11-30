@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { Providers } from "./providers";
 
@@ -57,13 +58,6 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        {process.env.NEXT_PUBLIC_51LA_ID && (
-          <script
-            charSet="UTF-8"
-            id="LA_COLLECT"
-            src={`//sdk.51.la/js-sdk-pro.min.js?id=${process.env.NEXT_PUBLIC_51LA_ID}&ck=${process.env.NEXT_PUBLIC_51LA_ID}`}
-          />
-        )}
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
@@ -71,6 +65,13 @@ export default function RootLayout({
         <Providers>
           {children}
         </Providers>
+        {process.env.NEXT_PUBLIC_51LA_ID && (
+          <Script
+            id="LA_COLLECT"
+            src={`//sdk.51.la/js-sdk-pro.min.js?id=${process.env.NEXT_PUBLIC_51LA_ID}&ck=${process.env.NEXT_PUBLIC_51LA_ID}`}
+            strategy="afterInteractive"
+          />
+        )}
       </body>
     </html>
   );
