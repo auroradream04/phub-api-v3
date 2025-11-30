@@ -16,6 +16,7 @@ interface MigrationFailure {
   originalUrl: string
   error: string
   timestamp: string
+  recoveryAttempted?: boolean
 }
 
 async function loadFailures(): Promise<MigrationFailure[]> {
@@ -66,8 +67,10 @@ export async function GET() {
       }),
     ])
 
-    // Get failure count
+    // Get failure count - only count those that have been through recovery and still failed
     const failures = await loadFailures()
+    const failedCount = failures.filter((f) => f.recoveryAttempted).length
+    const needsRecoveryCount = failures.filter((f) => !f.recoveryAttempted).length
 
     // Get disk stats
     const diskStats = await getThumbnailStats()
@@ -85,7 +88,8 @@ export async function GET() {
         total: totalCount,
         migrated: migratedCount,
         pending: pendingCount,
-        failed: failures.length,
+        failed: failedCount,
+        needsRecovery: needsRecoveryCount,
         noImage: noImageCount,
         percentComplete:
           totalCount > 0

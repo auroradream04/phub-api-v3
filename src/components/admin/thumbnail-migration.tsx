@@ -8,6 +8,7 @@ interface MigrationStats {
   migrated: number
   pending: number
   failed: number
+  needsRecovery: number
   noImage: number
   percentComplete: number
 }
@@ -201,7 +202,11 @@ export function ThumbnailMigration() {
         </div>
         <div>
           <span className="text-zinc-500">Failed</span>
-          <span className="ml-2 text-red-400 font-medium">{stats?.failed || '-'}</span>
+          <span className="ml-2 text-red-400 font-medium">{stats?.failed || 0}</span>
+        </div>
+        <div>
+          <span className="text-zinc-500">Needs Recovery</span>
+          <span className="ml-2 text-yellow-400 font-medium">{stats?.needsRecovery || 0}</span>
         </div>
       </div>
 
@@ -275,21 +280,21 @@ export function ThumbnailMigration() {
           </button>
         )}
 
-        {stats && stats.failed > 0 && (
+        {stats && (stats.failed > 0 || stats.needsRecovery > 0) && (
           <>
             <button
               onClick={runRecovery}
-              disabled={recovering}
+              disabled={recovering || stats.needsRecovery === 0}
               className="px-4 py-2 bg-[#1f1f23] hover:bg-zinc-700 disabled:opacity-50 rounded-lg text-sm transition-colors"
             >
-              {recovering ? 'Recovering...' : 'Recover Failed'}
+              {recovering ? 'Recovering...' : `Recover (${stats.needsRecovery})`}
             </button>
             <button
               onClick={() => setShowFailures(!showFailures)}
               className="flex items-center gap-2 px-4 py-2 bg-[#1f1f23] hover:bg-zinc-700 rounded-lg text-sm transition-colors"
             >
               <ChevronDown className={`w-4 h-4 transition-transform ${showFailures ? 'rotate-180' : ''}`} />
-              Failures ({stats.failed})
+              Failures ({stats.failed + stats.needsRecovery})
             </button>
           </>
         )}
