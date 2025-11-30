@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useTransition } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import Hls from 'hls.js'
+import { AreaChart } from '@/components/ui/area-chart'
 
 interface Ad {
   id: string
@@ -196,39 +197,23 @@ export default function AdDetailPage() {
 
   if (loading && !data) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-pink-500 border-t-transparent"></div>
+      <div className="flex items-center justify-center min-h-screen bg-[#111113]">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-purple-500 border-t-transparent"></div>
       </div>
     )
   }
 
   if (error || !data) {
     return (
-      <div className="p-8 bg-background min-h-screen">
+      <div className="p-8 bg-[#111113] min-h-screen">
         <div className="max-w-7xl mx-auto">
-          <div className="bg-red-900/20 border border-red-800 rounded-lg p-4">
+          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
             <p className="text-red-400">{error || 'Failed to load data'}</p>
           </div>
         </div>
       </div>
     )
   }
-
-  const maxCount = Math.max(...data.chartData.map(d => d.count), 1)
-
-  const getScaledMax = (max: number) => {
-    if (max === 0) return 10
-    const magnitude = Math.pow(10, Math.floor(Math.log10(max)))
-    const normalized = max / magnitude
-    let rounded: number
-    if (normalized <= 1) rounded = 1
-    else if (normalized <= 2) rounded = 2
-    else if (normalized <= 5) rounded = 5
-    else rounded = 10
-    return rounded * magnitude
-  }
-
-  const scaledMax = getScaledMax(maxCount)
 
   const formatChartLabel = (dateStr: string) => {
     const date = new Date(dateStr)
@@ -238,26 +223,46 @@ export default function AdDetailPage() {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
   }
 
+  const formatTooltipDate = (dateStr: string) => {
+    const date = new Date(dateStr)
+    if (timeRange <= 1) {
+      return date.toLocaleDateString('en-US', {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      })
+    }
+    return date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    })
+  }
+
   const growthNum = parseFloat(data.stats.growth)
   const isPositiveGrowth = growthNum >= 0
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#111113]">
       {/* Header */}
-      <div className="bg-card border-b border-border">
+      <div className="bg-[#18181b] border-b border-[#27272a]">
         <div className="max-w-7xl mx-auto px-6 py-5">
           <div className="flex items-center justify-between">
             <div>
               <button
                 onClick={() => router.push('/admin/ads')}
-                className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors mb-2"
+                className="text-sm text-zinc-500 hover:text-zinc-300 flex items-center gap-1 transition-colors mb-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
                 Back to Ads
               </button>
-              <h1 className="text-xl font-semibold text-foreground">{data.ad.title}</h1>
+              <h1 className="text-xl font-semibold text-zinc-100">{data.ad.title}</h1>
               <div className="flex items-center gap-2 mt-1">
                 <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
                   data.ad.status === 'active'
@@ -266,14 +271,14 @@ export default function AdDetailPage() {
                 }`}>
                   {data.ad.status}
                 </span>
-                <span className="text-sm text-muted-foreground">
+                <span className="text-sm text-zinc-500">
                   {data.ad.duration}s duration
                 </span>
               </div>
             </div>
 
             {activeTab === 'analytics' && (
-              <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
+              <div className="flex items-center gap-1 bg-[#1f1f23] rounded-lg p-1">
                 {TIME_RANGES.map(({ label, value }) => (
                   <button
                     key={label}
@@ -281,8 +286,8 @@ export default function AdDetailPage() {
                     disabled={isPending}
                     className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
                       timeRange === value
-                        ? 'bg-primary text-primary-foreground shadow-sm'
-                        : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                        ? 'bg-purple-600 text-white shadow-sm'
+                        : 'text-zinc-500 hover:text-zinc-300 hover:bg-[#27272a]'
                     } ${isPending ? 'opacity-70' : ''}`}
                   >
                     {label}
@@ -293,13 +298,13 @@ export default function AdDetailPage() {
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-6 mt-4 border-t border-border pt-4">
+          <div className="flex gap-6 mt-4 border-t border-[#27272a] pt-4">
             <button
               onClick={() => setActiveTab('analytics')}
               className={`text-sm font-medium pb-2 border-b-2 transition-colors ${
                 activeTab === 'analytics'
-                  ? 'border-pink-500 text-foreground'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
+                  ? 'border-purple-500 text-zinc-100'
+                  : 'border-transparent text-zinc-500 hover:text-zinc-300'
               }`}
             >
               Analytics
@@ -308,8 +313,8 @@ export default function AdDetailPage() {
               onClick={() => setActiveTab('settings')}
               className={`text-sm font-medium pb-2 border-b-2 transition-colors ${
                 activeTab === 'settings'
-                  ? 'border-pink-500 text-foreground'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
+                  ? 'border-purple-500 text-zinc-100'
+                  : 'border-transparent text-zinc-500 hover:text-zinc-300'
               }`}
             >
               Settings
@@ -318,14 +323,14 @@ export default function AdDetailPage() {
         </div>
       </div>
 
-      <div className={`max-w-7xl mx-auto transition-opacity duration-200 ${isPending ? 'opacity-60' : ''}`}>
+      <div className={`max-w-7xl mx-auto p-6 transition-opacity duration-200 ${isPending ? 'opacity-60' : ''}`}>
         {activeTab === 'analytics' ? (
           <div className="space-y-6">
             {/* Stats Row */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-card rounded-lg border border-border p-4">
-                <div className="text-sm text-muted-foreground mb-1">Period Impressions</div>
-                <div className="text-2xl font-semibold text-foreground">
+              <div className="bg-[#18181b] rounded-lg border border-[#27272a] p-4">
+                <div className="text-sm text-zinc-500 mb-1">Period Impressions</div>
+                <div className="text-2xl font-semibold text-zinc-100">
                   {data.stats.impressionsInPeriod.toLocaleString()}
                 </div>
                 <div className={`text-sm mt-1 ${isPositiveGrowth ? 'text-green-400' : 'text-red-400'}`}>
@@ -333,108 +338,58 @@ export default function AdDetailPage() {
                 </div>
               </div>
 
-              <div className="bg-card rounded-lg border border-border p-4">
-                <div className="text-sm text-muted-foreground mb-1">Total Impressions</div>
-                <div className="text-2xl font-semibold text-foreground">
+              <div className="bg-[#18181b] rounded-lg border border-[#27272a] p-4">
+                <div className="text-sm text-zinc-500 mb-1">Total Impressions</div>
+                <div className="text-2xl font-semibold text-zinc-100">
                   {data.stats.totalImpressions.toLocaleString()}
                 </div>
-                <div className="text-sm text-muted-foreground mt-1">All time</div>
+                <div className="text-sm text-zinc-500 mt-1">All time</div>
               </div>
 
-              <div className="bg-card rounded-lg border border-border p-4">
-                <div className="text-sm text-muted-foreground mb-1">Unique Videos</div>
-                <div className="text-2xl font-semibold text-foreground">
+              <div className="bg-[#18181b] rounded-lg border border-[#27272a] p-4">
+                <div className="text-sm text-zinc-500 mb-1">Unique Videos</div>
+                <div className="text-2xl font-semibold text-zinc-100">
                   {data.topVideos.length}
                 </div>
-                <div className="text-sm text-muted-foreground mt-1">In period</div>
+                <div className="text-sm text-zinc-500 mt-1">In period</div>
               </div>
 
-              <div className="bg-card rounded-lg border border-border p-4">
-                <div className="text-sm text-muted-foreground mb-1">Top Source</div>
-                <div className="text-lg font-semibold text-foreground truncate">
+              <div className="bg-[#18181b] rounded-lg border border-[#27272a] p-4">
+                <div className="text-sm text-zinc-500 mb-1">Top Source</div>
+                <div className="text-lg font-semibold text-zinc-100 truncate">
                   {data.topSources[0]?.source || 'N/A'}
                 </div>
-                <div className="text-sm text-muted-foreground mt-1">
+                <div className="text-sm text-zinc-500 mt-1">
                   {data.topSources[0]?.count.toLocaleString() || 0} views
                 </div>
               </div>
             </div>
 
             {/* Chart */}
-            <div className="bg-card rounded-lg border border-border p-5">
+            <div className="bg-[#18181b] rounded-lg border border-[#27272a] p-5">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-base font-semibold text-foreground">
+                <h2 className="text-base font-semibold text-zinc-100">
                   {timeRange <= 1 ? 'Hourly' : 'Daily'} Views
                 </h2>
-                <span className="text-sm text-muted-foreground">
+                <span className="text-sm text-zinc-500">
                   {new Date(data.period.startDate).toLocaleDateString()} - {new Date(data.period.endDate).toLocaleDateString()}
                 </span>
               </div>
 
-              {data.chartData.length > 0 ? (
-                <div className="h-64">
-                  <div className="flex h-full">
-                    {/* Y-axis */}
-                    <div className="flex flex-col justify-between text-xs text-muted-foreground pr-3 py-1">
-                      <span>{scaledMax.toLocaleString()}</span>
-                      <span>{Math.round(scaledMax * 0.5).toLocaleString()}</span>
-                      <span>0</span>
-                    </div>
-
-                    {/* Chart area */}
-                    <div className="flex-1 relative">
-                      {/* Grid lines */}
-                      <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
-                        <div className="border-t border-border/50"></div>
-                        <div className="border-t border-border/50"></div>
-                        <div className="border-t border-border/50"></div>
-                      </div>
-
-                      {/* Bars */}
-                      <div className="relative h-full flex items-end gap-px">
-                        {data.chartData.map((point, i) => {
-                          const height = scaledMax > 0 ? (point.count / scaledMax) * 100 : 0
-                          const showLabel = data.chartData.length <= 14 || i % Math.ceil(data.chartData.length / 7) === 0
-
-                          return (
-                            <div key={point.date} className="flex-1 flex flex-col h-full group">
-                              <div className="flex-1 flex items-end justify-center relative">
-                                <div
-                                  className="w-full max-w-[32px] bg-pink-500/80 hover:bg-pink-500 transition-colors rounded-t cursor-pointer mx-auto"
-                                  style={{ height: `${Math.max(height, point.count > 0 ? 2 : 0)}%` }}
-                                />
-                                {/* Tooltip */}
-                                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                                  <div className="bg-popover text-popover-foreground text-xs px-2 py-1.5 rounded shadow-lg border border-border whitespace-nowrap">
-                                    <div className="font-medium">{point.count.toLocaleString()}</div>
-                                    <div className="text-muted-foreground">{formatChartLabel(point.date)}</div>
-                                  </div>
-                                </div>
-                              </div>
-                              {showLabel && (
-                                <div className="text-xs text-muted-foreground text-center mt-2 truncate px-1">
-                                  {formatChartLabel(point.date)}
-                                </div>
-                              )}
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="h-64 flex items-center justify-center text-muted-foreground">
-                  No data for this period
-                </div>
-              )}
+              <AreaChart
+                data={data.chartData}
+                height={256}
+                formatLabel={formatChartLabel}
+                formatTooltipDate={formatTooltipDate}
+                valueLabel="IMPRESSIONS"
+              />
             </div>
 
             {/* Two Column Layout */}
             <div className="grid lg:grid-cols-2 gap-6">
               {/* Top Sources */}
-              <div className="bg-card rounded-lg border border-border p-5">
-                <h2 className="text-base font-semibold text-foreground mb-4">Top Sources</h2>
+              <div className="bg-[#18181b] rounded-lg border border-[#27272a] p-5">
+                <h2 className="text-base font-semibold text-zinc-100 mb-4">Top Sources</h2>
                 {data.topSources.length > 0 ? (
                   <div className="space-y-3">
                     {data.topSources.map((source, i) => {
@@ -444,12 +399,12 @@ export default function AdDetailPage() {
                       return (
                         <div key={i} className="group">
                           <div className="flex items-center justify-between text-sm mb-1">
-                            <span className="text-foreground truncate pr-2">{source.source}</span>
-                            <span className="text-muted-foreground font-medium">{source.count.toLocaleString()}</span>
+                            <span className="text-zinc-100 truncate pr-2">{source.source}</span>
+                            <span className="text-zinc-500 font-medium">{source.count.toLocaleString()}</span>
                           </div>
-                          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                          <div className="h-1.5 bg-[#1f1f23] rounded-full overflow-hidden">
                             <div
-                              className="h-full bg-pink-500/60 rounded-full transition-all"
+                              className="h-full bg-purple-500/60 rounded-full transition-all"
                               style={{ width: `${width}%` }}
                             />
                           </div>
@@ -458,13 +413,13 @@ export default function AdDetailPage() {
                     })}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">No data</p>
+                  <p className="text-sm text-zinc-500">No data</p>
                 )}
               </div>
 
               {/* Top Videos */}
-              <div className="bg-card rounded-lg border border-border p-5">
-                <h2 className="text-base font-semibold text-foreground mb-4">Top Videos</h2>
+              <div className="bg-[#18181b] rounded-lg border border-[#27272a] p-5">
+                <h2 className="text-base font-semibold text-zinc-100 mb-4">Top Videos</h2>
                 {data.topVideos.length > 0 ? (
                   <div className="space-y-3">
                     {data.topVideos.slice(0, 10).map((video, i) => {
@@ -478,15 +433,15 @@ export default function AdDetailPage() {
                               href={`/watch/${video.videoId}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-pink-400 hover:text-pink-300 truncate pr-2 transition-colors"
+                              className="text-purple-400 hover:text-purple-300 truncate pr-2 transition-colors"
                             >
                               {video.videoId}
                             </a>
-                            <span className="text-muted-foreground font-medium">{video.count.toLocaleString()}</span>
+                            <span className="text-zinc-500 font-medium">{video.count.toLocaleString()}</span>
                           </div>
-                          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                          <div className="h-1.5 bg-[#1f1f23] rounded-full overflow-hidden">
                             <div
-                              className="h-full bg-pink-500/60 rounded-full transition-all"
+                              className="h-full bg-purple-500/60 rounded-full transition-all"
                               style={{ width: `${width}%` }}
                             />
                           </div>
@@ -495,7 +450,7 @@ export default function AdDetailPage() {
                     })}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">No data</p>
+                  <p className="text-sm text-zinc-500">No data</p>
                 )}
               </div>
             </div>
@@ -503,77 +458,77 @@ export default function AdDetailPage() {
             {/* Two Column Grid */}
             <div className="grid grid-cols-2 gap-4">
               {/* Devices */}
-              <div className="bg-card rounded-lg border border-border p-4">
-                <h3 className="text-sm font-semibold text-foreground mb-3">Devices</h3>
+              <div className="bg-[#18181b] rounded-lg border border-[#27272a] p-4">
+                <h3 className="text-sm font-semibold text-zinc-100 mb-3">Devices</h3>
                 {data.devices.length > 0 ? (
                   <div className="space-y-2">
                     {data.devices.map((device, i) => (
                       <div key={i} className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">{device.device}</span>
-                        <span className="text-foreground font-medium">{device.percentage}%</span>
+                        <span className="text-zinc-500">{device.device}</span>
+                        <span className="text-zinc-100 font-medium">{device.percentage}%</span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">No data</p>
+                  <p className="text-sm text-zinc-500">No data</p>
                 )}
               </div>
 
               {/* Browsers */}
-              <div className="bg-card rounded-lg border border-border p-4">
-                <h3 className="text-sm font-semibold text-foreground mb-3">Browsers</h3>
+              <div className="bg-[#18181b] rounded-lg border border-[#27272a] p-4">
+                <h3 className="text-sm font-semibold text-zinc-100 mb-3">Browsers</h3>
                 {data.browsers.length > 0 ? (
                   <div className="space-y-2">
                     {data.browsers.map((browser, i) => (
                       <div key={i} className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">{browser.browser}</span>
-                        <span className="text-foreground font-medium">{browser.percentage}%</span>
+                        <span className="text-zinc-500">{browser.browser}</span>
+                        <span className="text-zinc-100 font-medium">{browser.percentage}%</span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">No data</p>
+                  <p className="text-sm text-zinc-500">No data</p>
                 )}
               </div>
 
               {/* Operating Systems */}
-              <div className="bg-card rounded-lg border border-border p-4">
-                <h3 className="text-sm font-semibold text-foreground mb-3">OS</h3>
+              <div className="bg-[#18181b] rounded-lg border border-[#27272a] p-4">
+                <h3 className="text-sm font-semibold text-zinc-100 mb-3">OS</h3>
                 {data.operatingSystems.length > 0 ? (
                   <div className="space-y-2">
                     {data.operatingSystems.map((os, i) => (
                       <div key={i} className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">{os.os}</span>
-                        <span className="text-foreground font-medium">{os.percentage}%</span>
+                        <span className="text-zinc-500">{os.os}</span>
+                        <span className="text-zinc-100 font-medium">{os.percentage}%</span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">No data</p>
+                  <p className="text-sm text-zinc-500">No data</p>
                 )}
               </div>
 
               {/* Countries */}
-              <div className="bg-card rounded-lg border border-border p-4">
-                <h3 className="text-sm font-semibold text-foreground mb-3">Countries</h3>
+              <div className="bg-[#18181b] rounded-lg border border-[#27272a] p-4">
+                <h3 className="text-sm font-semibold text-zinc-100 mb-3">Countries</h3>
                 {data.countries.length > 0 ? (
                   <div className="space-y-2">
                     {data.countries.slice(0, 5).map((country, i) => (
                       <div key={i} className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">{country.country}</span>
-                        <span className="text-foreground font-medium">{country.percentage}%</span>
+                        <span className="text-zinc-500">{country.country}</span>
+                        <span className="text-zinc-100 font-medium">{country.percentage}%</span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">No data</p>
+                  <p className="text-sm text-zinc-500">No data</p>
                 )}
               </div>
             </div>
 
             {/* Ad Preview */}
-            <div className="bg-card rounded-lg border border-border p-5">
-              <h2 className="text-base font-semibold text-foreground mb-4">Ad Preview</h2>
+            <div className="bg-[#18181b] rounded-lg border border-[#27272a] p-5">
+              <h2 className="text-base font-semibold text-zinc-100 mb-4">Ad Preview</h2>
               <div className="max-w-2xl mx-auto">
                 <video
                   ref={videoRef}
@@ -588,44 +543,44 @@ export default function AdDetailPage() {
         ) : (
           /* Settings Tab */
           <div className="max-w-2xl">
-            <div className="bg-card rounded-lg border border-border p-6">
-              <h2 className="text-base font-semibold text-foreground mb-6">Ad Settings</h2>
+            <div className="bg-[#18181b] rounded-lg border border-[#27272a] p-6">
+              <h2 className="text-base font-semibold text-zinc-100 mb-6">Ad Settings</h2>
 
               <div className="space-y-5">
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
+                  <label className="block text-sm font-medium text-zinc-300 mb-2">
                     Title
                   </label>
                   <input
                     type="text"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full px-3 py-2 bg-background border border-border text-foreground rounded-lg focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-colors"
+                    className="w-full px-3 py-2.5 bg-[#1f1f23] border border-[#27272a] text-zinc-100 rounded-lg focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-colors outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
+                  <label className="block text-sm font-medium text-zinc-300 mb-2">
                     Description
                   </label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     rows={3}
-                    className="w-full px-3 py-2 bg-background border border-border text-foreground rounded-lg focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-colors resize-none"
+                    className="w-full px-3 py-2.5 bg-[#1f1f23] border border-[#27272a] text-zinc-100 rounded-lg focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-colors resize-none outline-none"
                     placeholder="Optional description"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
+                    <label className="block text-sm font-medium text-zinc-300 mb-2">
                       Status
                     </label>
                     <select
                       value={formData.status}
                       onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                      className="w-full px-3 py-2 bg-background border border-border text-foreground rounded-lg focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-colors"
+                      className="w-full px-3 py-2.5 bg-[#1f1f23] border border-[#27272a] text-zinc-100 rounded-lg focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-colors outline-none"
                     >
                       <option value="active">Active</option>
                       <option value="inactive">Inactive</option>
@@ -633,7 +588,7 @@ export default function AdDetailPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
+                    <label className="block text-sm font-medium text-zinc-300 mb-2">
                       Weight
                     </label>
                     <input
@@ -642,9 +597,9 @@ export default function AdDetailPage() {
                       max="100"
                       value={formData.weight}
                       onChange={(e) => setFormData({ ...formData, weight: parseInt(e.target.value) || 1 })}
-                      className="w-full px-3 py-2 bg-background border border-border text-foreground rounded-lg focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-colors"
+                      className="w-full px-3 py-2.5 bg-[#1f1f23] border border-[#27272a] text-zinc-100 rounded-lg focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-colors outline-none"
                     />
-                    <p className="text-xs text-muted-foreground mt-1">Higher = more likely to show</p>
+                    <p className="text-xs text-zinc-500 mt-1">Higher = more likely to show</p>
                   </div>
                 </div>
 
@@ -654,18 +609,18 @@ export default function AdDetailPage() {
                     id="forceDisplay"
                     checked={formData.forceDisplay}
                     onChange={(e) => setFormData({ ...formData, forceDisplay: e.target.checked })}
-                    className="h-4 w-4 text-pink-500 bg-background border-border rounded focus:ring-pink-500/20"
+                    className="h-4 w-4 text-purple-500 bg-[#1f1f23] border-[#27272a] rounded focus:ring-purple-500/20"
                   />
-                  <label htmlFor="forceDisplay" className="ml-2 text-sm text-foreground">
+                  <label htmlFor="forceDisplay" className="ml-2 text-sm text-zinc-300">
                     Force display (ignores weight, always shows)
                   </label>
                 </div>
 
-                <div className="pt-4 border-t border-border">
+                <div className="pt-4 border-t border-[#27272a]">
                   <button
                     onClick={handleSaveSettings}
                     disabled={saving}
-                    className="w-full px-4 py-2.5 bg-pink-600 hover:bg-pink-700 text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="w-full px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     {saving ? 'Saving...' : 'Save Settings'}
                   </button>
