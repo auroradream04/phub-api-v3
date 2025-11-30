@@ -757,90 +757,100 @@ export default function AdminDashboard() {
           </div>
 
           {/* Videos list */}
-          <div className="md:col-span-3 p-4 overflow-y-auto">
-            {globalSearchResults.length > 0 ? (
-              <>
-                <div className="flex items-center justify-between mb-4">
+          <div className="md:col-span-3 flex flex-col overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[#27272a]">
+              {globalSearchResults.length > 0 ? (
+                <>
                   <span className="text-sm text-zinc-400">{globalSearchTotalCount.toLocaleString()} results</span>
                   {selectedSearchVideoIds.size > 0 && (
                     <button onClick={handleBulkDelete} className="text-sm text-red-400 hover:text-red-300 font-medium">
                       Delete {selectedSearchVideoIds.size} selected
                     </button>
                   )}
-                </div>
-                <div className="space-y-1">
-                  {globalSearchResults.map(video => (
-                    <VideoRow
-                      key={video.vod_id}
-                      video={video}
-                      selected={selectedSearchVideoIds.has(video.vod_id)}
-                      onSelect={() => {
-                        const newSet = new Set(selectedSearchVideoIds)
-                        if (newSet.has(video.vod_id)) newSet.delete(video.vod_id)
-                        else newSet.add(video.vod_id)
-                        setSelectedSearchVideoIds(newSet)
-                      }}
-                      onDelete={() => handleDeleteVideo(video.vod_id)}
-                    />
-                  ))}
-                </div>
-                {globalSearchTotalCount > globalSearchResults.length && (
-                  <button
-                    onClick={() => handleGlobalSearch(globalVideoSearchQuery, globalSearchPage + 1)}
-                    className="w-full mt-4 py-3 text-sm text-zinc-400 hover:text-zinc-200 hover:bg-[#1f1f23] rounded-lg transition-colors"
-                  >
-                    Load more
-                  </button>
-                )}
-              </>
-            ) : selectedCategory ? (
-              <>
-                <div className="flex items-center justify-between mb-4">
+                </>
+              ) : selectedCategory ? (
+                <>
                   <span className="text-sm text-zinc-300">{selectedCategory}</span>
                   <span className="text-sm text-zinc-500">{categoryVideoTotal.toLocaleString()} videos</span>
-                </div>
-                {loadingCategoryVideos ? (
+                </>
+              ) : (
+                <span className="text-sm text-zinc-500">Select a category or search</span>
+              )}
+            </div>
+
+            {/* Scrollable content */}
+            <div className="flex-1 overflow-y-auto p-4">
+              {globalSearchResults.length > 0 ? (
+                <>
+                  <div className="space-y-1">
+                    {globalSearchResults.map(video => (
+                      <VideoRow
+                        key={video.vod_id}
+                        video={video}
+                        selected={selectedSearchVideoIds.has(video.vod_id)}
+                        onSelect={() => {
+                          const newSet = new Set(selectedSearchVideoIds)
+                          if (newSet.has(video.vod_id)) newSet.delete(video.vod_id)
+                          else newSet.add(video.vod_id)
+                          setSelectedSearchVideoIds(newSet)
+                        }}
+                        onDelete={() => handleDeleteVideo(video.vod_id)}
+                      />
+                    ))}
+                  </div>
+                  {globalSearchTotalCount > globalSearchResults.length && (
+                    <button
+                      onClick={() => handleGlobalSearch(globalVideoSearchQuery, globalSearchPage + 1)}
+                      className="w-full mt-4 py-3 text-sm text-zinc-400 hover:text-zinc-200 hover:bg-[#1f1f23] rounded-lg transition-colors"
+                    >
+                      Load more
+                    </button>
+                  )}
+                </>
+              ) : selectedCategory ? (
+                loadingCategoryVideos ? (
                   <div className="flex items-center justify-center py-12">
                     <RefreshCw className="w-5 h-5 animate-spin text-purple-400" />
                   </div>
                 ) : categoryVideos.length > 0 ? (
-                  <>
-                    <div className="space-y-1">
-                      {categoryVideos.map(video => (
-                        <VideoRow key={video.vod_id} video={video} onDelete={() => handleDeleteVideo(video.vod_id)} />
-                      ))}
-                    </div>
-                    {totalPages > 1 && (
-                      <div className="flex items-center justify-center gap-2 mt-4">
-                        <button
-                          onClick={() => handleCategoryPageChange(Math.max(1, videoPage - 1))}
-                          disabled={videoPage === 1}
-                          className="px-3 py-1.5 text-sm rounded-md text-zinc-400 hover:bg-[#1f1f23] disabled:opacity-30 disabled:cursor-not-allowed"
-                        >
-                          Prev
-                        </button>
-                        <span className="text-sm text-zinc-500">
-                          Page {videoPage} of {totalPages.toLocaleString()}
-                        </span>
-                        <button
-                          onClick={() => handleCategoryPageChange(Math.min(totalPages, videoPage + 1))}
-                          disabled={videoPage === totalPages}
-                          className="px-3 py-1.5 text-sm rounded-md text-zinc-400 hover:bg-[#1f1f23] disabled:opacity-30 disabled:cursor-not-allowed"
-                        >
-                          Next
-                        </button>
-                      </div>
-                    )}
-                  </>
+                  <div className="space-y-1">
+                    {categoryVideos.map(video => (
+                      <VideoRow key={video.vod_id} video={video} onDelete={() => handleDeleteVideo(video.vod_id)} />
+                    ))}
+                  </div>
                 ) : (
                   <div className="flex items-center justify-center h-64 text-zinc-600">
                     No videos in this category
                   </div>
-                )}
-              </>
-            ) : (
-              <div className="flex items-center justify-center h-full text-zinc-600">
-                Select a category or search
+                )
+              ) : (
+                <div className="flex items-center justify-center h-full text-zinc-600">
+                  Select a category or search
+                </div>
+              )}
+            </div>
+
+            {/* Fixed pagination footer */}
+            {selectedCategory && totalPages > 1 && !globalSearchResults.length && (
+              <div className="flex items-center justify-center gap-2 px-4 py-3 border-t border-[#27272a] bg-[#18181b]">
+                <button
+                  onClick={() => handleCategoryPageChange(Math.max(1, videoPage - 1))}
+                  disabled={videoPage === 1}
+                  className="px-3 py-1.5 text-sm rounded-md text-zinc-400 hover:bg-[#1f1f23] disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  Prev
+                </button>
+                <span className="text-sm text-zinc-500">
+                  Page {videoPage} of {totalPages.toLocaleString()}
+                </span>
+                <button
+                  onClick={() => handleCategoryPageChange(Math.min(totalPages, videoPage + 1))}
+                  disabled={videoPage === totalPages}
+                  className="px-3 py-1.5 text-sm rounded-md text-zinc-400 hover:bg-[#1f1f23] disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
               </div>
             )}
           </div>
