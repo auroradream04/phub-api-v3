@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
       failures: failures.slice(offset, offset + limit),
       hasMore: offset + limit < failures.length,
     })
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { success: false, error: 'Failed to load failures' },
       { status: 500 }

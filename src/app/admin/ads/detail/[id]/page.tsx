@@ -116,6 +116,7 @@ export default function AdDetailPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // Only show loading on initial fetch, not on refresh
         if (!data) setLoading(true)
         const response = await fetch(`/api/admin/ads/detail/${adId}?days=${timeRange}`)
 
@@ -141,6 +142,7 @@ export default function AdDetailPage() {
     }
 
     fetchData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adId, timeRange])
 
   useEffect(() => {

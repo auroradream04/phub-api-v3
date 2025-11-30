@@ -256,7 +256,7 @@ export async function DELETE() {
       success: true,
       message: 'Failure log cleared',
     })
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { success: false, error: 'Failed to clear log' },
       { status: 500 }

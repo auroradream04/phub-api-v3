@@ -68,7 +68,6 @@ export function AreaChart({
   }, [data, formatLabel])
 
   const padding = { top: 10, right: 10, bottom: 30, left: 50 }
-  const chartWidth = 100 // percentage
   const chartHeight = height - padding.top - padding.bottom
 
   // Generate SVG path for the line
@@ -91,7 +90,7 @@ export function AreaChart({
   const areaPath = useMemo(() => {
     if (data.length === 0) return ''
     return `${linePath} L 100 100 L 0 100 Z`
-  }, [linePath])
+  }, [linePath, data.length])
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!containerRef.current || data.length === 0) return

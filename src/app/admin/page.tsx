@@ -429,9 +429,9 @@ export default function AdminDashboard() {
   // Check if any scraping is active
   const isAnyScraping = scraping || keywordJobs.japanese.running || keywordJobs.chinese.running
 
-  // Separate custom and regular categories
-  const customCategories = availableCategories.filter(c => c.isCustom)
-  const regularCategories = availableCategories.filter(c => !c.isCustom)
+  // Separate custom and regular categories (kept for future use)
+  const _customCategories = availableCategories.filter(c => c.isCustom)
+  const _regularCategories = availableCategories.filter(c => !c.isCustom)
 
   if (!session) {
     return <div className="p-8 text-zinc-500">Please sign in.</div>
@@ -889,7 +889,8 @@ function VideoRow({ video, selected, onSelect, onDelete }: {
         </button>
       )}
       {video.vod_pic && (
-        <img src={video.vod_pic} alt="" className="w-16 h-9 object-cover rounded bg-[#1f1f23] flex-shrink-0" />
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={video.vod_pic} alt="" className="w-16 h-9 object-cover rounded bg-[#1f1f23] flex-shrink-0" loading="lazy" />
       )}
       <span className="flex-1 text-sm text-zinc-300 truncate">{video.vod_name}</span>
       <span className="text-xs text-zinc-600 flex-shrink-0">{video.type_name}</span>

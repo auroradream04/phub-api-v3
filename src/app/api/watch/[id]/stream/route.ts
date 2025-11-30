@@ -229,7 +229,6 @@ async function injectAds(m3u8Text: string, quality: string, baseUrl: string, vid
   let currentTimePercentage = 0
   let segmentCount = 0
   let totalSegmentsEstimate = 0
-  // eslint-disable-next-line prefer-const
   let skippedSegments = 0
 
   // First pass: count total segments
