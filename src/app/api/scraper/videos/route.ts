@@ -81,7 +81,7 @@ export async function POST(_request: NextRequest) {
     // Track unmapped categories for this scraping session
     const unmappedCategories = new Set<string>()
 
-    const baseUrl = process.env.NEXTAUTH_URL || 'https://api.md8av.com'
+    const baseUrl = process.env.NEXTAUTH_URL || 'https://md8av.com'
 
     // Fetch scraper filter settings from database
     const minViewsSetting = await prisma.siteSetting.findUnique({

@@ -155,7 +155,7 @@ async function processPageWithCache(
   minDuration: number,
   cache: VideoCache
 ): Promise<{ scraped: number; errors: number; duplicates: number; hasMore: boolean }> {
-  const baseUrl = process.env.NEXTAUTH_URL || 'https://api.md8av.com'
+  const baseUrl = process.env.NEXTAUTH_URL || 'https://md8av.com'
 
   try {
     const result = await fetchVideosWithRetry(categoryId, page)
