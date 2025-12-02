@@ -2,7 +2,7 @@ import { prisma } from './prisma'
 
 // Cache for site settings to avoid database hits on every request
 const settingsCache = new Map<string, { value: string, timestamp: number }>()
-const CACHE_TTL = 60000 // 1 minute
+const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
 
 export async function getSiteSetting(key: string, defaultValue: string = ''): Promise<string> {
   // Check cache first
@@ -25,6 +25,50 @@ export async function getSiteSetting(key: string, defaultValue: string = ''): Pr
   } catch {
     return defaultValue
   }
+}
+
+// Batch fetch multiple settings in a single query
+export async function getSiteSettings(
+  keys: string[],
+  defaults: Record<string, string> = {}
+): Promise<Record<string, string>> {
+  const now = Date.now()
+  const result: Record<string, string> = {}
+  const keysToFetch: string[] = []
+
+  // Check cache for each key
+  for (const key of keys) {
+    const cached = settingsCache.get(key)
+    if (cached && now - cached.timestamp < CACHE_TTL) {
+      result[key] = cached.value
+    } else {
+      keysToFetch.push(key)
+    }
+  }
+
+  // Fetch missing keys in a single query
+  if (keysToFetch.length > 0) {
+    try {
+      const settings = await prisma.siteSetting.findMany({
+        where: { key: { in: keysToFetch } }
+      })
+
+      const settingsMap = new Map(settings.map(s => [s.key, s.value]))
+
+      for (const key of keysToFetch) {
+        const value = settingsMap.get(key) ?? defaults[key] ?? ''
+        result[key] = value
+        settingsCache.set(key, { value, timestamp: now })
+      }
+    } catch {
+      // On error, use defaults
+      for (const key of keysToFetch) {
+        result[key] = defaults[key] ?? ''
+      }
+    }
+  }
+
+  return result
 }
 
 export async function setSiteSetting(key: string, value: string): Promise<void> {
@@ -73,15 +117,37 @@ export interface AdSettings {
   minVideoForMidroll: number
 }
 
-// Helper to get all ad settings at once
+// Helper to get all ad settings at once (single DB query)
 export async function getAdSettings(): Promise<AdSettings> {
+  const keys = [
+    SETTING_KEYS.AD_ALWAYS_PREROLL,
+    SETTING_KEYS.AD_PREROLL_ENABLED,
+    SETTING_KEYS.AD_POSTROLL_ENABLED,
+    SETTING_KEYS.AD_MIDROLL_ENABLED,
+    SETTING_KEYS.AD_MIDROLL_INTERVAL,
+    SETTING_KEYS.AD_MAX_ADS_PER_VIDEO,
+    SETTING_KEYS.AD_MIN_VIDEO_FOR_MIDROLL,
+  ]
+
+  const defaults: Record<string, string> = {
+    [SETTING_KEYS.AD_ALWAYS_PREROLL]: 'true',
+    [SETTING_KEYS.AD_PREROLL_ENABLED]: 'true',
+    [SETTING_KEYS.AD_POSTROLL_ENABLED]: 'true',
+    [SETTING_KEYS.AD_MIDROLL_ENABLED]: 'true',
+    [SETTING_KEYS.AD_MIDROLL_INTERVAL]: '600',
+    [SETTING_KEYS.AD_MAX_ADS_PER_VIDEO]: '20',
+    [SETTING_KEYS.AD_MIN_VIDEO_FOR_MIDROLL]: '600',
+  }
+
+  const settings = await getSiteSettings(keys, defaults)
+
   return {
-    alwaysPreroll: (await getSiteSetting(SETTING_KEYS.AD_ALWAYS_PREROLL, 'true')) === 'true',
-    prerollEnabled: (await getSiteSetting(SETTING_KEYS.AD_PREROLL_ENABLED, 'true')) === 'true',
-    postrollEnabled: (await getSiteSetting(SETTING_KEYS.AD_POSTROLL_ENABLED, 'true')) === 'true',
-    midrollEnabled: (await getSiteSetting(SETTING_KEYS.AD_MIDROLL_ENABLED, 'true')) === 'true',
-    midrollInterval: parseInt(await getSiteSetting(SETTING_KEYS.AD_MIDROLL_INTERVAL, '600')),
-    maxAdsPerVideo: parseInt(await getSiteSetting(SETTING_KEYS.AD_MAX_ADS_PER_VIDEO, '20')),
-    minVideoForMidroll: parseInt(await getSiteSetting(SETTING_KEYS.AD_MIN_VIDEO_FOR_MIDROLL, '600')),
+    alwaysPreroll: settings[SETTING_KEYS.AD_ALWAYS_PREROLL] === 'true',
+    prerollEnabled: settings[SETTING_KEYS.AD_PREROLL_ENABLED] === 'true',
+    postrollEnabled: settings[SETTING_KEYS.AD_POSTROLL_ENABLED] === 'true',
+    midrollEnabled: settings[SETTING_KEYS.AD_MIDROLL_ENABLED] === 'true',
+    midrollInterval: parseInt(settings[SETTING_KEYS.AD_MIDROLL_INTERVAL]),
+    maxAdsPerVideo: parseInt(settings[SETTING_KEYS.AD_MAX_ADS_PER_VIDEO]),
+    minVideoForMidroll: parseInt(settings[SETTING_KEYS.AD_MIN_VIDEO_FOR_MIDROLL]),
   }
 }

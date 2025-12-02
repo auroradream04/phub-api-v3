@@ -1,85 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PornHub } from 'pornhub.js'
 import { getRandomProxy } from '@/lib/proxy'
-import { getSiteSettings, SETTING_KEYS, getAdSettings } from '@/lib/site-settings'
+import { getSiteSetting, SETTING_KEYS, getAdSettings } from '@/lib/site-settings'
 import { checkAndLogDomain } from '@/lib/domain-middleware'
 import { calculateAdPlacements, calculateM3u8Duration, assignAdsToplacements } from '@/lib/ad-placement'
 
 export const revalidate = 7200 // 2 hours
-
-// In-memory cache for PornHub video metadata (2 hour TTL)
-const VIDEO_CACHE_TTL = 2 * 60 * 60 * 1000 // 2 hours in ms
-const MAX_CACHE_SIZE = 1000 // Max videos to cache
-
-interface CachedMediaDefinition {
-  quality: number | number[] | string
-  videoUrl: string
-}
-
-interface CachedVideo {
-  mediaDefinitions: CachedMediaDefinition[]
-  cachedAt: number
-}
-
-const videoCache = new Map<string, CachedVideo>()
-
-function getCachedVideo(videoId: string): CachedVideo | null {
-  const cached = videoCache.get(videoId)
-  if (!cached) return null
-
-  // Check if expired
-  if (Date.now() - cached.cachedAt > VIDEO_CACHE_TTL) {
-    videoCache.delete(videoId)
-    return null
-  }
-
-  return cached
-}
-
-function setCachedVideo(videoId: string, mediaDefinitions: CachedMediaDefinition[]): void {
-  // Evict oldest entries if cache is full
-  if (videoCache.size >= MAX_CACHE_SIZE) {
-    const oldestKey = videoCache.keys().next().value
-    if (oldestKey) videoCache.delete(oldestKey)
-  }
-
-  videoCache.set(videoId, {
-    mediaDefinitions,
-    cachedAt: Date.now()
-  })
-}
-
-// In-memory cache for final m3u8 response (30 second TTL)
-const M3U8_CACHE_TTL = 30 * 1000 // 30 seconds
-const MAX_M3U8_CACHE_SIZE = 500
-
-interface CachedM3u8 {
-  content: string
-  cachedAt: number
-}
-
-const m3u8Cache = new Map<string, CachedM3u8>()
-
-function getCachedM3u8(cacheKey: string): string | null {
-  const cached = m3u8Cache.get(cacheKey)
-  if (!cached) return null
-
-  if (Date.now() - cached.cachedAt > M3U8_CACHE_TTL) {
-    m3u8Cache.delete(cacheKey)
-    return null
-  }
-
-  return cached.content
-}
-
-function setCachedM3u8(cacheKey: string, content: string): void {
-  if (m3u8Cache.size >= MAX_M3U8_CACHE_SIZE) {
-    const oldestKey = m3u8Cache.keys().next().value
-    if (oldestKey) m3u8Cache.delete(oldestKey)
-  }
-
-  m3u8Cache.set(cacheKey, { content, cachedAt: Date.now() })
-}
 
 export async function GET(
   request: NextRequest,
@@ -111,94 +37,58 @@ export async function GET(
       )
     }
 
-    // Check m3u8 response cache first (30s TTL)
-    const m3u8CacheKey = `${id}:${quality}`
-    const cachedM3u8 = getCachedM3u8(m3u8CacheKey)
-    if (cachedM3u8) {
-      console.log(`[Stream API] ✓ M3U8 cache hit for video ${id}`)
-      await domainCheck.logRequest(200, Date.now() - requestStart)
-      return new Response(cachedM3u8, {
-        headers: {
-          'Content-Type': 'application/vnd.apple.mpegurl',
-          'Cache-Control': 'public, max-age=30',
-          'Access-Control-Allow-Origin': '*',
-        },
-      })
-    }
+    const pornhub = new PornHub()
+    let videoInfo = null
 
-    // Check video metadata cache
-    const cached = getCachedVideo(id)
-    let mediaDefinitions: CachedMediaDefinition[]
+    // ALWAYS use proxy - try up to 3 different proxies
+    let retries = 3
+    while (retries > 0 && !videoInfo) {
+      // Select proxy BEFORE making request
+      const proxyInfo = getRandomProxy('Stream API')
 
-    if (cached) {
-      console.log(`[Stream API] ✓ Cache hit for video ${id}`)
-      mediaDefinitions = cached.mediaDefinitions
-    } else {
-      // Race 3 proxies simultaneously - use first successful response
-      const proxyAttempts = []
-      for (let i = 0; i < 3; i++) {
-        const proxyInfo = getRandomProxy('Stream API')
-        if (proxyInfo) {
-          proxyAttempts.push({ proxyInfo, index: i })
-        }
+      if (!proxyInfo) {
+        console.error('[Stream API] No proxy available from proxy list')
+        break
       }
 
-      if (proxyAttempts.length === 0) {
-        await domainCheck.logRequest(500, Date.now() - requestStart)
-        console.error('[Stream API] No proxies available')
-        throw new Error('No proxies available')
-      }
+      pornhub.setAgent(proxyInfo.agent)
 
-      // Create racing promises
-      const racePromises = proxyAttempts.map(async ({ proxyInfo }) => {
-        const pornhub = new PornHub()
-        pornhub.setAgent(proxyInfo.agent)
-
-        const startTime = Date.now()
-        try {
-          const response = await pornhub.video(id)
-          const duration = Date.now() - startTime
-
-          // Check for soft blocking
-          if (!response.mediaDefinitions || response.mediaDefinitions.length < 1) {
-            console.warn(`[Stream API] Proxy ${proxyInfo.proxyUrl} returned empty media definitions (${duration}ms)`)
-            throw new Error('No media definitions')
-          }
-
-          console.log(`[Stream API] ✓ Success with proxy ${proxyInfo.proxyUrl} (${duration}ms, ${response.mediaDefinitions.length} qualities)`)
-          return response
-        } catch (error: unknown) {
-          const duration = Date.now() - startTime
-          console.error(`[Stream API] Proxy ${proxyInfo.proxyUrl} failed (${duration}ms):`, error instanceof Error ? error.message : error)
-          throw error
-        }
-      })
-
-      // Use Promise.any to get first successful response
-      let videoInfo
+      const startTime = Date.now()
       try {
-        videoInfo = await Promise.any(racePromises)
-      } catch {
-        await domainCheck.logRequest(500, Date.now() - requestStart)
-        console.error('[Stream API] ❌ All proxy attempts failed')
-        throw new Error('Failed to fetch video information')
+        const response = await pornhub.video(id)
+        const duration = Date.now() - startTime
+
+        // Check for soft blocking (missing media definitions)
+        if (!response.mediaDefinitions || response.mediaDefinitions.length < 1) {
+          console.warn(`[Stream API] Proxy ${proxyInfo.proxyUrl} returned video without media definitions (${duration}ms) - likely blocked`)
+          // Try different proxy
+        } else {
+          console.log(`[Stream API] ✓ Success with proxy ${proxyInfo.proxyUrl} (${duration}ms, ${response.mediaDefinitions.length} qualities available)`)
+          videoInfo = response
+        }
+      } catch (error: unknown) {
+        const duration = Date.now() - startTime
+        console.error(`[Stream API] Proxy ${proxyInfo.proxyUrl} failed (${duration}ms):`, error instanceof Error ? error.message : error)
+        // Try different proxy
       }
 
-      // Cache the result
-      mediaDefinitions = videoInfo.mediaDefinitions
-      setCachedVideo(id, mediaDefinitions)
-      console.log(`[Stream API] Cached video ${id} (${mediaDefinitions.length} qualities)`)
+      retries--    }
+
+    if (!videoInfo || !videoInfo.mediaDefinitions || videoInfo.mediaDefinitions.length < 1) {
+      await domainCheck.logRequest(500, Date.now() - requestStart)
+      console.error('[Stream API] ❌ All proxy attempts failed - could not fetch video information')
+      throw new Error('Failed to fetch video information')
     }
 
     // Quality priority: 720p -> 480p -> 240p
     const qualityPriority = ['720', '480', '240']
-    const availableQualities = mediaDefinitions.map(md => md.quality).join(', ')
+    const availableQualities = videoInfo.mediaDefinitions.map(md => md.quality).join(', ')
 
     let mediaDefinition = null
     let selectedQuality = null
 
     for (const q of qualityPriority) {
-      mediaDefinition = mediaDefinitions.find(
+      mediaDefinition = videoInfo.mediaDefinitions.find(
         (md) => md.quality.toString() === q
       )
       if (mediaDefinition) {
@@ -254,16 +144,13 @@ export async function GET(
       console.log(`[Stream API] Variant playlist fetched (${variantM3u8.length} bytes), injecting ads...`)
       const modifiedM3u8 = await injectAds(variantM3u8, quality, variantUrl, id)
 
-      // Cache the response
-      setCachedM3u8(m3u8CacheKey, modifiedM3u8)
-
       await domainCheck.logRequest(200, Date.now() - requestStart)
       console.log(`[Stream API] ✓ Stream generated successfully for video ${id} (quality: ${quality}p, duration: ${Date.now() - requestStart}ms)`)
 
       return new Response(modifiedM3u8, {
         headers: {
           'Content-Type': 'application/vnd.apple.mpegurl',
-          'Cache-Control': 'public, max-age=30',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
           'Access-Control-Allow-Origin': '*',
         },
       })
@@ -272,9 +159,6 @@ export async function GET(
     console.log('[Stream API] Standard playlist detected, injecting ads...')
     const modifiedM3u8 = await injectAds(originalM3u8, quality, originalM3u8Url, id)
 
-    // Cache the response
-    setCachedM3u8(m3u8CacheKey, modifiedM3u8)
-
     // Log successful request
     await domainCheck.logRequest(200, Date.now() - requestStart)
     console.log(`[Stream API] ✓ Stream generated successfully for video ${id} (quality: ${quality}p, duration: ${Date.now() - requestStart}ms)`)
@@ -282,7 +166,7 @@ export async function GET(
     return new Response(modifiedM3u8, {
       headers: {
         'Content-Type': 'application/vnd.apple.mpegurl',
-        'Cache-Control': 'public, max-age=30',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
         'Access-Control-Allow-Origin': '*',
       },
     })
@@ -328,22 +212,15 @@ async function injectAds(m3u8Text: string, quality: string, baseUrl: string, vid
   const baseUrlObj = new URL(baseUrl)
   const basePath = baseUrlObj.pathname.substring(0, baseUrlObj.pathname.lastIndexOf('/'))
 
-  // Get all settings in parallel (batch query + ad settings query)
-  const [streamSettings, adSettings] = await Promise.all([
-    getSiteSettings(
-      [SETTING_KEYS.CORS_PROXY_ENABLED, SETTING_KEYS.CORS_PROXY_URL, SETTING_KEYS.SEGMENTS_TO_SKIP],
-      {
-        [SETTING_KEYS.CORS_PROXY_ENABLED]: 'true',
-        [SETTING_KEYS.CORS_PROXY_URL]: 'https://cors.freechatnow.net/',
-        [SETTING_KEYS.SEGMENTS_TO_SKIP]: '3',
-      }
-    ),
-    getAdSettings(),
-  ])
+  // Get CORS proxy settings
+  const corsProxyEnabled = (await getSiteSetting(SETTING_KEYS.CORS_PROXY_ENABLED, 'true')) === 'true'
+  const corsProxyUrl = await getSiteSetting(SETTING_KEYS.CORS_PROXY_URL, 'https://cors.freechatnow.net/')
 
-  const corsProxyEnabled = streamSettings[SETTING_KEYS.CORS_PROXY_ENABLED] === 'true'
-  const corsProxyUrl = streamSettings[SETTING_KEYS.CORS_PROXY_URL]
-  const segmentsToSkip = parseInt(streamSettings[SETTING_KEYS.SEGMENTS_TO_SKIP])
+  // Get segments to skip setting (for pre-roll: skip first X segments of original video)
+  const segmentsToSkip = parseInt(await getSiteSetting(SETTING_KEYS.SEGMENTS_TO_SKIP, '3'))
+
+  // Get ad settings
+  const adSettings = await getAdSettings()
 
   // Calculate video duration from M3U8
   const videoDurationSeconds = calculateM3u8Duration(m3u8Text)
