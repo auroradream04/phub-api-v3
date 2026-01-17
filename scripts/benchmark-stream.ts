@@ -5,7 +5,7 @@
  * Usage: npx tsx scripts/benchmark-stream.ts
  */
 
-const BENCHMARK_BASE_URL = process.env.BASE_URL || 'http://localhost:3000'
+const BENCHMARK_BASE_URL = process.env.BASE_URL || 'https://md8av.com'
 
 // Test video IDs (from database)
 const VIDEO_IDS = [

@@ -149,6 +149,11 @@ export interface ScraperCheckpoint {
   lastCategoryIndex: number // 0-based index of last completed category (-1 if none completed)
   lastPageCompleted: number // Last completed page of that category (0 if just moved to next category)
 
+  // Progress tracking for UI
+  currentCategoryName?: string // Name of category currently being scraped
+  currentPage?: number // Current page being scraped (1-based)
+  pagesPerCategory?: number // Total pages to scrape per category
+
   // Stats only
   totalVideosScraped: number
   totalVideosFailed: number

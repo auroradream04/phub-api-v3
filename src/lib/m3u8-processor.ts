@@ -1,5 +1,12 @@
 import { getSiteSettings, SETTING_KEYS, getAdSettings } from './site-settings'
 import { calculateAdPlacements, calculateM3u8Duration, assignAdsToplacements } from './ad-placement'
+import {
+  probeVideoFormat,
+  getAdVariantForFormat,
+  isDefaultFormat,
+  DEFAULT_FORMAT,
+  type VideoFormat
+} from './ad-transcoder'
 
 export type SegmentProxyMode = 'cors' | 'full' | 'passthrough'
 
@@ -12,6 +19,7 @@ export interface M3u8ProcessorOptions {
   corsProxyUrl?: string        // Override CORS proxy URL
   adsEnabled?: boolean         // Default: true
   segmentsToSkip?: number      // Override segments to skip
+  skipFormatDetection?: boolean // Skip format detection (use default format)
 }
 
 export interface ProcessedM3u8Result {
@@ -19,6 +27,197 @@ export interface ProcessedM3u8Result {
   duration: number
   segmentCount: number
   adsInjected: number
+  detectedFormat?: VideoFormat
+  transcodedAds?: boolean
+  cdnAdsStripped?: number
+}
+
+/**
+ * Detect and strip existing CDN pre-roll ads from m3u8 playlist
+ *
+ * CDN ads typically have this pattern:
+ * 1. #EXT-X-KEY:METHOD=NONE (or no key) - unencrypted ad segments
+ * 2. Some segments (the ad)
+ * 3. #EXT-X-DISCONTINUITY
+ * 4. #EXT-X-KEY:METHOD=AES-128 - encrypted video
+ * 5. Actual video segments
+ *
+ * Returns the cleaned m3u8 and count of stripped ad segments
+ */
+function stripCdnPrerollAds(m3u8Content: string): {
+  content: string
+  strippedSegments: number
+} {
+  const lines = m3u8Content.split('\n')
+
+  // Find the first DISCONTINUITY
+  let firstDiscontinuityIndex = -1
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].trim() === '#EXT-X-DISCONTINUITY') {
+      firstDiscontinuityIndex = i
+      break
+    }
+  }
+
+  // No discontinuity = no CDN ad pattern
+  if (firstDiscontinuityIndex === -1) {
+    return { content: m3u8Content, strippedSegments: 0 }
+  }
+
+  // Check what comes after the discontinuity
+  // We're looking for: DISCONTINUITY followed by encryption key (METHOD=AES-128)
+  let hasEncryptionAfterDiscontinuity = false
+  for (let i = firstDiscontinuityIndex + 1; i < lines.length && i < firstDiscontinuityIndex + 5; i++) {
+    if (lines[i].includes('#EXT-X-KEY:') && lines[i].includes('METHOD=AES-128')) {
+      hasEncryptionAfterDiscontinuity = true
+      break
+    }
+  }
+
+  // Check if content before discontinuity is unencrypted or has METHOD=NONE
+  let isUnencryptedBeforeDiscontinuity = true
+  for (let i = 0; i < firstDiscontinuityIndex; i++) {
+    if (lines[i].includes('#EXT-X-KEY:') && lines[i].includes('METHOD=AES-128')) {
+      isUnencryptedBeforeDiscontinuity = false
+      break
+    }
+  }
+
+  // CDN ad pattern: unencrypted before DISCONTINUITY, encrypted after
+  if (!isUnencryptedBeforeDiscontinuity || !hasEncryptionAfterDiscontinuity) {
+    return { content: m3u8Content, strippedSegments: 0 }
+  }
+
+  // Count segments being stripped (before discontinuity)
+  let strippedSegments = 0
+  for (let i = 0; i < firstDiscontinuityIndex; i++) {
+    if (lines[i].startsWith('#EXTINF:')) {
+      strippedSegments++
+    }
+  }
+
+  // Only strip if it looks like a reasonable ad (< 60 seconds worth, assuming ~3s segments)
+  if (strippedSegments > 20) {
+    console.log(`[M3u8Processor] Found ${strippedSegments} segments before DISCONTINUITY - too many for an ad, skipping strip`)
+    return { content: m3u8Content, strippedSegments: 0 }
+  }
+
+  console.log(`[M3u8Processor] Detected CDN pre-roll ad: ${strippedSegments} segments, stripping...`)
+
+  // Build new m3u8 without the CDN ad
+  const result: string[] = []
+  let skipUntilDiscontinuity = false
+  let foundFirstDiscontinuity = false
+  let skippingInitialKey = true
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+
+    // Copy header tags always
+    if (
+      line.startsWith('#EXTM3U') ||
+      line.startsWith('#EXT-X-VERSION') ||
+      line.startsWith('#EXT-X-TARGETDURATION') ||
+      line.startsWith('#EXT-X-MEDIA-SEQUENCE') ||
+      line.startsWith('#EXT-X-PLAYLIST-TYPE') ||
+      line.startsWith('#EXT-X-ALLOW-CACHE')
+    ) {
+      result.push(line)
+      continue
+    }
+
+    // Skip the initial METHOD=NONE key
+    if (skippingInitialKey && line.includes('#EXT-X-KEY:') && line.includes('METHOD=NONE')) {
+      continue
+    }
+
+    // Once we hit the first DISCONTINUITY, stop skipping
+    if (!foundFirstDiscontinuity && line.trim() === '#EXT-X-DISCONTINUITY') {
+      foundFirstDiscontinuity = true
+      skipUntilDiscontinuity = false
+      // Don't include the DISCONTINUITY itself - our ad will add one
+      continue
+    }
+
+    // Skip content before first discontinuity (the CDN ad)
+    if (!foundFirstDiscontinuity) {
+      continue
+    }
+
+    // After discontinuity, include everything
+    skippingInitialKey = false
+    result.push(line)
+  }
+
+  return {
+    content: result.join('\n'),
+    strippedSegments
+  }
+}
+
+/**
+ * Extract the first segment URL from an m3u8 playlist
+ */
+function extractFirstSegmentUrl(m3u8Content: string, baseUrl: string): string | null {
+  const lines = m3u8Content.split('\n')
+  const baseUrlObj = new URL(baseUrl)
+  const basePath = baseUrlObj.pathname.substring(0, baseUrlObj.pathname.lastIndexOf('/'))
+
+  for (const line of lines) {
+    // Skip tags and empty lines
+    if (line.startsWith('#') || line.trim() === '') continue
+
+    const trimmedLine = line.trim()
+
+    // Found a segment URL
+    if (trimmedLine.startsWith('http')) {
+      return trimmedLine
+    } else if (trimmedLine.startsWith('/')) {
+      return `${baseUrlObj.origin}${trimmedLine}`
+    } else {
+      return `${baseUrlObj.origin}${basePath}/${trimmedLine}`
+    }
+  }
+
+  return null
+}
+
+/**
+ * Cache for ad variants - maps adId -> formatKey -> variant info
+ */
+const adVariantCache = new Map<string, Map<string, { segments: string[], formatKey: string }>>()
+
+/**
+ * Get or prepare ad variant for the target format
+ */
+async function prepareAdVariant(
+  adId: string,
+  targetFormat: VideoFormat
+): Promise<{ segments: string[], formatKey: string } | null> {
+  // Check cache first
+  const adCache = adVariantCache.get(adId)
+  if (adCache?.has(targetFormat.formatKey)) {
+    return adCache.get(targetFormat.formatKey)!
+  }
+
+  // Get or create variant
+  const result = await getAdVariantForFormat(adId, targetFormat)
+
+  if (!result.success) {
+    console.log(`[M3u8Processor] Failed to prepare ad variant for ${adId} at ${targetFormat.formatKey}`)
+    return null
+  }
+
+  // Cache it
+  if (!adVariantCache.has(adId)) {
+    adVariantCache.set(adId, new Map())
+  }
+  adVariantCache.get(adId)!.set(targetFormat.formatKey, {
+    segments: result.segments,
+    formatKey: result.formatKey
+  })
+
+  return { segments: result.segments, formatKey: result.formatKey }
 }
 
 /**
@@ -29,7 +228,7 @@ export interface ProcessedM3u8Result {
  */
 export async function processM3u8(options: M3u8ProcessorOptions): Promise<ProcessedM3u8Result> {
   const {
-    m3u8Content,
+    m3u8Content: rawM3u8Content,
     baseUrl,
     videoId = `ext-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     segmentProxyMode: requestedMode,
@@ -37,7 +236,15 @@ export async function processM3u8(options: M3u8ProcessorOptions): Promise<Proces
     corsProxyUrl: overrideCorsProxyUrl,
     adsEnabled = true,
     segmentsToSkip: overrideSegmentsToSkip,
+    skipFormatDetection = false,
   } = options
+
+  // Strip existing CDN pre-roll ads before processing
+  const { content: m3u8Content, strippedSegments: cdnAdsStripped } = stripCdnPrerollAds(rawM3u8Content)
+
+  if (cdnAdsStripped > 0) {
+    console.log(`[M3u8Processor] Stripped ${cdnAdsStripped} CDN ad segments`)
+  }
 
   const lines = m3u8Content.split('\n')
   const result: string[] = []
@@ -79,6 +286,51 @@ export async function processM3u8(options: M3u8ProcessorOptions): Promise<Proces
   if (adsEnabled && adSettings) {
     const calculatedPlacements = calculateAdPlacements(videoDurationSeconds, adSettings)
     placements = await assignAdsToplacements(calculatedPlacements)
+  }
+
+  // Detect video format for ad matching (if we have ads to inject)
+  let detectedFormat: VideoFormat = DEFAULT_FORMAT
+  let transcodedAds = false
+
+  if (placements.some(p => p.selectedAd) && !skipFormatDetection) {
+    // Extract first segment URL
+    const firstSegmentUrl = extractFirstSegmentUrl(m3u8Content, baseUrl)
+
+    if (firstSegmentUrl) {
+      // Apply CORS proxy if needed for probing
+      const probeUrl = segmentProxyMode === 'cors'
+        ? `${corsProxyUrl}${firstSegmentUrl}`
+        : firstSegmentUrl
+
+      console.log(`[M3u8Processor] Probing video format from: ${firstSegmentUrl.substring(0, 80)}...`)
+
+      const probedFormat = await probeVideoFormat(probeUrl)
+
+      if (probedFormat) {
+        detectedFormat = probedFormat
+        console.log(`[M3u8Processor] Detected format: ${detectedFormat.formatKey}`)
+
+        // Prepare ad variants for all unique ads if format differs from default
+        if (!isDefaultFormat(detectedFormat)) {
+          const uniqueAdIds = new Set(
+            placements
+              .filter(p => p.selectedAd)
+              .map(p => p.selectedAd!.id)
+          )
+
+          console.log(`[M3u8Processor] Need to prepare ${uniqueAdIds.size} ad variant(s) for ${detectedFormat.formatKey}`)
+
+          for (const adId of uniqueAdIds) {
+            const variant = await prepareAdVariant(adId, detectedFormat)
+            if (variant) {
+              transcodedAds = true
+            }
+          }
+        }
+      } else {
+        console.log(`[M3u8Processor] Could not probe format, using default`)
+      }
+    }
   }
 
   // Check if we have a pre-roll ad
@@ -135,14 +387,37 @@ export async function processM3u8(options: M3u8ProcessorOptions): Promise<Proces
       for (const [percentage, placement] of placementMap.entries()) {
         // Check if this ad should be injected before current segment
         if (percentage <= currentTimePercentage && !placement.injected && placement.selectedAd) {
-          // Select random ad segment
-          const randomSegment = placement.selectedAd.segments[
-            Math.floor(Math.random() * placement.selectedAd.segments.length)
-          ] as { quality: number | string }
+          const adId = placement.selectedAd.id
+          const baseApiUrl = process.env.NEXTAUTH_URL || 'http://md8av.com'
+
+          // Check if we need to use a variant (non-default format)
+          let adUrl: string
+
+          if (!isDefaultFormat(detectedFormat)) {
+            // Try to get the cached variant
+            const variantInfo = adVariantCache.get(adId)?.get(detectedFormat.formatKey)
+
+            if (variantInfo && variantInfo.segments.length > 0) {
+              // Use variant segment
+              const randomIndex = Math.floor(Math.random() * variantInfo.segments.length)
+              adUrl = `${baseApiUrl}/api/ads/serve/${adId}/${randomIndex}/variant?format=${encodeURIComponent(detectedFormat.formatKey)}&v=${videoId}`
+            } else {
+              // Fallback to original (variant creation failed)
+              const randomSegment = placement.selectedAd.segments[
+                Math.floor(Math.random() * placement.selectedAd.segments.length)
+              ] as { quality: number | string }
+              adUrl = `${baseApiUrl}/api/ads/serve/${adId}/${randomSegment.quality}.ts?v=${videoId}`
+            }
+          } else {
+            // Use original ad (format matches)
+            const randomSegment = placement.selectedAd.segments[
+              Math.floor(Math.random() * placement.selectedAd.segments.length)
+            ] as { quality: number | string }
+            adUrl = `${baseApiUrl}/api/ads/serve/${adId}/${randomSegment.quality}.ts?v=${videoId}`
+          }
 
           // Add ad segment with videoId for tracking
           result.push('#EXTINF:3.0,')
-          const adUrl = `${process.env.NEXTAUTH_URL || 'http://md8av.com'}/api/ads/serve/${placement.selectedAd.id}/${randomSegment.quality}.ts?v=${videoId}`
           result.push(adUrl)
           result.push('#EXT-X-DISCONTINUITY')
 
@@ -207,6 +482,9 @@ export async function processM3u8(options: M3u8ProcessorOptions): Promise<Proces
     duration: videoDurationSeconds,
     segmentCount,
     adsInjected,
+    detectedFormat,
+    transcodedAds,
+    cdnAdsStripped,
   }
 }
 

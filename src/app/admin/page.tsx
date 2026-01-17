@@ -21,6 +21,10 @@ interface ScraperProgress {
   newVideosAdded?: number
   startedAt: string
   videosPerSecond?: number
+  // Granular progress
+  currentCategoryName?: string
+  currentPage?: number
+  elapsedSeconds?: number
 }
 
 interface MaccmsVideo {
@@ -39,6 +43,40 @@ interface KeywordJob {
 }
 
 const STORAGE_KEY = 'scraper_progress'
+
+// Helper function to format elapsed time
+function formatElapsedTime(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`
+  if (seconds < 3600) {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}m ${secs}s`
+  }
+  const hours = Math.floor(seconds / 3600)
+  const mins = Math.floor((seconds % 3600) / 60)
+  const secs = seconds % 60
+  return `${hours}h ${mins}m ${secs}s`
+}
+
+// Helper function to calculate ETA
+function calculateETA(progress: ScraperProgress): string {
+  if (!progress.videosPerSecond || progress.videosPerSecond === 0) return '--'
+
+  // Calculate remaining work based on categories and pages
+  const remainingCategories = progress.totalCategories - progress.categoriesCompleted
+  const currentPageRemaining = progress.pagesPerCategory - (progress.currentPage || 0)
+
+  // Rough estimate: assume ~30 videos per page average
+  const videosPerPage = 30
+  const remainingPages = currentPageRemaining + (remainingCategories * progress.pagesPerCategory)
+  const estimatedRemainingVideos = remainingPages * videosPerPage
+
+  const remainingSeconds = Math.ceil(estimatedRemainingVideos / progress.videosPerSecond)
+
+  if (remainingSeconds < 60) return `~${remainingSeconds}s`
+  if (remainingSeconds < 3600) return `~${Math.ceil(remainingSeconds / 60)}m`
+  return `~${Math.floor(remainingSeconds / 3600)}h ${Math.ceil((remainingSeconds % 3600) / 60)}m`
+}
 
 // Custom category IDs for keyword-based scraping
 const JAPANESE_CATEGORY_ID = 9999
@@ -159,15 +197,11 @@ export default function AdminDashboard() {
 
   const fetchCheckpointProgress = async (id: string) => {
     try {
-      const [checkpointRes, categoriesRes] = await Promise.all([
-        fetch(`/api/scraper/categories-with-recovery?checkpointId=${id}`),
-        fetch('/api/categories')
-      ])
+      const checkpointRes = await fetch(`/api/scraper/categories-with-recovery?checkpointId=${id}`)
       const checkpointData = await checkpointRes.json()
-      const categoriesData = await categoriesRes.json()
 
       if (checkpointData.success && checkpointData.progress) {
-        const startedAt = checkpointData.checkpoint?.startedAt || new Date().toISOString()
+        const startedAt = checkpointData.progress.startedAt || checkpointData.checkpoint?.startedAt || new Date().toISOString()
         const elapsedSeconds = (Date.now() - new Date(startedAt).getTime()) / 1000
         const totalVideos = checkpointData.progress.totalVideosScraped || 0
         const videoCountAtStart = checkpointData.checkpoint?.videoCountAtStart || 0
@@ -175,14 +209,18 @@ export default function AdminDashboard() {
 
         const progress: ScraperProgress = {
           checkpointId: String(id),
-          pagesPerCategory: Number(pagesPerCategory),
-          totalCategories: Number(checkpointData.progress.categoriesTotal || categoriesData.total || 165),
+          pagesPerCategory: Number(checkpointData.progress.pagesPerCategory || pagesPerCategory),
+          totalCategories: Number(checkpointData.progress.categoriesTotal || 165),
           categoriesCompleted: Number(checkpointData.progress.categoriesCompleted || 0),
           totalVideosScraped: totalVideos,
           totalVideosFailed: Number(checkpointData.progress.totalVideosFailed || 0),
           newVideosAdded: Math.max(0, videoCountCurrent - videoCountAtStart),
           startedAt,
-          videosPerSecond: elapsedSeconds > 0 ? Math.round((totalVideos / elapsedSeconds) * 10) / 10 : 0
+          videosPerSecond: elapsedSeconds > 0 ? Math.round((totalVideos / elapsedSeconds) * 10) / 10 : 0,
+          // Granular progress
+          currentCategoryName: checkpointData.progress.currentCategoryName || null,
+          currentPage: checkpointData.progress.currentPage || 0,
+          elapsedSeconds: Math.floor(elapsedSeconds),
         }
         saveProgress(progress)
         return checkpointData.progress.status
@@ -494,50 +532,112 @@ export default function AdminDashboard() {
               <span className="text-zinc-500">Categories</span>
               <span className="ml-2 text-zinc-100 font-semibold">{stats?.categories.length || 0}</span>
             </div>
-            {currentProgress && (
-              <>
-                <div>
-                  <span className="text-zinc-500">New</span>
-                  <span className="ml-2 text-purple-400 font-semibold">{currentProgress.newVideosAdded?.toLocaleString() || 0}</span>
-                </div>
-                <div>
-                  <span className="text-zinc-500">Speed</span>
-                  <span className="ml-2 text-zinc-100 font-semibold">{currentProgress.videosPerSecond}/s</span>
-                </div>
-              </>
-            )}
             {message && <span className="text-zinc-400">{message}</span>}
           </div>
 
           {/* Resume banner */}
           {savedProgress && !scraping && (
-            <div className="flex items-center justify-between py-4 px-5 bg-[#18181b] rounded-lg border border-[#27272a]">
-              <span className="text-zinc-300">
-                Saved: {savedProgress.categoriesCompleted}/{savedProgress.totalCategories} categories
-              </span>
-              <div className="flex gap-3">
-                <button onClick={() => startScraping(savedProgress.checkpointId)} className="text-purple-400 hover:text-purple-300 font-medium">
-                  Resume
-                </button>
-                <button onClick={clearProgress} className="text-zinc-500 hover:text-zinc-300">
-                  Clear
-                </button>
+            <div className="py-4 px-5 bg-[#18181b] rounded-lg border border-[#27272a]">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <span className="text-zinc-300 font-medium">Saved Progress</span>
+                  <div className="flex gap-6 text-sm text-zinc-500">
+                    <span>Categories: {savedProgress.categoriesCompleted}/{savedProgress.totalCategories}</span>
+                    <span>Videos: {savedProgress.totalVideosScraped.toLocaleString()}</span>
+                    {savedProgress.currentCategoryName && (
+                      <span>Last: <span className="text-zinc-400 capitalize">{savedProgress.currentCategoryName.replace(/-/g, ' ')}</span></span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <button onClick={() => startScraping(savedProgress.checkpointId)} className="text-purple-400 hover:text-purple-300 font-medium">
+                    Resume
+                  </button>
+                  <button onClick={clearProgress} className="text-zinc-500 hover:text-zinc-300">
+                    Clear
+                  </button>
+                </div>
               </div>
             </div>
           )}
 
-          {/* Progress bars */}
+          {/* Detailed Progress Panel */}
           {(scraping && currentProgress) && (
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm text-zinc-400">
-                <span>Category Scraping {currentProgress.categoriesCompleted}/{currentProgress.totalCategories}</span>
-                <span>{currentProgress.totalVideosScraped.toLocaleString()} videos</span>
+            <div className="p-5 bg-[#18181b] rounded-lg border border-[#27272a] space-y-4">
+              {/* Header with elapsed time */}
+              <div className="flex items-center justify-between">
+                <span className="font-medium">Scraping Progress</span>
+                <span className="text-sm text-zinc-400 font-mono">
+                  {formatElapsedTime(currentProgress.elapsedSeconds || 0)}
+                </span>
               </div>
-              <div className="h-1.5 bg-[#1f1f23] rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-purple-500 transition-all"
-                  style={{ width: `${(currentProgress.categoriesCompleted / currentProgress.totalCategories) * 100}%` }}
-                />
+
+              {/* Current Category */}
+              {currentProgress.currentCategoryName && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-zinc-400">Current Category</span>
+                    <span className="text-purple-400 font-medium capitalize">
+                      {currentProgress.currentCategoryName.replace(/-/g, ' ')}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-zinc-400">Page Progress</span>
+                    <span className="text-zinc-200 font-mono">
+                      {currentProgress.currentPage || 0} / {currentProgress.pagesPerCategory}
+                    </span>
+                  </div>
+                  <div className="h-1.5 bg-[#1f1f23] rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-purple-400 transition-all"
+                      style={{ width: `${((currentProgress.currentPage || 0) / currentProgress.pagesPerCategory) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Category Progress */}
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-zinc-400">Categories</span>
+                  <span className="text-zinc-200 font-mono">
+                    {currentProgress.categoriesCompleted} / {currentProgress.totalCategories}
+                  </span>
+                </div>
+                <div className="h-1.5 bg-[#1f1f23] rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-purple-500 transition-all"
+                    style={{ width: `${(currentProgress.categoriesCompleted / currentProgress.totalCategories) * 100}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Stats Grid */}
+              <div className="grid grid-cols-4 gap-4 pt-2 border-t border-[#27272a]">
+                <div>
+                  <div className="text-xs text-zinc-500 mb-1">Total Scraped</div>
+                  <div className="text-lg font-semibold text-zinc-100">
+                    {currentProgress.totalVideosScraped.toLocaleString()}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-zinc-500 mb-1">New Added</div>
+                  <div className="text-lg font-semibold text-purple-400">
+                    +{(currentProgress.newVideosAdded || 0).toLocaleString()}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-zinc-500 mb-1">Speed</div>
+                  <div className="text-lg font-semibold text-zinc-100">
+                    {currentProgress.videosPerSecond}/s
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-zinc-500 mb-1">ETA</div>
+                  <div className="text-lg font-semibold text-zinc-100">
+                    {calculateETA(currentProgress)}
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -584,10 +684,10 @@ export default function AdminDashboard() {
                 <input
                   type="number"
                   min={1}
-                  max={100}
+                  max={1000}
                   value={pagesPerCategory}
-                  onChange={e => setPagesPerCategory(Math.max(1, Math.min(100, parseInt(e.target.value) || 5)))}
-                  className="w-16 px-2 py-1 bg-[#1f1f23] border border-[#27272a] rounded text-sm text-center focus:border-purple-500 outline-none"
+                  onChange={e => setPagesPerCategory(Math.max(1, Math.min(1000, parseInt(e.target.value) || 5)))}
+                  className="w-20 px-2 py-1 bg-[#1f1f23] border border-[#27272a] rounded text-sm text-center focus:border-purple-500 outline-none"
                 />
               </div>
             </div>

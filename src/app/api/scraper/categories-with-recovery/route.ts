@@ -495,7 +495,8 @@ async function scrapeInBackground(
     await updateScraperCheckpoint(checkpointId, {
       ...checkpoint,
       totalCategories,
-      videoCountAtStart
+      videoCountAtStart,
+      pagesPerCategory
     })
 
     console.log(`[Category Scraper] Starting with ${videoCountAtStart} videos cached`)
@@ -528,13 +529,15 @@ async function scrapeInBackground(
         totalScraped += result.scraped
         totalFailed += result.errors
 
-        // Update checkpoint
+        // Update checkpoint with granular progress
         try {
           await updateScraperCheckpoint(checkpointId, {
             lastCategoryIndex: categoryIndex,
             lastPageCompleted: page,
             totalVideosScraped: totalScraped,
             totalVideosFailed: totalFailed,
+            currentCategoryName: category.name,
+            currentPage: page,
           })
 
           const job = ACTIVE_JOBS.get(checkpointId)
@@ -694,6 +697,11 @@ export async function GET(_request: NextRequest) {
       totalVideosFailed: checkpoint.totalVideosFailed,
       categoriesCompleted: checkpoint.lastCategoryIndex + 1,
       categoriesTotal: checkpoint.totalCategories || 165,
+      // Granular progress
+      currentCategoryName: checkpoint.currentCategoryName || null,
+      currentPage: checkpoint.currentPage || 0,
+      pagesPerCategory: checkpoint.pagesPerCategory || 0,
+      startedAt: checkpoint.startedAt,
     },
   })
 }

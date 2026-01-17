@@ -56,3 +56,6 @@ next-env.d.ts
 /exports
 *.sql
 maccms10/
+
+# Private uploads and generated files
+/private

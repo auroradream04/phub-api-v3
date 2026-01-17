@@ -190,7 +190,11 @@ export async function GET(request: NextRequest) {
       adsEnabled,
     })
 
-    console.log(`[Stream Proxy] Processed m3u8: ${processed.segmentCount} segments, ${processed.adsInjected} ads injected, duration: ${processed.duration}s (${Date.now() - requestStart}ms)`)
+    const formatInfo = processed.detectedFormat
+      ? ` format: ${processed.detectedFormat.formatKey}${processed.transcodedAds ? ' (transcoded)' : ''}`
+      : ''
+    const cdnAdInfo = processed.cdnAdsStripped ? `, ${processed.cdnAdsStripped} CDN ads stripped` : ''
+    console.log(`[Stream Proxy] Processed m3u8: ${processed.segmentCount} segments, ${processed.adsInjected} ads injected${cdnAdInfo}, duration: ${processed.duration}s,${formatInfo} (${Date.now() - requestStart}ms)`)
 
     // Cache the result
     setCachedM3u8(cacheKey, processed.content)
