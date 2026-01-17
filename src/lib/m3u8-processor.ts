@@ -497,6 +497,9 @@ export async function processM3u8(options: M3u8ProcessorOptions): Promise<Proces
     }
   }
 
+  // Add debug marker to verify deployment
+  result.push('# DEPLOYMENT_TEST_V3')
+
   // Add end tag if original had it
   if (m3u8Content.includes('#EXT-X-ENDLIST')) {
     result.push('#EXT-X-ENDLIST')
