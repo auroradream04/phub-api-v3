@@ -419,6 +419,7 @@ export async function processM3u8(options: M3u8ProcessorOptions): Promise<Proces
 
           // Add ad segment with proper encryption handling
           // 1. Mark as unencrypted (our ad is not encrypted)
+          console.log(`[M3u8Processor] Injecting ad with METHOD=NONE, deferredKey=${!!deferredEncryptionKey}`)
           result.push('#EXT-X-KEY:METHOD=NONE')
           result.push('#EXTINF:3.0,')
           result.push(adUrl)
@@ -426,6 +427,7 @@ export async function processM3u8(options: M3u8ProcessorOptions): Promise<Proces
 
           // 2. Output the deferred encryption key (video is encrypted)
           if (deferredEncryptionKey) {
+            console.log(`[M3u8Processor] Outputting deferred encryption key`)
             result.push(deferredEncryptionKey)
             deferredEncryptionKey = '' // Clear it after using
           }
@@ -475,7 +477,12 @@ export async function processM3u8(options: M3u8ProcessorOptions): Promise<Proces
       // If we have a pre-roll ad that hasn't been injected yet, defer the encryption key
       // so we can output METHOD=NONE for the ad first
       const prerollPlacement = placements.find(p => p.type === 'pre-roll' && p.selectedAd && !p.injected)
-      if (prerollPlacement && rewrittenKey.includes('METHOD=AES-128')) {
+      const isAes128 = rewrittenKey.includes('METHOD=AES-128')
+
+      console.log(`[M3u8Processor] KEY line: preroll=${!!prerollPlacement}, hasAd=${!!prerollPlacement?.selectedAd}, injected=${prerollPlacement?.injected}, isAes128=${isAes128}`)
+
+      if (prerollPlacement && isAes128) {
+        console.log(`[M3u8Processor] Deferring encryption key for pre-roll ad`)
         deferredEncryptionKey = rewrittenKey
         // Don't output yet - will be output after ad injection
       } else {
