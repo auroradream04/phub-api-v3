@@ -104,6 +104,11 @@ export const SETTING_KEYS = {
   AD_MIDROLL_INTERVAL: 'AD_MIDROLL_INTERVAL',
   AD_MAX_ADS_PER_VIDEO: 'AD_MAX_ADS_PER_VIDEO',
   AD_MIN_VIDEO_FOR_MIDROLL: 'AD_MIN_VIDEO_FOR_MIDROLL',
+  // Proxy settings (for universal VOD proxy)
+  PROXY_SEGMENT_MODE: 'proxy_segment_mode',       // 'cors' | 'full' | 'passthrough'
+  PROXY_SEGMENT_URL: 'proxy_segment_url',         // Base URL for segment proxy
+  PROXY_ADS_ENABLED: 'proxy_ads_enabled',         // Enable ads for proxied streams
+  PROXY_CACHE_TTL: 'proxy_cache_ttl',             // Cache TTL in seconds
 } as const
 
 // Ad settings interface

@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PornHub } from 'pornhub.js'
-import { getRandomProxy } from '@/lib/proxy'
-import { getSiteSettings, SETTING_KEYS, getAdSettings } from '@/lib/site-settings'
+import { getProxiesForRacing, reportProxySuccess, reportProxyFailure } from '@/lib/proxy'
 import { checkAndLogDomain } from '@/lib/domain-middleware'
-import { calculateAdPlacements, calculateM3u8Duration, assignAdsToplacements } from '@/lib/ad-placement'
+import { processM3u8, isMasterPlaylist, extractFirstVariantUrl } from '@/lib/m3u8-processor'
 
 export const revalidate = 7200 // 2 hours
 
@@ -134,14 +133,8 @@ export async function GET(
       console.log(`[Stream API] ✓ Cache hit for video ${id}`)
       mediaDefinitions = cached.mediaDefinitions
     } else {
-      // Race 3 proxies simultaneously - use first successful response
-      const proxyAttempts = []
-      for (let i = 0; i < 3; i++) {
-        const proxyInfo = getRandomProxy('Stream API')
-        if (proxyInfo) {
-          proxyAttempts.push({ proxyInfo, index: i })
-        }
-      }
+      // Get 3 unique proxies for racing (health-aware selection)
+      const proxyAttempts = getProxiesForRacing(3)
 
       if (proxyAttempts.length === 0) {
         await domainCheck.logRequest(500, Date.now() - requestStart)
@@ -149,8 +142,8 @@ export async function GET(
         throw new Error('No proxies available')
       }
 
-      // Create racing promises
-      const racePromises = proxyAttempts.map(async ({ proxyInfo }) => {
+      // Create racing promises - track which proxy wins
+      const racePromises = proxyAttempts.map(async (proxyInfo) => {
         const pornhub = new PornHub()
         pornhub.setAgent(proxyInfo.agent)
 
@@ -166,19 +159,37 @@ export async function GET(
           }
 
           console.log(`[Stream API] ✓ Success with proxy ${proxyInfo.proxyUrl} (${duration}ms, ${response.mediaDefinitions.length} qualities)`)
-          return response
+          // Return response with proxyId for health reporting
+          return { response, proxyId: proxyInfo.proxyId }
         } catch (error: unknown) {
           const duration = Date.now() - startTime
           console.error(`[Stream API] Proxy ${proxyInfo.proxyUrl} failed (${duration}ms):`, error instanceof Error ? error.message : error)
-          throw error
+          // Attach proxyId to error for failure reporting
+          const err = new Error(error instanceof Error ? error.message : 'Unknown error')
+          ;(err as Error & { proxyId: string }).proxyId = proxyInfo.proxyId
+          throw err
         }
       })
 
       // Use Promise.any to get first successful response
       let videoInfo
+      let winnerProxyId: string | null = null
       try {
-        videoInfo = await Promise.any(racePromises)
-      } catch {
+        const result = await Promise.any(racePromises)
+        videoInfo = result.response
+        winnerProxyId = result.proxyId
+        // Report success for the winning proxy
+        reportProxySuccess(winnerProxyId)
+      } catch (aggregateError) {
+        // All proxies failed - report failure for all
+        if (aggregateError instanceof AggregateError) {
+          for (const err of aggregateError.errors) {
+            const proxyId = (err as Error & { proxyId?: string }).proxyId
+            if (proxyId) {
+              reportProxyFailure(proxyId)
+            }
+          }
+        }
         await domainCheck.logRequest(500, Date.now() - requestStart)
         console.error('[Stream API] ❌ All proxy attempts failed')
         throw new Error('Failed to fetch video information')
@@ -252,7 +263,13 @@ export async function GET(
 
       const variantM3u8 = await variantResponse.text()
       console.log(`[Stream API] Variant playlist fetched (${variantM3u8.length} bytes), injecting ads...`)
-      const modifiedM3u8 = await injectAds(variantM3u8, quality, variantUrl, id)
+      const processed = await processM3u8({
+        m3u8Content: variantM3u8,
+        baseUrl: variantUrl,
+        videoId: id,
+        segmentProxyMode: 'cors',
+      })
+      const modifiedM3u8 = processed.content
 
       // Cache the response
       setCachedM3u8(m3u8CacheKey, modifiedM3u8)
@@ -270,7 +287,13 @@ export async function GET(
     }
 
     console.log('[Stream API] Standard playlist detected, injecting ads...')
-    const modifiedM3u8 = await injectAds(originalM3u8, quality, originalM3u8Url, id)
+    const processed = await processM3u8({
+      m3u8Content: originalM3u8,
+      baseUrl: originalM3u8Url,
+      videoId: id,
+      segmentProxyMode: 'cors',
+    })
+    const modifiedM3u8 = processed.content
 
     // Cache the response
     setCachedM3u8(m3u8CacheKey, modifiedM3u8)
@@ -295,176 +318,4 @@ export async function GET(
       { status: 500 }
     )
   }
-}
-
-function isMasterPlaylist(m3u8Text: string): boolean {
-  return m3u8Text.includes('#EXT-X-STREAM-INF')
-}
-
-function extractFirstVariantUrl(m3u8Text: string, baseUrl: string): string | null {
-  const lines = m3u8Text.split('\n')
-
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i].startsWith('#EXT-X-STREAM-INF')) {
-      const nextLine = lines[i + 1]
-      if (nextLine && nextLine.trim() !== '') {
-        if (nextLine.startsWith('http')) {
-          return nextLine.trim()
-        } else {
-          const baseUrlObj = new URL(baseUrl)
-          const basePath = baseUrlObj.pathname.substring(0, baseUrlObj.pathname.lastIndexOf('/'))
-          return `${baseUrlObj.origin}${basePath}/${nextLine.trim()}`
-        }
-      }
-    }
-  }
-
-  return null
-}
-
-async function injectAds(m3u8Text: string, quality: string, baseUrl: string, videoId: string): Promise<string> {
-  const lines = m3u8Text.split('\n')
-  const result: string[] = []
-  const baseUrlObj = new URL(baseUrl)
-  const basePath = baseUrlObj.pathname.substring(0, baseUrlObj.pathname.lastIndexOf('/'))
-
-  // Get all settings in parallel (batch query + ad settings query)
-  const [streamSettings, adSettings] = await Promise.all([
-    getSiteSettings(
-      [SETTING_KEYS.CORS_PROXY_ENABLED, SETTING_KEYS.CORS_PROXY_URL, SETTING_KEYS.SEGMENTS_TO_SKIP],
-      {
-        [SETTING_KEYS.CORS_PROXY_ENABLED]: 'true',
-        [SETTING_KEYS.CORS_PROXY_URL]: 'https://cors.freechatnow.net/',
-        [SETTING_KEYS.SEGMENTS_TO_SKIP]: '3',
-      }
-    ),
-    getAdSettings(),
-  ])
-
-  const corsProxyEnabled = streamSettings[SETTING_KEYS.CORS_PROXY_ENABLED] === 'true'
-  const corsProxyUrl = streamSettings[SETTING_KEYS.CORS_PROXY_URL]
-  const segmentsToSkip = parseInt(streamSettings[SETTING_KEYS.SEGMENTS_TO_SKIP])
-
-  // Calculate video duration from M3U8
-  const videoDurationSeconds = calculateM3u8Duration(m3u8Text)
-
-  // Calculate ad placements based on settings
-  let placements = calculateAdPlacements(videoDurationSeconds, adSettings)
-
-  // Assign ads to placements
-  placements = await assignAdsToplacements(placements)
-
-  // Check if we have a pre-roll ad
-  const hasPreroll = placements.some(p => p.type === 'pre-roll' && p.selectedAd)
-
-  // Create a map of time percentages to placements for quick lookup
-  const placementMap = new Map<number, typeof placements[0]>()
-  for (const placement of placements) {
-    placementMap.set(placement.percentageOfVideo, placement)
-  }
-
-  // Copy header tags
-  let headerComplete = false
-  let pendingExtInf = ''
-  let currentTimePercentage = 0
-  let segmentCount = 0
-  let totalSegmentsEstimate = 0
-  let skippedSegments = 0
-
-  // First pass: count total segments
-  for (const line of lines) {
-    if (line.startsWith('#EXTINF:')) {
-      totalSegmentsEstimate++
-    }
-  }
-
-  // Second pass: build M3U8 with injected ads
-  for (const line of lines) {
-    // Copy header tags
-    if (
-      line.startsWith('#EXTM3U') ||
-      line.startsWith('#EXT-X-VERSION') ||
-      line.startsWith('#EXT-X-TARGETDURATION') ||
-      line.startsWith('#EXT-X-MEDIA-SEQUENCE') ||
-      line.startsWith('#EXT-X-PLAYLIST-TYPE') ||
-      line.startsWith('#EXT-X-ALLOW-CACHE')
-    ) {
-      result.push(line)
-      continue
-    }
-
-    // Store EXTINF temporarily
-    if (line.startsWith('#EXTINF:')) {
-      pendingExtInf = line
-      continue
-    }
-
-    // Process segment URLs
-    if (!line.startsWith('#') && line.trim() !== '') {
-      if (!headerComplete) {
-        headerComplete = true
-      }
-
-      // Check if we need to inject ads before this segment
-      const progressPercentage = (segmentCount / Math.max(totalSegmentsEstimate, 1)) * 100
-      currentTimePercentage = Math.round(progressPercentage)
-
-      // Inject ads that should appear at or near this progress point
-      for (const [percentage, placement] of placementMap.entries()) {
-        // Check if this ad should be injected before current segment
-        if (percentage <= currentTimePercentage && !placement.injected && placement.selectedAd) {
-          // Select random ad segment
-          const randomSegment = placement.selectedAd.segments[
-            Math.floor(Math.random() * placement.selectedAd.segments.length)
-          ] as { quality: number | string }
-
-          // Add ad segment with videoId for tracking
-          result.push('#EXTINF:3.0,')
-          const adUrl = `${process.env.NEXTAUTH_URL || 'http://md8av.com'}/api/ads/serve/${placement.selectedAd.id}/${randomSegment.quality}.ts?v=${videoId}`
-          result.push(adUrl)
-          result.push('#EXT-X-DISCONTINUITY')
-
-          // Mark as injected
-          placement.injected = true
-          // Impression is now tracked when segment is actually fetched
-        }
-      }
-
-      // Skip first X segments of original video when pre-roll is present
-      if (hasPreroll && skippedSegments < segmentsToSkip) {
-        skippedSegments++
-        pendingExtInf = '' // Clear the pending EXTINF since we're skipping this segment
-        segmentCount++ // Still count for percentage calculation
-        continue
-      }
-
-      // Add video segment
-      if (pendingExtInf) {
-        result.push(pendingExtInf)
-        pendingExtInf = ''
-      }
-
-      // Convert relative URLs to absolute and apply CORS proxy
-      let segmentUrl: string
-      if (line.startsWith('http')) {
-        segmentUrl = line
-      } else {
-        segmentUrl = `${baseUrlObj.origin}${basePath}/${line.trim()}`
-      }
-
-      // Apply CORS proxy if enabled
-      const isOwnApi = segmentUrl.includes(process.env.NEXTAUTH_URL || 'md8av.com')
-      if (corsProxyEnabled && !isOwnApi) {
-        segmentUrl = `${corsProxyUrl}${segmentUrl}`
-      }
-
-      result.push(segmentUrl)
-      segmentCount++
-    } else if (line.startsWith('#') && !line.startsWith('#EXTINF:')) {
-      // Copy other tags
-      result.push(line)
-    }
-  }
-
-  return result.join('\n')
 }
