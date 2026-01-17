@@ -168,10 +168,15 @@ export async function processM3u8(options: M3u8ProcessorOptions): Promise<Proces
 
       // Convert relative URLs to absolute
       let segmentUrl: string
-      if (line.startsWith('http')) {
-        segmentUrl = line
+      const trimmedLine = line.trim()
+      if (trimmedLine.startsWith('http')) {
+        segmentUrl = trimmedLine
+      } else if (trimmedLine.startsWith('/')) {
+        // Absolute path - use origin only
+        segmentUrl = `${baseUrlObj.origin}${trimmedLine}`
       } else {
-        segmentUrl = `${baseUrlObj.origin}${basePath}/${line.trim()}`
+        // Relative path - resolve against current directory
+        segmentUrl = `${baseUrlObj.origin}${basePath}/${trimmedLine}`
       }
 
       // Apply proxy based on mode
@@ -253,12 +258,18 @@ export function extractFirstVariantUrl(m3u8Text: string, baseUrl: string): strin
     if (lines[i].startsWith('#EXT-X-STREAM-INF')) {
       const nextLine = lines[i + 1]
       if (nextLine && nextLine.trim() !== '') {
-        if (nextLine.startsWith('http')) {
-          return nextLine.trim()
+        const trimmedLine = nextLine.trim()
+        if (trimmedLine.startsWith('http')) {
+          return trimmedLine
         } else {
           const baseUrlObj = new URL(baseUrl)
+          // Check if it's an absolute path (starts with /)
+          if (trimmedLine.startsWith('/')) {
+            return `${baseUrlObj.origin}${trimmedLine}`
+          }
+          // Relative path - resolve against current directory
           const basePath = baseUrlObj.pathname.substring(0, baseUrlObj.pathname.lastIndexOf('/'))
-          return `${baseUrlObj.origin}${basePath}/${nextLine.trim()}`
+          return `${baseUrlObj.origin}${basePath}/${trimmedLine}`
         }
       }
     }
@@ -286,13 +297,20 @@ export function extractAllVariants(m3u8Text: string, baseUrl: string): Array<{
         const bandwidthMatch = lines[i].match(/BANDWIDTH=(\d+)/)
         const resolutionMatch = lines[i].match(/RESOLUTION=(\d+x\d+)/)
 
+        const trimmedLine = nextLine.trim()
         let url: string
-        if (nextLine.startsWith('http')) {
-          url = nextLine.trim()
+        if (trimmedLine.startsWith('http')) {
+          url = trimmedLine
         } else {
           const baseUrlObj = new URL(baseUrl)
-          const basePath = baseUrlObj.pathname.substring(0, baseUrlObj.pathname.lastIndexOf('/'))
-          url = `${baseUrlObj.origin}${basePath}/${nextLine.trim()}`
+          // Check if it's an absolute path (starts with /)
+          if (trimmedLine.startsWith('/')) {
+            url = `${baseUrlObj.origin}${trimmedLine}`
+          } else {
+            // Relative path - resolve against current directory
+            const basePath = baseUrlObj.pathname.substring(0, baseUrlObj.pathname.lastIndexOf('/'))
+            url = `${baseUrlObj.origin}${basePath}/${trimmedLine}`
+          }
         }
 
         variants.push({
