@@ -160,45 +160,53 @@ export async function GET(request: NextRequest) {
   const requestStart = Date.now()
 
   try {
-    const url = request.nextUrl.searchParams.get('url')
+    // Handle both encoded and unencoded URLs
+    // MacCMS often sends: /api/provide/proxy?url=https://example.com/api?ac=list&pg=1
+    // where &pg=1 should be part of the target URL, not our params
 
-    if (!url) {
+    let targetUrl: string | null = null
+
+    // First, try to extract from raw URL (handles unencoded case)
+    const rawUrl = request.url
+    const urlParamIndex = rawUrl.indexOf('?url=')
+
+    if (urlParamIndex !== -1) {
+      // Everything after ?url= is the target URL
+      targetUrl = rawUrl.substring(urlParamIndex + 5)
+
+      // Decode if it was URL-encoded
+      try {
+        // Check if it looks encoded (contains %3A for :)
+        if (targetUrl.includes('%3A') || targetUrl.includes('%2F')) {
+          targetUrl = decodeURIComponent(targetUrl)
+        }
+      } catch {
+        // Keep as-is if decoding fails
+      }
+    }
+
+    // Fallback to standard param extraction
+    if (!targetUrl) {
+      targetUrl = request.nextUrl.searchParams.get('url')
+    }
+
+    if (!targetUrl) {
       return NextResponse.json(
         { error: 'URL parameter is required. Usage: /api/provide/proxy?url=https://example.com/api.php/provide/vod' },
         { status: 400 }
       )
     }
 
-    // Decode URL if encoded
-    let decodedUrl: string
-    try {
-      decodedUrl = decodeURIComponent(url)
-    } catch {
-      decodedUrl = url
-    }
-
     // SSRF protection
-    if (!isUrlSafe(decodedUrl)) {
-      console.warn(`[VOD Proxy] Blocked unsafe URL: ${decodedUrl}`)
+    if (!isUrlSafe(targetUrl)) {
+      console.warn(`[VOD Proxy] Blocked unsafe URL: ${targetUrl}`)
       return NextResponse.json(
         { error: 'Invalid or blocked URL' },
         { status: 400 }
       )
     }
 
-    // Preserve query parameters from original URL
-    const originalUrl = new URL(decodedUrl)
-
-    // Forward any additional query params from our request to the target
-    const additionalParams = ['ac', 'pg', 't', 'wd', 'h', 'ids', 'at']
-    for (const param of additionalParams) {
-      const value = request.nextUrl.searchParams.get(param)
-      if (value && !originalUrl.searchParams.has(param)) {
-        originalUrl.searchParams.set(param, value)
-      }
-    }
-
-    const finalUrl = originalUrl.toString()
+    const finalUrl = targetUrl
 
     // Check cache
     const cacheKey = finalUrl
