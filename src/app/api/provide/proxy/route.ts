@@ -29,30 +29,26 @@ function isUrlSafe(url: string): boolean {
   }
 }
 
+// Fields that contain video playback URLs - ONLY these get rewritten
+const VIDEO_URL_FIELDS = new Set([
+  'vod_play_url',
+  'vod_down_url',
+])
+
 /**
- * Rewrite URLs in a string value
+ * Rewrite URLs in a vod_play_url string value
  * Supports formats like:
  * - Simple URL: https://cdn.com/video.m3u8
  * - Prefixed URL: HD$https://cdn.com/hd.m3u8
  * - Multiple: HD$https://cdn.com/hd.m3u8#SD$https://cdn.com/sd.m3u8
  * - Episodes: Episode1$https://cdn.com/ep1.m3u8#Episode2$https://cdn.com/ep2.m3u8
  */
-function rewriteUrlsInString(value: string, proxyBase: string): string {
+function rewritePlayUrl(value: string, proxyBase: string): string {
   // Pattern: Match any URL (http/https), optionally preceded by a prefix and $
   // This handles: "HD$https://...", "https://...", "player$https://..."
   const urlPattern = /([^$#\s]*\$)?(https?:\/\/[^#\s"'<>]+)/g
 
   return value.replace(urlPattern, (match, prefix, url) => {
-    // Only proxy m3u8 files and common video formats
-    const shouldProxy = /\.(m3u8|mp4|ts|mkv|avi|webm|flv)($|\?)/i.test(url) ||
-                        url.includes('m3u8') ||
-                        url.includes('video') ||
-                        url.includes('stream')
-
-    if (!shouldProxy) {
-      return match // Keep original URL
-    }
-
     const encodedUrl = encodeURIComponent(url)
     const proxyUrl = `${proxyBase}?url=${encodedUrl}`
     return prefix ? `${prefix}${proxyUrl}` : proxyUrl
@@ -60,59 +56,49 @@ function rewriteUrlsInString(value: string, proxyBase: string): string {
 }
 
 /**
- * Recursively rewrite URLs in JSON object
+ * Recursively process JSON, but ONLY rewrite vod_play_url and vod_down_url fields
+ * Everything else passes through unchanged
  */
 function rewriteUrlsInJson(obj: unknown, proxyBase: string): unknown {
-  if (typeof obj === 'string') {
-    return rewriteUrlsInString(obj, proxyBase)
+  if (obj === null || obj === undefined) {
+    return obj
   }
 
   if (Array.isArray(obj)) {
     return obj.map(item => rewriteUrlsInJson(item, proxyBase))
   }
 
-  if (obj !== null && typeof obj === 'object') {
+  if (typeof obj === 'object') {
     const result: Record<string, unknown> = {}
     for (const [key, value] of Object.entries(obj)) {
-      // Target specific fields that typically contain video URLs
-      const isVideoField = [
-        'vod_play_url',
-        'vod_down_url',
-        'vodPlayUrl',
-        'vodDownUrl',
-        'play_url',
-        'down_url',
-        'playUrl',
-        'downUrl',
-        'url',
-        'video_url',
-        'videoUrl',
-        'stream_url',
-        'streamUrl',
-      ].includes(key)
-
-      if (isVideoField && typeof value === 'string') {
-        result[key] = rewriteUrlsInString(value, proxyBase)
-      } else {
+      // ONLY rewrite vod_play_url and vod_down_url
+      if (VIDEO_URL_FIELDS.has(key) && typeof value === 'string') {
+        result[key] = rewritePlayUrl(value, proxyBase)
+      } else if (typeof value === 'object' && value !== null) {
+        // Recurse into nested objects/arrays to find video items
         result[key] = rewriteUrlsInJson(value, proxyBase)
+      } else {
+        // Pass through everything else unchanged
+        result[key] = value
       }
     }
     return result
   }
 
+  // Primitives (string, number, boolean) pass through unchanged
   return obj
 }
 
 /**
- * Rewrite URLs in XML string
+ * Rewrite URLs in XML string - ONLY vod_play_url and vod_down_url
  */
 function rewriteUrlsInXml(xml: string, proxyBase: string): string {
-  // Rewrite URLs inside <dd> tags (MacCMS format)
+  // Rewrite URLs inside <dd> tags (MacCMS format for vod_play_url)
   // <dd flag="dplayer">HD$https://cdn.com/video.m3u8</dd>
   let result = xml.replace(
     /(<dd[^>]*>)(.*?)(<\/dd>)/gi,
     (match, openTag, content, closeTag) => {
-      const rewritten = rewriteUrlsInString(content, proxyBase)
+      const rewritten = rewritePlayUrl(content, proxyBase)
       return `${openTag}${rewritten}${closeTag}`
     }
   )
@@ -121,7 +107,7 @@ function rewriteUrlsInXml(xml: string, proxyBase: string): string {
   result = result.replace(
     /(<vod_play_url>)(.*?)(<\/vod_play_url>)/gi,
     (match, openTag, content, closeTag) => {
-      const rewritten = rewriteUrlsInString(content, proxyBase)
+      const rewritten = rewritePlayUrl(content, proxyBase)
       return `${openTag}${rewritten}${closeTag}`
     }
   )
@@ -129,7 +115,7 @@ function rewriteUrlsInXml(xml: string, proxyBase: string): string {
   result = result.replace(
     /(<vod_down_url>)(.*?)(<\/vod_down_url>)/gi,
     (match, openTag, content, closeTag) => {
-      const rewritten = rewriteUrlsInString(content, proxyBase)
+      const rewritten = rewritePlayUrl(content, proxyBase)
       return `${openTag}${rewritten}${closeTag}`
     }
   )
@@ -268,8 +254,8 @@ export async function GET(request: NextRequest) {
         rewrittenContent = JSON.stringify(rewrittenJson)
         responseContentType = 'application/json; charset=utf-8'
       } catch {
-        // Not valid JSON, treat as plain text and try URL rewriting anyway
-        rewrittenContent = rewriteUrlsInString(originalContent, proxyBase)
+        // Not valid JSON - pass through unchanged
+        rewrittenContent = originalContent
         responseContentType = contentType
       }
     }
