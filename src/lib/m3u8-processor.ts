@@ -184,6 +184,10 @@ export async function processM3u8(options: M3u8ProcessorOptions): Promise<Proces
 
       result.push(segmentUrl)
       segmentCount++
+    } else if (line.startsWith('#EXT-X-KEY:')) {
+      // Rewrite encryption key URI to absolute URL
+      const rewrittenKey = rewriteKeyUri(line, baseUrlObj, basePath, segmentProxyMode, corsProxyUrl)
+      result.push(rewrittenKey)
     } else if (line.startsWith('#') && !line.startsWith('#EXTINF:')) {
       // Copy other tags (except #EXT-X-ENDLIST which we'll add at the end if needed)
       if (line.trim() === '#EXT-X-ENDLIST') {
@@ -239,6 +243,50 @@ function applySegmentProxy(
     default:
       return segmentUrl
   }
+}
+
+/**
+ * Rewrite #EXT-X-KEY URI to absolute URL
+ * Example: #EXT-X-KEY:METHOD=AES-128,URI="/path/key.key"
+ * Becomes: #EXT-X-KEY:METHOD=AES-128,URI="https://cdn.com/path/key.key"
+ */
+function rewriteKeyUri(
+  line: string,
+  baseUrlObj: URL,
+  basePath: string,
+  mode: SegmentProxyMode,
+  corsProxyUrl: string
+): string {
+  // Match URI="..." or URI='...'
+  const uriMatch = line.match(/URI="([^"]+)"|URI='([^']+)'/)
+  if (!uriMatch) return line
+
+  const originalUri = uriMatch[1] || uriMatch[2]
+
+  // Skip if already absolute
+  if (originalUri.startsWith('http')) {
+    // Still might need CORS proxy
+    if (mode === 'cors') {
+      const proxiedUri = `${corsProxyUrl}${originalUri}`
+      return line.replace(originalUri, proxiedUri)
+    }
+    return line
+  }
+
+  // Resolve relative/absolute path
+  let absoluteUri: string
+  if (originalUri.startsWith('/')) {
+    absoluteUri = `${baseUrlObj.origin}${originalUri}`
+  } else {
+    absoluteUri = `${baseUrlObj.origin}${basePath}/${originalUri}`
+  }
+
+  // Apply CORS proxy if needed
+  if (mode === 'cors') {
+    absoluteUri = `${corsProxyUrl}${absoluteUri}`
+  }
+
+  return line.replace(originalUri, absoluteUri)
 }
 
 /**
