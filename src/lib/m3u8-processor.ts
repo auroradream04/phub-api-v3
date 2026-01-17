@@ -348,6 +348,7 @@ export async function processM3u8(options: M3u8ProcessorOptions): Promise<Proces
   let totalSegmentsEstimate = 0
   let skippedSegments = 0
   let adsInjected = 0
+  let deferredEncryptionKey = '' // Defer encryption key until after pre-roll ad
 
   // First pass: count total segments
   for (const line of lines) {
@@ -416,10 +417,18 @@ export async function processM3u8(options: M3u8ProcessorOptions): Promise<Proces
             adUrl = `${baseApiUrl}/api/ads/serve/${adId}/${randomSegment.quality}.ts?v=${videoId}`
           }
 
-          // Add ad segment with videoId for tracking
+          // Add ad segment with proper encryption handling
+          // 1. Mark as unencrypted (our ad is not encrypted)
+          result.push('#EXT-X-KEY:METHOD=NONE')
           result.push('#EXTINF:3.0,')
           result.push(adUrl)
           result.push('#EXT-X-DISCONTINUITY')
+
+          // 2. Output the deferred encryption key (video is encrypted)
+          if (deferredEncryptionKey) {
+            result.push(deferredEncryptionKey)
+            deferredEncryptionKey = '' // Clear it after using
+          }
 
           // Mark as injected
           placement.injected = true
@@ -462,7 +471,16 @@ export async function processM3u8(options: M3u8ProcessorOptions): Promise<Proces
     } else if (line.startsWith('#EXT-X-KEY:')) {
       // Rewrite encryption key URI to absolute URL
       const rewrittenKey = rewriteKeyUri(line, baseUrlObj, basePath, segmentProxyMode, corsProxyUrl)
-      result.push(rewrittenKey)
+
+      // If we have a pre-roll ad that hasn't been injected yet, defer the encryption key
+      // so we can output METHOD=NONE for the ad first
+      const prerollPlacement = placements.find(p => p.type === 'pre-roll' && p.selectedAd && !p.injected)
+      if (prerollPlacement && rewrittenKey.includes('METHOD=AES-128')) {
+        deferredEncryptionKey = rewrittenKey
+        // Don't output yet - will be output after ad injection
+      } else {
+        result.push(rewrittenKey)
+      }
     } else if (line.startsWith('#') && !line.startsWith('#EXTINF:')) {
       // Copy other tags (except #EXT-X-ENDLIST which we'll add at the end if needed)
       if (line.trim() === '#EXT-X-ENDLIST') {
