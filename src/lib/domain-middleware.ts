@@ -2,6 +2,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import crypto from 'crypto'
 
+// In-memory cache for domain access checks (5 min TTL)
+const DOMAIN_CACHE_TTL = 5 * 60 * 1000
+interface CachedDomainAccess {
+  id: string | null
+  status: string | null
+  reason: string | null
+  cachedAt: number
+}
+const domainAccessCache = new Map<string, CachedDomainAccess>()
+
 /**
  * Extract domain with improved fallback precedence
  * Tries: referer → origin → x-forwarded-host → host → null
@@ -171,16 +181,34 @@ export async function checkAndLogDomain(
   // Check if domain is blocked (only if domain exists)
   if (domain && domain !== 'localhost') {
     try {
-      const domainRule = await prisma.domainAccess.findUnique({
-        where: { domain }
-      })
-
-      if (domainRule) {
-        domainAccessId = domainRule.id
-
-        if (domainRule.status === 'blocked') {
+      // Check in-memory cache first
+      const cached = domainAccessCache.get(domain)
+      if (cached && Date.now() - cached.cachedAt < DOMAIN_CACHE_TTL) {
+        domainAccessId = cached.id
+        if (cached.status === 'blocked') {
           allowed = false
-          blockReason = domainRule.reason || 'Domain is blocked'
+          blockReason = cached.reason || 'Domain is blocked'
+        }
+      } else {
+        const domainRule = await prisma.domainAccess.findUnique({
+          where: { domain }
+        })
+
+        // Cache the result (even null = domain not found)
+        domainAccessCache.set(domain, {
+          id: domainRule?.id ?? null,
+          status: domainRule?.status ?? null,
+          reason: domainRule?.reason ?? null,
+          cachedAt: Date.now(),
+        })
+
+        if (domainRule) {
+          domainAccessId = domainRule.id
+
+          if (domainRule.status === 'blocked') {
+            allowed = false
+            blockReason = domainRule.reason || 'Domain is blocked'
+          }
         }
       }
     } catch {

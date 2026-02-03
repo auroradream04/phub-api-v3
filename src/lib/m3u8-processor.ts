@@ -183,6 +183,36 @@ function extractFirstSegmentUrl(m3u8Content: string, baseUrl: string): string | 
 }
 
 /**
+ * Cache for detected video formats - maps videoId -> VideoFormat (2h TTL)
+ * Avoids re-downloading 512KB + running ffprobe on every cache miss
+ */
+const FORMAT_CACHE_TTL = 2 * 60 * 60 * 1000 // 2 hours
+interface CachedFormat {
+  format: VideoFormat
+  cachedAt: number
+}
+const formatCache = new Map<string, CachedFormat>()
+
+function getCachedFormat(videoId: string): VideoFormat | null {
+  const cached = formatCache.get(videoId)
+  if (!cached) return null
+  if (Date.now() - cached.cachedAt > FORMAT_CACHE_TTL) {
+    formatCache.delete(videoId)
+    return null
+  }
+  return cached.format
+}
+
+function setCachedFormat(videoId: string, format: VideoFormat): void {
+  // Cap cache size
+  if (formatCache.size >= 1000) {
+    const oldestKey = formatCache.keys().next().value
+    if (oldestKey) formatCache.delete(oldestKey)
+  }
+  formatCache.set(videoId, { format, cachedAt: Date.now() })
+}
+
+/**
  * Cache for ad variants - maps adId -> formatKey -> variant info
  */
 const adVariantCache = new Map<string, Map<string, { segments: string[], formatKey: string }>>()
@@ -292,43 +322,54 @@ export async function processM3u8(options: M3u8ProcessorOptions): Promise<Proces
   let detectedFormat: VideoFormat = DEFAULT_FORMAT
   let transcodedAds = false
 
-  if (placements.some(p => p.selectedAd) && !skipFormatDetection) {
-    // Extract first segment URL
-    const firstSegmentUrl = extractFirstSegmentUrl(m3u8Content, baseUrl)
+  const hasAdsToInject = placements.some(p => p.selectedAd)
 
-    if (firstSegmentUrl) {
-      // Apply CORS proxy if needed for probing
-      const probeUrl = segmentProxyMode === 'cors'
-        ? `${corsProxyUrl}${firstSegmentUrl}`
-        : firstSegmentUrl
+  if (hasAdsToInject && !skipFormatDetection) {
+    // Check format cache first (avoids 512KB download + ffprobe)
+    const cachedFormat = getCachedFormat(videoId)
 
-      console.log(`[M3u8Processor] Probing video format from: ${firstSegmentUrl.substring(0, 80)}...`)
+    if (cachedFormat) {
+      detectedFormat = cachedFormat
+      console.log(`[M3u8Processor] ✓ Format cache hit: ${detectedFormat.formatKey}`)
+    } else {
+      // Extract first segment URL
+      const firstSegmentUrl = extractFirstSegmentUrl(m3u8Content, baseUrl)
 
-      const probedFormat = await probeVideoFormat(probeUrl)
+      if (firstSegmentUrl) {
+        // Apply CORS proxy if needed for probing
+        const probeUrl = segmentProxyMode === 'cors'
+          ? `${corsProxyUrl}${firstSegmentUrl}`
+          : firstSegmentUrl
 
-      if (probedFormat) {
-        detectedFormat = probedFormat
-        console.log(`[M3u8Processor] Detected format: ${detectedFormat.formatKey}`)
+        console.log(`[M3u8Processor] Probing video format from: ${firstSegmentUrl.substring(0, 80)}...`)
 
-        // Prepare ad variants for all unique ads if format differs from default
-        if (!isDefaultFormat(detectedFormat)) {
-          const uniqueAdIds = new Set(
-            placements
-              .filter(p => p.selectedAd)
-              .map(p => p.selectedAd!.id)
-          )
+        const probedFormat = await probeVideoFormat(probeUrl)
 
-          console.log(`[M3u8Processor] Need to prepare ${uniqueAdIds.size} ad variant(s) for ${detectedFormat.formatKey}`)
-
-          for (const adId of uniqueAdIds) {
-            const variant = await prepareAdVariant(adId, detectedFormat)
-            if (variant) {
-              transcodedAds = true
-            }
-          }
+        if (probedFormat) {
+          detectedFormat = probedFormat
+          setCachedFormat(videoId, detectedFormat)
+          console.log(`[M3u8Processor] Detected format: ${detectedFormat.formatKey}`)
+        } else {
+          console.log(`[M3u8Processor] Could not probe format, using default`)
         }
-      } else {
-        console.log(`[M3u8Processor] Could not probe format, using default`)
+      }
+    }
+
+    // Prepare ad variants if format differs from default
+    if (!isDefaultFormat(detectedFormat)) {
+      const uniqueAdIds = new Set(
+        placements
+          .filter(p => p.selectedAd)
+          .map(p => p.selectedAd!.id)
+      )
+
+      console.log(`[M3u8Processor] Need to prepare ${uniqueAdIds.size} ad variant(s) for ${detectedFormat.formatKey}`)
+
+      for (const adId of uniqueAdIds) {
+        const variant = await prepareAdVariant(adId, detectedFormat)
+        if (variant) {
+          transcodedAds = true
+        }
       }
     }
   }

@@ -48,8 +48,8 @@ function setCachedVideo(videoId: string, mediaDefinitions: CachedMediaDefinition
   })
 }
 
-// In-memory cache for final m3u8 response (30 second TTL)
-const M3U8_CACHE_TTL = 30 * 1000 // 30 seconds
+// In-memory cache for final m3u8 response (10 minute TTL - VOD content doesn't change)
+const M3U8_CACHE_TTL = 10 * 60 * 1000 // 10 minutes
 const MAX_M3U8_CACHE_SIZE = 500
 
 interface CachedM3u8 {
@@ -87,12 +87,6 @@ export async function GET(
   const requestStart = Date.now()
   const { id } = await params
 
-  // Check domain access
-  const domainCheck = await checkAndLogDomain(request, `/api/watch/${id}/stream`, 'GET')
-  if (!domainCheck.allowed) {
-    return domainCheck.response
-  }
-
   try {
     const quality = request.nextUrl.searchParams.get('q')
 
@@ -110,19 +104,24 @@ export async function GET(
       )
     }
 
-    // Check m3u8 response cache first (30s TTL)
+    // Check m3u8 response cache FIRST (before domain check to avoid DB hit on hot path)
     const m3u8CacheKey = `${id}:${quality}`
     const cachedM3u8 = getCachedM3u8(m3u8CacheKey)
     if (cachedM3u8) {
       console.log(`[Stream API] ✓ M3U8 cache hit for video ${id}`)
-      await domainCheck.logRequest(200, Date.now() - requestStart)
       return new Response(cachedM3u8, {
         headers: {
           'Content-Type': 'application/vnd.apple.mpegurl',
-          'Cache-Control': 'public, max-age=30',
+          'Cache-Control': 'public, max-age=600',
           'Access-Control-Allow-Origin': '*',
         },
       })
+    }
+
+    // Cache miss — now check domain access (requires DB query)
+    const domainCheck = await checkAndLogDomain(request, `/api/watch/${id}/stream`, 'GET')
+    if (!domainCheck.allowed) {
+      return domainCheck.response
     }
 
     // Check video metadata cache
@@ -137,7 +136,7 @@ export async function GET(
       const proxyAttempts = getProxiesForRacing(3)
 
       if (proxyAttempts.length === 0) {
-        await domainCheck.logRequest(500, Date.now() - requestStart)
+        domainCheck.logRequest(500, Date.now() - requestStart).catch(() => {})
         console.error('[Stream API] No proxies available')
         throw new Error('No proxies available')
       }
@@ -190,7 +189,7 @@ export async function GET(
             }
           }
         }
-        await domainCheck.logRequest(500, Date.now() - requestStart)
+        domainCheck.logRequest(500, Date.now() - requestStart).catch(() => {})
         console.error('[Stream API] ❌ All proxy attempts failed')
         throw new Error('Failed to fetch video information')
       }
@@ -223,7 +222,7 @@ export async function GET(
     }
 
     if (!mediaDefinition) {
-      await domainCheck.logRequest(404, Date.now() - requestStart)
+      domainCheck.logRequest(404, Date.now() - requestStart).catch(() => {})
       console.warn(`[Stream API] No qualities available for video ${id}. Available: ${availableQualities}`)
       return NextResponse.json(
         { error: 'No video qualities available' },
@@ -267,20 +266,21 @@ export async function GET(
         m3u8Content: variantM3u8,
         baseUrl: variantUrl,
         videoId: id,
-        segmentProxyMode: 'cors',
+        segmentProxyMode: 'passthrough',
       })
       const modifiedM3u8 = processed.content
 
       // Cache the response
       setCachedM3u8(m3u8CacheKey, modifiedM3u8)
 
-      await domainCheck.logRequest(200, Date.now() - requestStart)
+      // Non-blocking logging
+      domainCheck.logRequest(200, Date.now() - requestStart).catch(() => {})
       console.log(`[Stream API] ✓ Stream generated successfully for video ${id} (quality: ${quality}p, duration: ${Date.now() - requestStart}ms)`)
 
       return new Response(modifiedM3u8, {
         headers: {
           'Content-Type': 'application/vnd.apple.mpegurl',
-          'Cache-Control': 'public, max-age=30',
+          'Cache-Control': 'public, max-age=600',
           'Access-Control-Allow-Origin': '*',
         },
       })
@@ -291,27 +291,26 @@ export async function GET(
       m3u8Content: originalM3u8,
       baseUrl: originalM3u8Url,
       videoId: id,
-      segmentProxyMode: 'cors',
+      segmentProxyMode: 'passthrough',
     })
     const modifiedM3u8 = processed.content
 
     // Cache the response
     setCachedM3u8(m3u8CacheKey, modifiedM3u8)
 
-    // Log successful request
-    await domainCheck.logRequest(200, Date.now() - requestStart)
+    // Non-blocking logging
+    domainCheck.logRequest(200, Date.now() - requestStart).catch(() => {})
     console.log(`[Stream API] ✓ Stream generated successfully for video ${id} (quality: ${quality}p, duration: ${Date.now() - requestStart}ms)`)
 
     return new Response(modifiedM3u8, {
       headers: {
         'Content-Type': 'application/vnd.apple.mpegurl',
-        'Cache-Control': 'public, max-age=30',
+        'Cache-Control': 'public, max-age=600',
         'Access-Control-Allow-Origin': '*',
       },
     })
 
   } catch (error) {
-    await domainCheck.logRequest(500, Date.now() - requestStart)
     console.error('[Stream API] ❌ Failed to generate stream:', error instanceof Error ? error.message : error)
     return NextResponse.json(
       { error: 'Failed to generate stream' },
