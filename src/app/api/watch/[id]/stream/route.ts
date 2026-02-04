@@ -99,6 +99,14 @@ export async function GET(
       )
     }
 
+    // Allow cache bypass for debugging
+    const fresh = request.nextUrl.searchParams.get('fresh') === '1'
+    if (fresh) {
+      videoCache.delete(id)
+      m3u8Cache.delete(`${id}:${quality}`)
+      console.log(`[Stream API] Cache cleared for video ${id}`)
+    }
+
     // Check m3u8 response cache FIRST (before domain check to avoid DB hit on hot path)
     const m3u8CacheKey = `${id}:${quality}`
     const cachedM3u8 = getCachedM3u8(m3u8CacheKey)

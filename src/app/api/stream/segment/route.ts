@@ -126,13 +126,14 @@ export async function GET(request: NextRequest) {
 
     // Fetch the segment - use proxy for CDN domains (they validate IP in tokens)
     let response: Response
+    let proxyLabel = 'direct'
 
     if (isCdnDomain(decodedUrl)) {
       // Use proxy index (deterministic across serverless instances) to get the
       // same proxy that generated CDN tokens. Fall back to random proxy.
       const proxyIdx = pxParam ? parseInt(pxParam, 10) : -1
       let proxyAgent = proxyIdx >= 0 ? getAgentByIndex(proxyIdx) : null
-      let proxyLabel = proxyIdx >= 0 ? `index:${proxyIdx}` : ''
+      proxyLabel = proxyIdx >= 0 ? (proxyAgent ? `index:${proxyIdx}` : `index:${proxyIdx}(miss)`) : 'no-index'
 
       if (!proxyAgent) {
         const randomProxy = getRandomProxy('segment')
@@ -157,7 +158,7 @@ export async function GET(request: NextRequest) {
     if (!response.ok && response.status !== 206) {
       const errorBody = await response.text().catch(() => '')
       const respHeaders = Object.fromEntries(response.headers.entries())
-      console.error(`[Segment Proxy] Failed: ${response.status} | URL: ${decodedUrl.substring(0, 120)} | proxy: ${pxParam || 'none'}`)
+      console.error(`[Segment Proxy] Failed: ${response.status} | URL: ${decodedUrl.substring(0, 120)} | proxy: ${proxyLabel}`)
       return NextResponse.json(
         {
           error: `Failed to fetch segment: ${response.status}`,
@@ -166,7 +167,8 @@ export async function GET(request: NextRequest) {
             fetchedUrl: decodedUrl,
             cdnHeaders: respHeaders,
             cdnBody: errorBody.substring(0, 200),
-            proxyIndex: pxParam || 'none',
+            proxyMode: proxyLabel,
+            pxParam: pxParam || 'none',
           }
         },
         { status: response.status }
