@@ -67,12 +67,15 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch the segment
+    console.log(`[Segment Proxy] Fetching: ${decodedUrl.substring(0, 120)}...`)
     const response = await fetch(decodedUrl, {
       headers: fetchHeaders,
+      redirect: 'follow',
     })
 
     if (!response.ok && response.status !== 206) {
-      console.error(`[Segment Proxy] Failed to fetch segment: ${response.status} ${response.statusText}`)
+      const errorBody = await response.text().catch(() => '')
+      console.error(`[Segment Proxy] Failed: ${response.status} ${response.statusText} | URL: ${decodedUrl} | Body: ${errorBody.substring(0, 200)}`)
       return NextResponse.json(
         { error: `Failed to fetch segment: ${response.status}` },
         { status: response.status }
