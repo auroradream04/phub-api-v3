@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PornHub } from 'pornhub.js'
-import { getProxiesForRacing, reportProxySuccess, reportProxyFailure } from '@/lib/proxy'
+import { getProxiesForRacing, reportProxySuccess, reportProxyFailure, createProxySession } from '@/lib/proxy'
 import { checkAndLogDomain } from '@/lib/domain-middleware'
 import { processM3u8, isMasterPlaylist, extractFirstVariantUrl } from '@/lib/m3u8-processor'
 
@@ -17,6 +17,7 @@ interface CachedMediaDefinition {
 
 interface CachedVideo {
   mediaDefinitions: CachedMediaDefinition[]
+  winnerProxyUrl: string
   cachedAt: number
 }
 
@@ -35,7 +36,7 @@ function getCachedVideo(videoId: string): CachedVideo | null {
   return cached
 }
 
-function setCachedVideo(videoId: string, mediaDefinitions: CachedMediaDefinition[]): void {
+function setCachedVideo(videoId: string, mediaDefinitions: CachedMediaDefinition[], winnerProxyUrl: string): void {
   // Evict oldest entries if cache is full
   if (videoCache.size >= MAX_CACHE_SIZE) {
     const oldestKey = videoCache.keys().next().value
@@ -44,6 +45,7 @@ function setCachedVideo(videoId: string, mediaDefinitions: CachedMediaDefinition
 
   videoCache.set(videoId, {
     mediaDefinitions,
+    winnerProxyUrl,
     cachedAt: Date.now()
   })
 }
@@ -120,10 +122,14 @@ export async function GET(
     // Check video metadata cache
     const cached = getCachedVideo(id)
     let mediaDefinitions: CachedMediaDefinition[]
+    let proxySessionId: string | null = null
 
     if (cached) {
       console.log(`[Stream API] ✓ Cache hit for video ${id}`)
       mediaDefinitions = cached.mediaDefinitions
+      if (cached.winnerProxyUrl) {
+        proxySessionId = createProxySession(cached.winnerProxyUrl)
+      }
     } else {
       // Get 3 unique proxies for racing (health-aware selection)
       const proxyAttempts = getProxiesForRacing(3)
@@ -189,8 +195,9 @@ export async function GET(
 
       // Cache the result
       mediaDefinitions = videoInfo.mediaDefinitions
-      setCachedVideo(id, mediaDefinitions)
-      console.log(`[Stream API] Cached video ${id} (${mediaDefinitions.length} qualities)`)
+      setCachedVideo(id, mediaDefinitions, winnerProxyId!)
+      proxySessionId = createProxySession(winnerProxyId!)
+      console.log(`[Stream API] Cached video ${id} (${mediaDefinitions.length} qualities, proxy session: ${proxySessionId})`)
     }
 
     // Quality priority: 720p -> 480p -> 240p
@@ -260,6 +267,7 @@ export async function GET(
         baseUrl: variantUrl,
         videoId: id,
         segmentProxyMode: 'full',
+        proxySessionId: proxySessionId || undefined,
       })
       const modifiedM3u8 = processed.content
 
@@ -285,6 +293,7 @@ export async function GET(
       baseUrl: originalM3u8Url,
       videoId: id,
       segmentProxyMode: 'full',
+      proxySessionId: proxySessionId || undefined,
     })
     const modifiedM3u8 = processed.content
 

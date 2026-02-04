@@ -20,6 +20,7 @@ export interface M3u8ProcessorOptions {
   adsEnabled?: boolean         // Default: true
   segmentsToSkip?: number      // Override segments to skip
   skipFormatDetection?: boolean // Skip format detection (use default format)
+  proxySessionId?: string      // Proxy session ID for consistent CDN token validation
 }
 
 export interface ProcessedM3u8Result {
@@ -267,6 +268,7 @@ export async function processM3u8(options: M3u8ProcessorOptions): Promise<Proces
     adsEnabled = true,
     segmentsToSkip: overrideSegmentsToSkip,
     skipFormatDetection = false,
+    proxySessionId,
   } = options
 
   // Strip existing CDN pre-roll ads before processing
@@ -505,13 +507,13 @@ export async function processM3u8(options: M3u8ProcessorOptions): Promise<Proces
       }
 
       // Apply proxy based on mode
-      segmentUrl = applySegmentProxy(segmentUrl, segmentProxyMode, corsProxyUrl, segmentProxyUrl)
+      segmentUrl = applySegmentProxy(segmentUrl, segmentProxyMode, corsProxyUrl, segmentProxyUrl, proxySessionId)
 
       result.push(segmentUrl)
       segmentCount++
     } else if (line.startsWith('#EXT-X-KEY:')) {
       // Rewrite encryption key URI to absolute URL
-      const rewrittenKey = rewriteKeyUri(line, baseUrlObj, basePath, segmentProxyMode, corsProxyUrl, segmentProxyUrl)
+      const rewrittenKey = rewriteKeyUri(line, baseUrlObj, basePath, segmentProxyMode, corsProxyUrl, segmentProxyUrl, proxySessionId)
 
       // If we have a pre-roll ad that hasn't been injected yet, defer the encryption key
       // so we can output METHOD=NONE for the ad first
@@ -557,7 +559,8 @@ function applySegmentProxy(
   segmentUrl: string,
   mode: SegmentProxyMode,
   corsProxyUrl: string,
-  segmentProxyUrl?: string
+  segmentProxyUrl?: string,
+  proxySessionId?: string
 ): string {
   const isOwnApi = segmentUrl.includes(process.env.NEXTAUTH_URL || 'md8av.com')
 
@@ -571,10 +574,13 @@ function applySegmentProxy(
       // Use external CORS proxy
       return `${corsProxyUrl}${segmentUrl}`
 
-    case 'full':
+    case 'full': {
       // Route through our own segment proxy
       const proxyBase = segmentProxyUrl || `${process.env.NEXTAUTH_URL || 'http://md8av.com'}/api/stream/segment`
-      return `${proxyBase}?url=${encodeURIComponent(segmentUrl)}`
+      let fullUrl = `${proxyBase}?url=${encodeURIComponent(segmentUrl)}`
+      if (proxySessionId) fullUrl += `&pid=${proxySessionId}`
+      return fullUrl
+    }
 
     case 'passthrough':
       // No modification
@@ -596,7 +602,8 @@ function rewriteKeyUri(
   basePath: string,
   mode: SegmentProxyMode,
   corsProxyUrl: string,
-  segmentProxyUrl?: string
+  segmentProxyUrl?: string,
+  proxySessionId?: string
 ): string {
   // Match URI="..." or URI='...'
   const uriMatch = line.match(/URI="([^"]+)"|URI='([^']+)'/)
@@ -620,6 +627,7 @@ function rewriteKeyUri(
   } else if (mode === 'full') {
     const proxyBase = segmentProxyUrl || `${process.env.NEXTAUTH_URL || 'http://md8av.com'}/api/stream/segment`
     absoluteUri = `${proxyBase}?url=${encodeURIComponent(absoluteUri)}`
+    if (proxySessionId) absoluteUri += `&pid=${proxySessionId}`
   }
 
   return line.replace(originalUri, absoluteUri)

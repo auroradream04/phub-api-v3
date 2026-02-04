@@ -442,6 +442,37 @@ export function getProxyList(): string[] {
   return proxyList.map(p => p.url)
 }
 
+// ============================================
+// PROXY SESSIONS
+// Maintains consistent proxy identity for CDN token validation.
+// CDN tokens (ipa=1) are tied to the IP that fetched the video metadata.
+// Segment fetches must use the SAME proxy to match the token's IP.
+// ============================================
+const PROXY_SESSION_TTL = 4 * 60 * 60 * 1000
+const proxySessionStore = new Map<string, { proxyUrl: string, createdAt: number }>()
+
+export function createProxySession(proxyUrl: string): string {
+  if (proxySessionStore.size >= 2000) {
+    const now = Date.now()
+    for (const [id, s] of proxySessionStore) {
+      if (now - s.createdAt > PROXY_SESSION_TTL) proxySessionStore.delete(id)
+    }
+  }
+  const id = Math.random().toString(36).slice(2, 10)
+  proxySessionStore.set(id, { proxyUrl, createdAt: Date.now() })
+  return id
+}
+
+export function getSessionAgent(sessionId: string): ProxyAgent | null {
+  const session = proxySessionStore.get(sessionId)
+  if (!session) return null
+  if (Date.now() - session.createdAt > PROXY_SESSION_TTL) {
+    proxySessionStore.delete(sessionId)
+    return null
+  }
+  return createAgent(session.proxyUrl)
+}
+
 // Periodic health decay (prevent stale data from dominating)
 setInterval(() => {
   for (const health of proxyHealth.values()) {
