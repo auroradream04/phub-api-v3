@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PornHub } from 'pornhub.js'
-import { getProxiesForRacing, reportProxySuccess, reportProxyFailure, createProxySession } from '@/lib/proxy'
+import { getProxiesForRacing, reportProxySuccess, reportProxyFailure, createProxySession, fetchViaProxyAgent } from '@/lib/proxy'
 import { checkAndLogDomain } from '@/lib/domain-middleware'
 import { processM3u8, isMasterPlaylist, extractFirstVariantUrl } from '@/lib/m3u8-processor'
 
@@ -123,12 +123,14 @@ export async function GET(
     const cached = getCachedVideo(id)
     let mediaDefinitions: CachedMediaDefinition[]
     let proxySessionId: string | null = null
+    let winnerProxyUrl: string | null = null
 
     if (cached) {
       console.log(`[Stream API] ✓ Cache hit for video ${id}`)
       mediaDefinitions = cached.mediaDefinitions
-      if (cached.winnerProxyUrl) {
-        proxySessionId = createProxySession(cached.winnerProxyUrl)
+      winnerProxyUrl = cached.winnerProxyUrl || null
+      if (winnerProxyUrl) {
+        proxySessionId = createProxySession(winnerProxyUrl)
       }
     } else {
       // Get 3 unique proxies for racing (health-aware selection)
@@ -195,8 +197,9 @@ export async function GET(
 
       // Cache the result
       mediaDefinitions = videoInfo.mediaDefinitions
-      setCachedVideo(id, mediaDefinitions, winnerProxyId!)
-      proxySessionId = createProxySession(winnerProxyId!)
+      winnerProxyUrl = winnerProxyId!
+      setCachedVideo(id, mediaDefinitions, winnerProxyUrl)
+      proxySessionId = createProxySession(winnerProxyUrl)
       console.log(`[Stream API] Cached video ${id} (${mediaDefinitions.length} qualities, proxy session: ${proxySessionId})`)
     }
 
@@ -231,16 +234,23 @@ export async function GET(
     }
 
     const originalM3u8Url = mediaDefinition.videoUrl
-    console.log(`[Stream API] Fetching m3u8 playlist from: ${originalM3u8Url}`)
+    console.log(`[Stream API] Fetching m3u8 playlist via ${winnerProxyUrl ? 'proxy' : 'direct'}: ${originalM3u8Url}`)
 
-    const m3u8Response = await fetch(originalM3u8Url)
-
-    if (!m3u8Response.ok) {
-      console.error(`[Stream API] Failed to fetch m3u8 playlist: ${m3u8Response.status} ${m3u8Response.statusText}`)
-      throw new Error(`Failed to fetch m3u8: ${m3u8Response.status}`)
+    let originalM3u8: string
+    if (winnerProxyUrl) {
+      const m3u8Result = await fetchViaProxyAgent(originalM3u8Url, winnerProxyUrl)
+      if (m3u8Result.status !== 200) {
+        console.error(`[Stream API] Failed to fetch m3u8 via proxy: ${m3u8Result.status}`)
+        throw new Error(`Failed to fetch m3u8: ${m3u8Result.status}`)
+      }
+      originalM3u8 = m3u8Result.body
+    } else {
+      const m3u8Response = await fetch(originalM3u8Url)
+      if (!m3u8Response.ok) {
+        throw new Error(`Failed to fetch m3u8: ${m3u8Response.status}`)
+      }
+      originalM3u8 = await m3u8Response.text()
     }
-
-    const originalM3u8 = await m3u8Response.text()
     console.log(`[Stream API] M3u8 playlist fetched successfully (${originalM3u8.length} bytes)`)
 
     if (isMasterPlaylist(originalM3u8)) {
@@ -252,15 +262,22 @@ export async function GET(
         throw new Error('Could not extract variant playlist URL')
       }
 
-      console.log(`[Stream API] Fetching variant playlist from: ${variantUrl}`)
-      const variantResponse = await fetch(variantUrl)
-
-      if (!variantResponse.ok) {
-        console.error(`[Stream API] Failed to fetch variant playlist: ${variantResponse.status} ${variantResponse.statusText}`)
-        throw new Error(`Failed to fetch variant playlist: ${variantResponse.status}`)
+      console.log(`[Stream API] Fetching variant playlist via ${winnerProxyUrl ? 'proxy' : 'direct'}: ${variantUrl}`)
+      let variantM3u8: string
+      if (winnerProxyUrl) {
+        const variantResult = await fetchViaProxyAgent(variantUrl, winnerProxyUrl)
+        if (variantResult.status !== 200) {
+          console.error(`[Stream API] Failed to fetch variant via proxy: ${variantResult.status}`)
+          throw new Error(`Failed to fetch variant playlist: ${variantResult.status}`)
+        }
+        variantM3u8 = variantResult.body
+      } else {
+        const variantResponse = await fetch(variantUrl)
+        if (!variantResponse.ok) {
+          throw new Error(`Failed to fetch variant playlist: ${variantResponse.status}`)
+        }
+        variantM3u8 = await variantResponse.text()
       }
-
-      const variantM3u8 = await variantResponse.text()
       console.log(`[Stream API] Variant playlist fetched (${variantM3u8.length} bytes), injecting ads...`)
       const processed = await processM3u8({
         m3u8Content: variantM3u8,

@@ -1,5 +1,6 @@
 import fs from 'fs'
 import path from 'path'
+import https from 'node:https'
 import { HttpsProxyAgent } from 'https-proxy-agent'
 import { HttpProxyAgent } from 'http-proxy-agent'
 import { SocksProxyAgent } from 'socks-proxy-agent'
@@ -471,6 +472,52 @@ export function getSessionAgent(sessionId: string): ProxyAgent | null {
     return null
   }
   return createAgent(session.proxyUrl)
+}
+
+// ============================================
+// PROXY-ROUTED FETCH
+// Fetches a URL through a specific proxy using CONNECT tunneling.
+// Used for m3u8/variant playlist fetches that must match the proxy
+// IP used for video metadata (CDN tokens are IP-bound).
+// ============================================
+export function fetchViaProxyAgent(
+  url: string,
+  proxyUrl: string
+): Promise<{ status: number; body: string }> {
+  const agent = createAgent(proxyUrl)
+  return new Promise((resolve, reject) => {
+    const parsedUrl = new URL(url)
+    const req = https.request(
+      {
+        hostname: parsedUrl.hostname,
+        port: 443,
+        path: parsedUrl.pathname + parsedUrl.search,
+        method: 'GET',
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          Host: parsedUrl.hostname,
+        },
+        agent: agent as import('https').Agent,
+      },
+      (res) => {
+        const chunks: Buffer[] = []
+        res.on('data', (chunk: Buffer) => chunks.push(chunk))
+        res.on('end', () => {
+          resolve({
+            status: res.statusCode || 500,
+            body: Buffer.concat(chunks).toString('utf-8'),
+          })
+        })
+        res.on('error', reject)
+      }
+    )
+    req.on('error', reject)
+    req.setTimeout(30000, () => {
+      req.destroy()
+      reject(new Error('Proxy fetch timeout'))
+    })
+    req.end()
+  })
 }
 
 // Periodic health decay (prevent stale data from dominating)
