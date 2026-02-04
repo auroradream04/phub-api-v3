@@ -40,13 +40,10 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Decode URL if it's encoded
-    let decodedUrl: string
-    try {
-      decodedUrl = decodeURIComponent(url)
-    } catch {
-      decodedUrl = url
-    }
+    // searchParams.get() already decodes the URL parameter — do NOT
+    // decodeURIComponent again or it will corrupt percent-encoded values
+    // inside query strings (e.g. hash=abc%2Fdef → hash=abc/def → 404)
+    const decodedUrl = url
 
     // SSRF protection
     if (!isUrlSafe(decodedUrl)) {
@@ -132,12 +129,7 @@ export async function HEAD(request: NextRequest) {
       )
     }
 
-    let decodedUrl: string
-    try {
-      decodedUrl = decodeURIComponent(url)
-    } catch {
-      decodedUrl = url
-    }
+    const decodedUrl = url
 
     if (!isUrlSafe(decodedUrl)) {
       return NextResponse.json(

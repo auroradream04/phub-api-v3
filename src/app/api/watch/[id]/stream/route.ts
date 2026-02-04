@@ -88,18 +88,11 @@ export async function GET(
   const { id } = await params
 
   try {
-    const quality = request.nextUrl.searchParams.get('q')
+    const quality = request.nextUrl.searchParams.get('q') || '720'
 
     if (!id || id.trim() === '') {
       return NextResponse.json(
         { error: 'Video ID is required' },
-        { status: 400 }
-      )
-    }
-
-    if (!quality) {
-      return NextResponse.json(
-        { error: 'Quality parameter (q) is required' },
         { status: 400 }
       )
     }
