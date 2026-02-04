@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PornHub } from 'pornhub.js'
-import { getProxiesForRacing, reportProxySuccess, reportProxyFailure, getProxyIndex, fetchViaProxyAgent } from '@/lib/proxy'
+import { getProxiesForRacing, reportProxySuccess, reportProxyFailure, fetchViaProxyAgent } from '@/lib/proxy'
 import { checkAndLogDomain } from '@/lib/domain-middleware'
 import { processM3u8, isMasterPlaylist, extractFirstVariantUrl } from '@/lib/m3u8-processor'
 
@@ -130,16 +130,12 @@ export async function GET(
     // Check video metadata cache
     const cached = getCachedVideo(id)
     let mediaDefinitions: CachedMediaDefinition[]
-    let proxyIndex = -1
     let winnerProxyUrl: string | null = null
 
     if (cached) {
       console.log(`[Stream API] ✓ Cache hit for video ${id}`)
       mediaDefinitions = cached.mediaDefinitions
       winnerProxyUrl = cached.winnerProxyUrl || null
-      if (winnerProxyUrl) {
-        proxyIndex = getProxyIndex(winnerProxyUrl)
-      }
     } else {
       // Get 3 unique proxies for racing (health-aware selection)
       const proxyAttempts = getProxiesForRacing(3)
@@ -207,8 +203,7 @@ export async function GET(
       mediaDefinitions = videoInfo.mediaDefinitions
       winnerProxyUrl = winnerProxyId!
       setCachedVideo(id, mediaDefinitions, winnerProxyUrl)
-      proxyIndex = getProxyIndex(winnerProxyUrl)
-      console.log(`[Stream API] Cached video ${id} (${mediaDefinitions.length} qualities, proxy index: ${proxyIndex})`)
+      console.log(`[Stream API] Cached video ${id} (${mediaDefinitions.length} qualities)`)
     }
 
     // Quality priority: 720p -> 480p -> 240p
@@ -291,8 +286,7 @@ export async function GET(
         m3u8Content: variantM3u8,
         baseUrl: variantUrl,
         videoId: id,
-        segmentProxyMode: 'full',
-        proxyIndex: proxyIndex >= 0 ? proxyIndex : undefined,
+        segmentProxyMode: 'cors',
       })
       const modifiedM3u8 = processed.content
 
@@ -317,8 +311,7 @@ export async function GET(
       m3u8Content: originalM3u8,
       baseUrl: originalM3u8Url,
       videoId: id,
-      segmentProxyMode: 'full',
-      proxyIndex: proxyIndex >= 0 ? proxyIndex : undefined,
+      segmentProxyMode: 'cors',
     })
     const modifiedM3u8 = processed.content
 
