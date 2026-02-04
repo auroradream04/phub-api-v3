@@ -511,7 +511,7 @@ export async function processM3u8(options: M3u8ProcessorOptions): Promise<Proces
       segmentCount++
     } else if (line.startsWith('#EXT-X-KEY:')) {
       // Rewrite encryption key URI to absolute URL
-      const rewrittenKey = rewriteKeyUri(line, baseUrlObj, basePath, segmentProxyMode, corsProxyUrl)
+      const rewrittenKey = rewriteKeyUri(line, baseUrlObj, basePath, segmentProxyMode, corsProxyUrl, segmentProxyUrl)
 
       // If we have a pre-roll ad that hasn't been injected yet, defer the encryption key
       // so we can output METHOD=NONE for the ad first
@@ -595,7 +595,8 @@ function rewriteKeyUri(
   baseUrlObj: URL,
   basePath: string,
   mode: SegmentProxyMode,
-  corsProxyUrl: string
+  corsProxyUrl: string,
+  segmentProxyUrl?: string
 ): string {
   // Match URI="..." or URI='...'
   const uriMatch = line.match(/URI="([^"]+)"|URI='([^']+)'/)
@@ -603,27 +604,22 @@ function rewriteKeyUri(
 
   const originalUri = uriMatch[1] || uriMatch[2]
 
-  // Skip if already absolute
-  if (originalUri.startsWith('http')) {
-    // Still might need CORS proxy
-    if (mode === 'cors') {
-      const proxiedUri = `${corsProxyUrl}${originalUri}`
-      return line.replace(originalUri, proxiedUri)
-    }
-    return line
-  }
-
-  // Resolve relative/absolute path
+  // Resolve to absolute URL first
   let absoluteUri: string
-  if (originalUri.startsWith('/')) {
+  if (originalUri.startsWith('http')) {
+    absoluteUri = originalUri
+  } else if (originalUri.startsWith('/')) {
     absoluteUri = `${baseUrlObj.origin}${originalUri}`
   } else {
     absoluteUri = `${baseUrlObj.origin}${basePath}/${originalUri}`
   }
 
-  // Apply CORS proxy if needed
+  // Apply proxy based on mode
   if (mode === 'cors') {
     absoluteUri = `${corsProxyUrl}${absoluteUri}`
+  } else if (mode === 'full') {
+    const proxyBase = segmentProxyUrl || `${process.env.NEXTAUTH_URL || 'http://md8av.com'}/api/stream/segment`
+    absoluteUri = `${proxyBase}?url=${encodeURIComponent(absoluteUri)}`
   }
 
   return line.replace(originalUri, absoluteUri)
