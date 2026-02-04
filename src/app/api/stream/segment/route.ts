@@ -57,9 +57,10 @@ export async function GET(request: NextRequest) {
     // Get Range header for partial content support
     const rangeHeader = request.headers.get('range')
 
-    // Prepare fetch headers
+    // Prepare fetch headers — Referer is required by CDN hotlink protection
     const fetchHeaders: Record<string, string> = {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      'Referer': 'https://www.pornhub.com/',
     }
 
     if (rangeHeader) {
@@ -150,6 +151,7 @@ export async function HEAD(request: NextRequest) {
       method: 'HEAD',
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Referer': 'https://www.pornhub.com/',
       },
     })
 
