@@ -475,6 +475,20 @@ export function getSessionAgent(sessionId: string): ProxyAgent | null {
 }
 
 // ============================================
+// PROXY INDEX LOOKUP (deterministic across instances)
+// ============================================
+export function getProxyIndex(proxyUrl: string): number {
+  if (!proxyListLoaded) loadProxyList()
+  return proxyList.findIndex(p => p.url === proxyUrl)
+}
+
+export function getAgentByIndex(index: number): ProxyAgent | null {
+  if (!proxyListLoaded) loadProxyList()
+  if (index < 0 || index >= proxyList.length) return null
+  return getOrCreateAgent(proxyList[index])
+}
+
+// ============================================
 // PROXY-ROUTED FETCH
 // Fetches a URL through a specific proxy using CONNECT tunneling.
 // Used for m3u8/variant playlist fetches that must match the proxy

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PornHub } from 'pornhub.js'
-import { getProxiesForRacing, reportProxySuccess, reportProxyFailure, createProxySession, fetchViaProxyAgent } from '@/lib/proxy'
+import { getProxiesForRacing, reportProxySuccess, reportProxyFailure, getProxyIndex, fetchViaProxyAgent } from '@/lib/proxy'
 import { checkAndLogDomain } from '@/lib/domain-middleware'
 import { processM3u8, isMasterPlaylist, extractFirstVariantUrl } from '@/lib/m3u8-processor'
 
@@ -122,7 +122,7 @@ export async function GET(
     // Check video metadata cache
     const cached = getCachedVideo(id)
     let mediaDefinitions: CachedMediaDefinition[]
-    let proxySessionId: string | null = null
+    let proxyIndex = -1
     let winnerProxyUrl: string | null = null
 
     if (cached) {
@@ -130,7 +130,7 @@ export async function GET(
       mediaDefinitions = cached.mediaDefinitions
       winnerProxyUrl = cached.winnerProxyUrl || null
       if (winnerProxyUrl) {
-        proxySessionId = createProxySession(winnerProxyUrl)
+        proxyIndex = getProxyIndex(winnerProxyUrl)
       }
     } else {
       // Get 3 unique proxies for racing (health-aware selection)
@@ -199,8 +199,8 @@ export async function GET(
       mediaDefinitions = videoInfo.mediaDefinitions
       winnerProxyUrl = winnerProxyId!
       setCachedVideo(id, mediaDefinitions, winnerProxyUrl)
-      proxySessionId = createProxySession(winnerProxyUrl)
-      console.log(`[Stream API] Cached video ${id} (${mediaDefinitions.length} qualities, proxy session: ${proxySessionId})`)
+      proxyIndex = getProxyIndex(winnerProxyUrl)
+      console.log(`[Stream API] Cached video ${id} (${mediaDefinitions.length} qualities, proxy index: ${proxyIndex})`)
     }
 
     // Quality priority: 720p -> 480p -> 240p
@@ -284,7 +284,7 @@ export async function GET(
         baseUrl: variantUrl,
         videoId: id,
         segmentProxyMode: 'full',
-        proxySessionId: proxySessionId || undefined,
+        proxyIndex: proxyIndex >= 0 ? proxyIndex : undefined,
       })
       const modifiedM3u8 = processed.content
 
@@ -310,7 +310,7 @@ export async function GET(
       baseUrl: originalM3u8Url,
       videoId: id,
       segmentProxyMode: 'full',
-      proxySessionId: proxySessionId || undefined,
+      proxyIndex: proxyIndex >= 0 ? proxyIndex : undefined,
     })
     const modifiedM3u8 = processed.content
 

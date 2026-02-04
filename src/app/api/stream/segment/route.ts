@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import https from 'node:https'
 import type { IncomingMessage } from 'node:http'
-import { getRandomProxy, getSessionAgent } from '@/lib/proxy'
+import { getRandomProxy, getAgentByIndex } from '@/lib/proxy'
 
 // SSRF protection - block private IP ranges
 const BLOCKED_PATTERNS = [
@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
     // Next.js URL normalization that can mangle percent-encoded values
     const parsedUrl = new URL(request.url)
     const decodedUrl = parsedUrl.searchParams.get('url')
-    const proxySessionId = parsedUrl.searchParams.get('pid')
+    const pxParam = parsedUrl.searchParams.get('px')
 
     if (!decodedUrl) {
       return NextResponse.json(
@@ -128,10 +128,11 @@ export async function GET(request: NextRequest) {
     let response: Response
 
     if (isCdnDomain(decodedUrl)) {
-      // Try session-specific proxy first (matches the proxy that generated CDN tokens),
-      // fall back to random proxy
-      let proxyAgent = proxySessionId ? getSessionAgent(proxySessionId) : null
-      let proxyLabel = proxySessionId ? `session:${proxySessionId}` : ''
+      // Use proxy index (deterministic across serverless instances) to get the
+      // same proxy that generated CDN tokens. Fall back to random proxy.
+      const proxyIdx = pxParam ? parseInt(pxParam, 10) : -1
+      let proxyAgent = proxyIdx >= 0 ? getAgentByIndex(proxyIdx) : null
+      let proxyLabel = proxyIdx >= 0 ? `index:${proxyIdx}` : ''
 
       if (!proxyAgent) {
         const randomProxy = getRandomProxy('segment')
@@ -156,7 +157,7 @@ export async function GET(request: NextRequest) {
     if (!response.ok && response.status !== 206) {
       const errorBody = await response.text().catch(() => '')
       const respHeaders = Object.fromEntries(response.headers.entries())
-      console.error(`[Segment Proxy] Failed: ${response.status} | URL: ${decodedUrl.substring(0, 120)} | proxy: ${proxySessionId || 'none'}`)
+      console.error(`[Segment Proxy] Failed: ${response.status} | URL: ${decodedUrl.substring(0, 120)} | proxy: ${pxParam || 'none'}`)
       return NextResponse.json(
         {
           error: `Failed to fetch segment: ${response.status}`,
@@ -165,7 +166,7 @@ export async function GET(request: NextRequest) {
             fetchedUrl: decodedUrl,
             cdnHeaders: respHeaders,
             cdnBody: errorBody.substring(0, 200),
-            proxySession: proxySessionId || 'none',
+            proxyIndex: pxParam || 'none',
           }
         },
         { status: response.status }
