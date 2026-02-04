@@ -31,21 +31,19 @@ function isUrlSafe(url: string): boolean {
 
 export async function GET(request: NextRequest) {
   try {
-    // Extract url param from raw URL to avoid Next.js URL normalization issues
-    // request.nextUrl.searchParams can double-decode percent-encoded values
-    const rawUrl = request.url
-    const urlParamMatch = rawUrl.match(/[?&]url=([^&]+)/)
-    const rawUrlParam = urlParamMatch ? urlParamMatch[1] : null
+    // Use standard URL parser instead of request.nextUrl to avoid
+    // Next.js URL normalization that can mangle percent-encoded values
+    const parsedUrl = new URL(request.url)
+    const decodedUrl = parsedUrl.searchParams.get('url')
 
-    if (!rawUrlParam) {
+    if (!decodedUrl) {
       return NextResponse.json(
         { error: 'URL parameter is required' },
         { status: 400 }
       )
     }
 
-    // Single decode of the URL parameter
-    const decodedUrl = decodeURIComponent(rawUrlParam)
+    console.log(`[Segment Proxy] URL param decoded to: ${decodedUrl.substring(0, 150)}`)
 
     // SSRF protection
     if (!isUrlSafe(decodedUrl)) {
@@ -125,18 +123,15 @@ export async function GET(request: NextRequest) {
 // Support HEAD requests for content info
 export async function HEAD(request: NextRequest) {
   try {
-    const rawUrl = request.url
-    const urlParamMatch = rawUrl.match(/[?&]url=([^&]+)/)
-    const rawUrlParam = urlParamMatch ? urlParamMatch[1] : null
+    const parsedUrl = new URL(request.url)
+    const decodedUrl = parsedUrl.searchParams.get('url')
 
-    if (!rawUrlParam) {
+    if (!decodedUrl) {
       return NextResponse.json(
         { error: 'URL parameter is required' },
         { status: 400 }
       )
     }
-
-    const decodedUrl = decodeURIComponent(rawUrlParam)
 
     if (!isUrlSafe(decodedUrl)) {
       return NextResponse.json(
