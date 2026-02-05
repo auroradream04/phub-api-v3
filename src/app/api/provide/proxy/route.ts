@@ -183,6 +183,10 @@ export async function GET(request: NextRequest) {
       } catch {
         // Keep as-is if decoding fails
       }
+
+      // Fix malformed URLs where first query param uses & instead of ?
+      // e.g., "https://api.com/vod/&ac=list" -> "https://api.com/vod/?ac=list"
+      targetUrl = targetUrl.replace(/^([^?]*?)&/, '$1?')
     }
 
     // Fallback to standard param extraction
