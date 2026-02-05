@@ -29,12 +29,6 @@ function isUrlSafe(url: string): boolean {
   }
 }
 
-// Fields that contain video playback URLs - ONLY these get rewritten
-const VIDEO_URL_FIELDS = new Set([
-  'vod_play_url',
-  'vod_down_url',
-])
-
 /**
  * Rewrite URLs in a vod_play_url string value
  * Supports formats like:
@@ -68,15 +62,17 @@ function rewriteUrlsInJson(jsonData: Record<string, unknown>, proxyBase: string)
     result.list = result.list.map(item => {
       if (typeof item === 'object' && item !== null) {
         const videoItem = item as Record<string, unknown>
-        return {
-          ...videoItem,
-          ...(videoItem.vod_play_url && typeof videoItem.vod_play_url === 'string' && {
-            vod_play_url: rewritePlayUrl(videoItem.vod_play_url, proxyBase),
-          }),
-          ...(videoItem.vod_down_url && typeof videoItem.vod_down_url === 'string' && {
-            vod_down_url: rewritePlayUrl(videoItem.vod_down_url, proxyBase),
-          }),
+        const newItem = { ...videoItem }
+
+        if (videoItem.vod_play_url && typeof videoItem.vod_play_url === 'string') {
+          newItem.vod_play_url = rewritePlayUrl(videoItem.vod_play_url, proxyBase)
         }
+
+        if (videoItem.vod_down_url && typeof videoItem.vod_down_url === 'string') {
+          newItem.vod_down_url = rewritePlayUrl(videoItem.vod_down_url, proxyBase)
+        }
+
+        return newItem
       }
       return item
     })
