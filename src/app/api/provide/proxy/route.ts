@@ -204,9 +204,10 @@ export async function GET(request: NextRequest) {
 
     const finalUrl = targetUrl
 
-    // Check cache - include trimStart in key so different trim values aren't cached together
+    // Check cache - include trimStart and player params in key so different values aren't cached together
     const trimStart = request.nextUrl.searchParams.get('trimStart')
-    const cacheKey = `${finalUrl}:${trimStart || '0'}`
+    const player = request.nextUrl.searchParams.get('player')
+    const cacheKey = `${finalUrl}:${trimStart || '0'}:${player || '0'}`
     const cached = getCached(cacheKey)
     if (cached) {
       console.log(`[VOD Proxy] Cache hit for ${finalUrl}`)
@@ -241,7 +242,9 @@ export async function GET(request: NextRequest) {
     const originalContent = await response.text()
 
     // Determine the base URL for our stream proxy
-    const extraParams = trimStart ? `&trimStart=${trimStart}` : ''
+    let extraParams = ''
+    if (trimStart) extraParams += `&trimStart=${trimStart}`
+    if (player) extraParams += `&player=${player}`
     const proxyBase = `${process.env.NEXTAUTH_URL || 'https://md8av.com'}/api/stream/proxy`
 
     let rewrittenContent: string
