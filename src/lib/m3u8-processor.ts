@@ -34,14 +34,29 @@ export interface ProcessedM3u8Result {
 }
 
 /**
- * Detect and strip existing CDN pre-roll ads from m3u8 playlist
+ * Extract segment URL path to identify segment sources
+ * Used to detect when ads (different URL source) are present
+ */
+function extractSegmentPath(segmentUrl: string): string {
+  try {
+    const url = new URL(segmentUrl.startsWith('http') ? segmentUrl : `https://example.com${segmentUrl}`)
+    // Extract the path up to the filename
+    return url.pathname.substring(0, url.pathname.lastIndexOf('/'))
+  } catch {
+    return segmentUrl
+  }
+}
+
+/**
+ * Detect and strip existing CDN ads from m3u8 playlist
  *
- * CDN ads typically have this pattern:
- * 1. #EXT-X-KEY:METHOD=NONE (or no key) - unencrypted ad segments
- * 2. Some segments (the ad)
- * 3. #EXT-X-DISCONTINUITY
- * 4. #EXT-X-KEY:METHOD=AES-128 - encrypted video
- * 5. Actual video segments
+ * Ads are identified by:
+ * 1. DISCONTINUITY markers separate ad sections from main video
+ * 2. Different segment URL sources (ads from different CDN paths)
+ * 3. Small segment counts (ads typically < 20 segments, ~60 seconds)
+ *
+ * Strips ALL ad instances (pre-roll, mid-roll, post-roll) so they can be
+ * replaced with your own ads via the ad injection system.
  *
  * Returns the cleaned m3u8 and count of stripped ad segments
  */
@@ -51,70 +66,103 @@ function stripCdnPrerollAds(m3u8Content: string): {
 } {
   const lines = m3u8Content.split('\n')
 
-  // Find the first DISCONTINUITY
-  let firstDiscontinuityIndex = -1
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i].trim() === '#EXT-X-DISCONTINUITY') {
-      firstDiscontinuityIndex = i
-      break
-    }
+  // Parse into sections separated by DISCONTINUITY markers
+  interface Section {
+    startIndex: number
+    endIndex: number
+    segmentCount: number
+    segmentPaths: Set<string>
   }
 
-  // No discontinuity = no CDN ad pattern
-  if (firstDiscontinuityIndex === -1) {
-    return { content: m3u8Content, strippedSegments: 0 }
-  }
-
-  // Check what comes after the discontinuity
-  // We're looking for: DISCONTINUITY followed by encryption key (METHOD=AES-128)
-  let hasEncryptionAfterDiscontinuity = false
-  for (let i = firstDiscontinuityIndex + 1; i < lines.length && i < firstDiscontinuityIndex + 5; i++) {
-    if (lines[i].includes('#EXT-X-KEY:') && lines[i].includes('METHOD=AES-128')) {
-      hasEncryptionAfterDiscontinuity = true
-      break
-    }
-  }
-
-  // Check if content before discontinuity is unencrypted or has METHOD=NONE
-  let isUnencryptedBeforeDiscontinuity = true
-  for (let i = 0; i < firstDiscontinuityIndex; i++) {
-    if (lines[i].includes('#EXT-X-KEY:') && lines[i].includes('METHOD=AES-128')) {
-      isUnencryptedBeforeDiscontinuity = false
-      break
-    }
-  }
-
-  // CDN ad pattern: unencrypted before DISCONTINUITY, encrypted after
-  if (!isUnencryptedBeforeDiscontinuity || !hasEncryptionAfterDiscontinuity) {
-    return { content: m3u8Content, strippedSegments: 0 }
-  }
-
-  // Count segments being stripped (before discontinuity)
-  let strippedSegments = 0
-  for (let i = 0; i < firstDiscontinuityIndex; i++) {
-    if (lines[i].startsWith('#EXTINF:')) {
-      strippedSegments++
-    }
-  }
-
-  // Only strip if it looks like a reasonable ad (< 60 seconds worth, assuming ~3s segments)
-  if (strippedSegments > 20) {
-    console.log(`[M3u8Processor] Found ${strippedSegments} segments before DISCONTINUITY - too many for an ad, skipping strip`)
-    return { content: m3u8Content, strippedSegments: 0 }
-  }
-
-  console.log(`[M3u8Processor] Detected CDN pre-roll ad: ${strippedSegments} segments, stripping...`)
-
-  // Build new m3u8 without the CDN ad
-  const result: string[] = []
-  let skipUntilDiscontinuity = false
-  let foundFirstDiscontinuity = false
-  let skippingInitialKey = true
+  const sections: Section[] = []
+  let currentSection: Section | null = null
+  let currentSegmentPaths = new Set<string>()
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]
 
-    // Copy header tags always
+    if (line.trim() === '#EXT-X-DISCONTINUITY') {
+      // Save current section
+      if (currentSection) {
+        currentSection.endIndex = i
+        currentSection.segmentPaths = currentSegmentPaths
+        sections.push(currentSection)
+      }
+      // Start new section
+      currentSection = {
+        startIndex: i + 1,
+        endIndex: lines.length,
+        segmentCount: 0,
+        segmentPaths: new Set()
+      }
+      currentSegmentPaths = new Set<string>()
+    } else if (currentSection && line.startsWith('#EXTINF:')) {
+      currentSection.segmentCount++
+      // Look ahead for the segment URL
+      if (i + 1 < lines.length) {
+        const nextLine = lines[i + 1]
+        if (!nextLine.startsWith('#')) {
+          currentSegmentPaths.add(extractSegmentPath(nextLine))
+        }
+      }
+    }
+  }
+
+  // Save final section
+  if (currentSection) {
+    currentSection.endIndex = lines.length
+    currentSection.segmentPaths = currentSegmentPaths
+    sections.push(currentSection)
+  }
+
+  // If no sections found, return as-is
+  if (sections.length === 0) {
+    return { content: m3u8Content, strippedSegments: 0 }
+  }
+
+  // Identify main video section (largest segment count)
+  const mainVideoSection = sections.reduce((max, section) =>
+    section.segmentCount > max.segmentCount ? section : max
+  )
+
+  // Find and mark ad sections to strip
+  const sectionsToStrip = new Set<number>()
+  let totalStrippedSegments = 0
+
+  for (let idx = 0; idx < sections.length; idx++) {
+    const section = sections[idx]
+
+    // Skip if it's the main video section
+    if (section === mainVideoSection) continue
+
+    // If segment count is small (< 20, likely an ad) or URL path differs from main video, strip it
+    const isSmallSegmentCount = section.segmentCount < 20
+    const isDifferentSource = section.segmentPaths.size > 0 &&
+      mainVideoSection.segmentPaths.size > 0 &&
+      !Array.from(section.segmentPaths).some(path => mainVideoSection.segmentPaths.has(path))
+
+    if (isSmallSegmentCount || isDifferentSource) {
+      sectionsToStrip.add(idx)
+      totalStrippedSegments += section.segmentCount
+      console.log(`[M3u8Processor] Detected ad section: ${section.segmentCount} segments (source: ${Array.from(section.segmentPaths).join(', ')})`)
+    }
+  }
+
+  // If no ads detected, return as-is
+  if (sectionsToStrip.size === 0) {
+    return { content: m3u8Content, strippedSegments: 0 }
+  }
+
+  console.log(`[M3u8Processor] Stripping ${totalStrippedSegments} ad segments from ${sectionsToStrip.size} section(s)`)
+
+  // Build new m3u8 without ad sections
+  const result: string[] = []
+  let currentSectionIdx = -1
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+
+    // Always include header tags
     if (
       line.startsWith('#EXTM3U') ||
       line.startsWith('#EXT-X-VERSION') ||
@@ -127,32 +175,30 @@ function stripCdnPrerollAds(m3u8Content: string): {
       continue
     }
 
-    // Skip the initial METHOD=NONE key
-    if (skippingInitialKey && line.includes('#EXT-X-KEY:') && line.includes('METHOD=NONE')) {
+    // Track which section we're in
+    if (line.trim() === '#EXT-X-DISCONTINUITY') {
+      currentSectionIdx++
+      // Skip DISCONTINUITY markers from stripped sections
+      if (sectionsToStrip.has(currentSectionIdx)) {
+        continue
+      }
+      // For non-stripped sections, keep the DISCONTINUITY marker
+      result.push(line)
       continue
     }
 
-    // Once we hit the first DISCONTINUITY, stop skipping
-    if (!foundFirstDiscontinuity && line.trim() === '#EXT-X-DISCONTINUITY') {
-      foundFirstDiscontinuity = true
-      skipUntilDiscontinuity = false
-      // Don't include the DISCONTINUITY itself - our ad will add one
+    // Skip content in ad sections
+    if (sectionsToStrip.has(currentSectionIdx)) {
       continue
     }
 
-    // Skip content before first discontinuity (the CDN ad)
-    if (!foundFirstDiscontinuity) {
-      continue
-    }
-
-    // After discontinuity, include everything
-    skippingInitialKey = false
+    // Include everything else
     result.push(line)
   }
 
   return {
     content: result.join('\n'),
-    strippedSegments
+    strippedSegments: totalStrippedSegments
   }
 }
 
