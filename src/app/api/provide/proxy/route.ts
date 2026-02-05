@@ -47,7 +47,12 @@ function rewritePlayUrl(value: string, proxyBase: string, extraParams: string = 
     // Example: ?url=https%3A%2F%2Fexample.com&trimStart=20
     const encodedUrl = encodeURIComponent(url)
     const proxyUrl = `${proxyBase}?url=${encodedUrl}${extraParams}`
-    return prefix ? `${prefix}${proxyUrl}` : proxyUrl
+
+    // Double-encode the entire proxy URL so it survives player wrapper query string parsing
+    // This preserves parameters when wrapped by dplayer or similar wrappers that don't URL-encode
+    // Example: dplayer passes ?url=DOUBLE_ENCODED_PROXY_URL&other_params
+    const doubleEncodedProxyUrl = encodeURIComponent(proxyUrl)
+    return prefix ? `${prefix}${doubleEncodedProxyUrl}` : doubleEncodedProxyUrl
   })
 }
 
