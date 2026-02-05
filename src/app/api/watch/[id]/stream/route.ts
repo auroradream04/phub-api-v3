@@ -311,7 +311,7 @@ export async function GET(
       m3u8Content: originalM3u8,
       baseUrl: originalM3u8Url,
       videoId: id,
-      segmentProxyMode: 'cors',
+      segmentProxyMode: 'full',
     })
     const modifiedM3u8 = processed.content
 
