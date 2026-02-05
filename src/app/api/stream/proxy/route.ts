@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { processM3u8, isMasterPlaylist, extractFirstVariantUrl, SegmentProxyMode } from '@/lib/m3u8-processor'
 import { getSiteSettings } from '@/lib/site-settings'
 
-// In-memory cache for m3u8 responses (30 second TTL)
-const M3U8_CACHE_TTL = 30 * 1000
+// In-memory cache for m3u8 responses (10 minute TTL - VOD content doesn't change)
+const M3U8_CACHE_TTL = 10 * 60 * 1000
 const MAX_CACHE_SIZE = 500
 
 interface CachedM3u8 {
@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
       return new Response(cachedM3u8, {
         headers: {
           'Content-Type': 'application/vnd.apple.mpegurl',
-          'Cache-Control': 'public, max-age=30',
+          'Cache-Control': 'public, max-age=600',
           'Access-Control-Allow-Origin': '*',
         },
       })
@@ -127,6 +127,7 @@ export async function GET(request: NextRequest) {
     const response = await fetch(decodedUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Referer': 'https://www.pornhub.com/',
       },
     })
 
@@ -167,6 +168,7 @@ export async function GET(request: NextRequest) {
       const variantResponse = await fetch(variantUrl, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Referer': 'https://www.pornhub.com/',
         },
       })
 
@@ -183,12 +185,24 @@ export async function GET(request: NextRequest) {
     }
 
     // Process the m3u8 with ad injection and URL rewriting
-    const processed = await processM3u8({
-      m3u8Content,
-      baseUrl,
-      segmentProxyMode,
-      adsEnabled,
-    })
+    let processed
+    try {
+      processed = await processM3u8({
+        m3u8Content,
+        baseUrl,
+        segmentProxyMode,
+        adsEnabled,
+      })
+    } catch (adError) {
+      console.warn(`[Stream Proxy] Ad injection failed (likely DB error), processing without ads:`, adError instanceof Error ? adError.message : adError)
+      // Process m3u8 to rewrite URLs, but disable ads
+      processed = await processM3u8({
+        m3u8Content,
+        baseUrl,
+        segmentProxyMode,
+        adsEnabled: false,
+      })
+    }
 
     const formatInfo = processed.detectedFormat
       ? ` format: ${processed.detectedFormat.formatKey}${processed.transcodedAds ? ' (transcoded)' : ''}`
@@ -202,7 +216,7 @@ export async function GET(request: NextRequest) {
     return new Response(processed.content, {
       headers: {
         'Content-Type': 'application/vnd.apple.mpegurl',
-        'Cache-Control': 'public, max-age=30',
+        'Cache-Control': 'public, max-age=600',
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type',
