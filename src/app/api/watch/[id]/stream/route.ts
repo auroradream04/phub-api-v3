@@ -292,8 +292,16 @@ export async function GET(
         })
         modifiedM3u8 = processed.content
       } catch (adError) {
-        console.warn(`[Stream API] Ad injection failed (likely DB error), returning m3u8 without ads:`, adError instanceof Error ? adError.message : adError)
-        // Use m3u8 without ads if database unavailable
+        console.warn(`[Stream API] Ad injection failed (likely DB error), processing without ads:`, adError instanceof Error ? adError.message : adError)
+        // Process m3u8 to rewrite URLs, but disable ads
+        const processed = await processM3u8({
+          m3u8Content: variantM3u8,
+          baseUrl: variantUrl,
+          videoId: id,
+          segmentProxyMode: 'full',
+          adsEnabled: false,
+        })
+        modifiedM3u8 = processed.content
       }
 
       // Cache the response
@@ -323,8 +331,16 @@ export async function GET(
       })
       modifiedM3u8 = processed.content
     } catch (adError) {
-      console.warn(`[Stream API] Ad injection failed (likely DB error), returning m3u8 without ads:`, adError instanceof Error ? adError.message : adError)
-      // Use m3u8 without ads if database unavailable
+      console.warn(`[Stream API] Ad injection failed (likely DB error), processing without ads:`, adError instanceof Error ? adError.message : adError)
+      // Process m3u8 to rewrite URLs, but disable ads
+      const processed = await processM3u8({
+        m3u8Content: originalM3u8,
+        baseUrl: originalM3u8Url,
+        videoId: id,
+        segmentProxyMode: 'full',
+        adsEnabled: false,
+      })
+      modifiedM3u8 = processed.content
     }
 
     // Cache the response
