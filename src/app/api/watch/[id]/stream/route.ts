@@ -281,14 +281,20 @@ export async function GET(
         }
         variantM3u8 = await variantResponse.text()
       }
-      console.log(`[Stream API] Variant playlist fetched (${variantM3u8.length} bytes), injecting ads...`)
-      const processed = await processM3u8({
-        m3u8Content: variantM3u8,
-        baseUrl: variantUrl,
-        videoId: id,
-        segmentProxyMode: 'full',
-      })
-      const modifiedM3u8 = processed.content
+      console.log(`[Stream API] Variant playlist fetched (${variantM3u8.length} bytes), processing...`)
+      let modifiedM3u8 = variantM3u8
+      try {
+        const processed = await processM3u8({
+          m3u8Content: variantM3u8,
+          baseUrl: variantUrl,
+          videoId: id,
+          segmentProxyMode: 'full',
+        })
+        modifiedM3u8 = processed.content
+      } catch (adError) {
+        console.warn(`[Stream API] Ad injection failed (likely DB error), returning m3u8 without ads:`, adError instanceof Error ? adError.message : adError)
+        // Use m3u8 without ads if database unavailable
+      }
 
       // Cache the response
       setCachedM3u8(m3u8CacheKey, modifiedM3u8)
@@ -306,14 +312,20 @@ export async function GET(
       })
     }
 
-    console.log('[Stream API] Standard playlist detected, injecting ads...')
-    const processed = await processM3u8({
-      m3u8Content: originalM3u8,
-      baseUrl: originalM3u8Url,
-      videoId: id,
-      segmentProxyMode: 'full',
-    })
-    const modifiedM3u8 = processed.content
+    console.log('[Stream API] Standard playlist detected, processing...')
+    let modifiedM3u8 = originalM3u8
+    try {
+      const processed = await processM3u8({
+        m3u8Content: originalM3u8,
+        baseUrl: originalM3u8Url,
+        videoId: id,
+        segmentProxyMode: 'full',
+      })
+      modifiedM3u8 = processed.content
+    } catch (adError) {
+      console.warn(`[Stream API] Ad injection failed (likely DB error), returning m3u8 without ads:`, adError instanceof Error ? adError.message : adError)
+      // Use m3u8 without ads if database unavailable
+    }
 
     // Cache the response
     setCachedM3u8(m3u8CacheKey, modifiedM3u8)
