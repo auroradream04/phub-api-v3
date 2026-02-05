@@ -98,7 +98,12 @@ function stripCdnPrerollAds(m3u8Content: string): {
   }
 
   const sections: Section[] = []
-  let currentSection: Section | null = null
+  let currentSection: Section = {
+    startIndex: 0,
+    endIndex: lines.length,
+    segmentCount: 0,
+    segmentPaths: new Set()
+  }
   let currentSegmentPaths = new Set<string>()
 
   for (let i = 0; i < lines.length; i++) {
@@ -189,7 +194,7 @@ function stripCdnPrerollAds(m3u8Content: string): {
 
   // Build new m3u8 without ad sections
   const result: string[] = []
-  let currentSectionIdx = -1
+  let currentSectionIdx = 0
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]
