@@ -48,6 +48,29 @@ function extractSegmentPath(segmentUrl: string): string {
 }
 
 /**
+ * Extract original URL from a proxied segment URL
+ * Example: https://md8av.com/api/stream/segment?url=https%3A%2F%2Fv2025.sysybf.com%2F20260201%2F...
+ * Returns: https://v2025.sysybf.com/20260201/...
+ */
+function extractOriginalUrl(segmentUrl: string): string {
+  try {
+    // If it's already a direct URL (not proxied), return as-is
+    if (!segmentUrl.includes('?url=')) {
+      return segmentUrl
+    }
+
+    // Extract the url= parameter value
+    const urlMatch = segmentUrl.match(/[\?&]url=([^&]+)/)
+    if (urlMatch && urlMatch[1]) {
+      return decodeURIComponent(urlMatch[1])
+    }
+  } catch {
+    // Fallback to original
+  }
+  return segmentUrl
+}
+
+/**
  * Detect and strip existing CDN ads from m3u8 playlist
  *
  * Ads are identified by:
@@ -102,7 +125,9 @@ function stripCdnPrerollAds(m3u8Content: string): {
       if (i + 1 < lines.length) {
         const nextLine = lines[i + 1]
         if (!nextLine.startsWith('#')) {
-          currentSegmentPaths.add(extractSegmentPath(nextLine))
+          // Extract original URL first (handles proxied URLs like ?url=...)
+          const originalUrl = extractOriginalUrl(nextLine)
+          currentSegmentPaths.add(extractSegmentPath(originalUrl))
         }
       }
     }
@@ -133,7 +158,10 @@ function stripCdnPrerollAds(m3u8Content: string): {
     const section = sections[idx]
 
     // Skip if it's the main video section
-    if (section === mainVideoSection) continue
+    if (section === mainVideoSection) {
+      console.log(`[M3u8Processor] Section ${idx}: MAIN VIDEO (${section.segmentCount} segments)`)
+      continue
+    }
 
     // If segment count is small (< 20, likely an ad) or URL path differs from main video, strip it
     const isSmallSegmentCount = section.segmentCount < 20
@@ -141,10 +169,14 @@ function stripCdnPrerollAds(m3u8Content: string): {
       mainVideoSection.segmentPaths.size > 0 &&
       !Array.from(section.segmentPaths).some(path => mainVideoSection.segmentPaths.has(path))
 
+    console.log(`[M3u8Processor] Section ${idx}: ${section.segmentCount} segments (small: ${isSmallSegmentCount}, different: ${isDifferentSource})`)
+    console.log(`  This section paths: ${Array.from(section.segmentPaths).join(', ')}`)
+    console.log(`  Main video paths: ${Array.from(mainVideoSection.segmentPaths).join(', ')}`)
+
     if (isSmallSegmentCount || isDifferentSource) {
       sectionsToStrip.add(idx)
       totalStrippedSegments += section.segmentCount
-      console.log(`[M3u8Processor] Detected ad section: ${section.segmentCount} segments (source: ${Array.from(section.segmentPaths).join(', ')})`)
+      console.log(`[M3u8Processor]  → STRIPPING`)
     }
   }
 
