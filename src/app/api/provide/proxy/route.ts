@@ -43,8 +43,10 @@ function rewritePlayUrl(value: string, proxyBase: string, extraParams: string = 
   const urlPattern = /([^$#\s]*\$)?(https?:\/\/[^#\s"'<>]+)/g
 
   return value.replace(urlPattern, (match, prefix, url) => {
-    // Don't encode - pass URL as-is since we do raw URL extraction
-    const proxyUrl = `${proxyBase}?url=${url}${extraParams}`
+    // Encode the URL so extraParams (like &trimStart=20) aren't stripped by players
+    // Example: ?url=https%3A%2F%2Fexample.com&trimStart=20
+    const encodedUrl = encodeURIComponent(url)
+    const proxyUrl = `${proxyBase}?url=${encodedUrl}${extraParams}`
     return prefix ? `${prefix}${proxyUrl}` : proxyUrl
   })
 }
