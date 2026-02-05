@@ -37,14 +37,14 @@ function isUrlSafe(url: string): boolean {
  * - Multiple: HD$https://cdn.com/hd.m3u8#SD$https://cdn.com/sd.m3u8
  * - Episodes: Episode1$https://cdn.com/ep1.m3u8#Episode2$https://cdn.com/ep2.m3u8
  */
-function rewritePlayUrl(value: string, proxyBase: string): string {
+function rewritePlayUrl(value: string, proxyBase: string, extraParams: string = ''): string {
   // Pattern: Match any URL (http/https), optionally preceded by a prefix and $
   // This handles: "HD$https://...", "https://...", "player$https://..."
   const urlPattern = /([^$#\s]*\$)?(https?:\/\/[^#\s"'<>]+)/g
 
   return value.replace(urlPattern, (match, prefix, url) => {
     // Don't encode - pass URL as-is since we do raw URL extraction
-    const proxyUrl = `${proxyBase}?url=${url}`
+    const proxyUrl = `${proxyBase}?url=${url}${extraParams}`
     return prefix ? `${prefix}${proxyUrl}` : proxyUrl
   })
 }
@@ -53,7 +53,7 @@ function rewritePlayUrl(value: string, proxyBase: string): string {
  * Rewrite URL fields in JSON response
  * Copies all fields as-is but rewrites vod_play_url and vod_down_url
  */
-function rewriteUrlsInJson(jsonData: Record<string, unknown>, proxyBase: string): Record<string, unknown> {
+function rewriteUrlsInJson(jsonData: Record<string, unknown>, proxyBase: string, extraParams: string = ''): Record<string, unknown> {
   // Copy everything from the original response
   const result = { ...jsonData }
 
@@ -65,11 +65,11 @@ function rewriteUrlsInJson(jsonData: Record<string, unknown>, proxyBase: string)
         const newItem = { ...videoItem }
 
         if (videoItem.vod_play_url && typeof videoItem.vod_play_url === 'string') {
-          newItem.vod_play_url = rewritePlayUrl(videoItem.vod_play_url, proxyBase)
+          newItem.vod_play_url = rewritePlayUrl(videoItem.vod_play_url, proxyBase, extraParams)
         }
 
         if (videoItem.vod_down_url && typeof videoItem.vod_down_url === 'string') {
-          newItem.vod_down_url = rewritePlayUrl(videoItem.vod_down_url, proxyBase)
+          newItem.vod_down_url = rewritePlayUrl(videoItem.vod_down_url, proxyBase, extraParams)
         }
 
         return newItem
@@ -84,13 +84,13 @@ function rewriteUrlsInJson(jsonData: Record<string, unknown>, proxyBase: string)
 /**
  * Rewrite URLs in XML string - ONLY vod_play_url and vod_down_url
  */
-function rewriteUrlsInXml(xml: string, proxyBase: string): string {
+function rewriteUrlsInXml(xml: string, proxyBase: string, extraParams: string = ''): string {
   // Rewrite URLs inside <dd> tags (MacCMS format for vod_play_url)
   // <dd flag="dplayer">HD$https://cdn.com/video.m3u8</dd>
   let result = xml.replace(
     /(<dd[^>]*>)(.*?)(<\/dd>)/gi,
     (match, openTag, content, closeTag) => {
-      const rewritten = rewritePlayUrl(content, proxyBase)
+      const rewritten = rewritePlayUrl(content, proxyBase, extraParams)
       return `${openTag}${rewritten}${closeTag}`
     }
   )
@@ -99,7 +99,7 @@ function rewriteUrlsInXml(xml: string, proxyBase: string): string {
   result = result.replace(
     /(<vod_play_url>)(.*?)(<\/vod_play_url>)/gi,
     (match, openTag, content, closeTag) => {
-      const rewritten = rewritePlayUrl(content, proxyBase)
+      const rewritten = rewritePlayUrl(content, proxyBase, extraParams)
       return `${openTag}${rewritten}${closeTag}`
     }
   )
@@ -107,7 +107,7 @@ function rewriteUrlsInXml(xml: string, proxyBase: string): string {
   result = result.replace(
     /(<vod_down_url>)(.*?)(<\/vod_down_url>)/gi,
     (match, openTag, content, closeTag) => {
-      const rewritten = rewritePlayUrl(content, proxyBase)
+      const rewritten = rewritePlayUrl(content, proxyBase, extraParams)
       return `${openTag}${rewritten}${closeTag}`
     }
   )
@@ -240,6 +240,8 @@ export async function GET(request: NextRequest) {
     const originalContent = await response.text()
 
     // Determine the base URL for our stream proxy
+    const trimStart = request.nextUrl.searchParams.get('trimStart')
+    const extraParams = trimStart ? `&trimStart=${trimStart}` : ''
     const proxyBase = `${process.env.NEXTAUTH_URL || 'https://md8av.com'}/api/stream/proxy`
 
     let rewrittenContent: string
@@ -248,13 +250,13 @@ export async function GET(request: NextRequest) {
     // Detect format and rewrite URLs
     if (contentType.includes('xml') || originalContent.trim().startsWith('<?xml') || originalContent.trim().startsWith('<')) {
       // XML response
-      rewrittenContent = rewriteUrlsInXml(originalContent, proxyBase)
+      rewrittenContent = rewriteUrlsInXml(originalContent, proxyBase, extraParams)
       responseContentType = 'application/xml; charset=utf-8'
     } else {
       // Try JSON
       try {
         const jsonData = JSON.parse(originalContent)
-        const rewrittenJson = rewriteUrlsInJson(jsonData, proxyBase)
+        const rewrittenJson = rewriteUrlsInJson(jsonData, proxyBase, extraParams)
         rewrittenContent = JSON.stringify(rewrittenJson)
         responseContentType = 'application/json; charset=utf-8'
       } catch {

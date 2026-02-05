@@ -2,6 +2,52 @@ import { NextRequest, NextResponse } from 'next/server'
 import { processM3u8, isMasterPlaylist, extractFirstVariantUrl, SegmentProxyMode } from '@/lib/m3u8-processor'
 import { getSiteSettings } from '@/lib/site-settings'
 
+/**
+ * Remove segments from beginning of m3u8 to skip initial ads
+ * Removes segments until total duration >= trimSeconds
+ */
+function trimM3u8Start(m3u8Content: string, trimSeconds: number): string {
+  if (trimSeconds <= 0) return m3u8Content
+
+  const lines = m3u8Content.split('\n')
+  let accumulatedDuration = 0
+  let skipUntilLine = 0
+  let currentExtinfLine = -1
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+
+    // Parse EXTINF lines which contain segment duration
+    if (line.startsWith('#EXTINF:')) {
+      currentExtinfLine = i
+      // Extract duration: #EXTINF:3.337,
+      const match = line.match(/#EXTINF:([\d.]+)/)
+      if (match) {
+        const duration = parseFloat(match[1])
+        accumulatedDuration += duration
+
+        // If we've accumulated enough duration, mark where to start keeping segments
+        if (accumulatedDuration >= trimSeconds) {
+          skipUntilLine = i // Keep this EXTINF and following segment
+          break
+        }
+      }
+    }
+  }
+
+  // If nothing to trim, return as-is
+  if (skipUntilLine === 0) {
+    return m3u8Content
+  }
+
+  // Keep header lines, skip to the first EXTINF we want to keep
+  const headerEndIndex = lines.findIndex(line => line.startsWith('#EXTINF:'))
+  const headerLines = lines.slice(0, headerEndIndex)
+  const contentLines = lines.slice(skipUntilLine)
+
+  return [...headerLines, ...contentLines].join('\n')
+}
+
 // In-memory cache for m3u8 responses (10 minute TTL - VOD content doesn't change)
 const M3U8_CACHE_TTL = 10 * 60 * 1000
 const MAX_CACHE_SIZE = 500
@@ -71,6 +117,8 @@ export async function GET(request: NextRequest) {
     const mode = request.nextUrl.searchParams.get('mode') as SegmentProxyMode | null
     const adsParam = request.nextUrl.searchParams.get('ads')
     const rawParam = request.nextUrl.searchParams.get('raw') === '1'
+    const trimStartParam = request.nextUrl.searchParams.get('trimStart')
+    const trimStartSeconds = trimStartParam ? parseInt(trimStartParam, 10) : 0
 
     if (!url) {
       return NextResponse.json(
@@ -205,6 +253,13 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    // Apply start trimming if requested (skip initial ads/segments)
+    let finalContent = processed.content
+    if (trimStartSeconds > 0) {
+      finalContent = trimM3u8Start(finalContent, trimStartSeconds)
+      console.log(`[Stream Proxy] Trimmed ${trimStartSeconds}s from start`)
+    }
+
     const formatInfo = processed.detectedFormat
       ? ` format: ${processed.detectedFormat.formatKey}${processed.transcodedAds ? ' (transcoded)' : ''}`
       : ''
@@ -212,9 +267,9 @@ export async function GET(request: NextRequest) {
     console.log(`[Stream Proxy] Processed m3u8: ${processed.segmentCount} segments, ${processed.adsInjected} ads injected${cdnAdInfo}, duration: ${processed.duration}s,${formatInfo} (${Date.now() - requestStart}ms)`)
 
     // Cache the result
-    setCachedM3u8(cacheKey, processed.content)
+    setCachedM3u8(cacheKey, finalContent)
 
-    return new Response(processed.content, {
+    return new Response(finalContent, {
       headers: {
         'Content-Type': rawParam ? 'text/plain; charset=utf-8' : 'application/vnd.apple.mpegurl',
         'Cache-Control': 'public, max-age=600',
