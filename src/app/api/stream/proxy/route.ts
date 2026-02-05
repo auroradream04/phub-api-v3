@@ -145,7 +145,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Check cache
-    const cacheKey = `${decodedUrl}:${mode || 'default'}:${adsParam || 'true'}`
+    const cacheKey = `${decodedUrl}:${mode || 'default'}:${adsParam || 'true'}:${trimStartSeconds || '0'}`
     const cachedM3u8 = getCachedM3u8(cacheKey)
     if (cachedM3u8) {
       console.log(`[Stream Proxy] Cache hit for ${decodedUrl}`)
@@ -233,6 +233,12 @@ export async function GET(request: NextRequest) {
       baseUrl = variantUrl
     }
 
+    // Trim the original m3u8 BEFORE ad injection to remove embedded ads
+    if (trimStartSeconds > 0) {
+      m3u8Content = trimM3u8Start(m3u8Content, trimStartSeconds)
+      console.log(`[Stream Proxy] Trimmed ${trimStartSeconds}s from start (removed embedded ads)`)
+    }
+
     // Process the m3u8 with ad injection and URL rewriting
     let processed
     try {
@@ -253,12 +259,8 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // Apply start trimming if requested (skip initial ads/segments)
-    let finalContent = processed.content
-    if (trimStartSeconds > 0) {
-      finalContent = trimM3u8Start(finalContent, trimStartSeconds)
-      console.log(`[Stream Proxy] Trimmed ${trimStartSeconds}s from start`)
-    }
+    // Finalize content
+    const finalContent = processed.content
 
     const formatInfo = processed.detectedFormat
       ? ` format: ${processed.detectedFormat.formatKey}${processed.transcodedAds ? ' (transcoded)' : ''}`
