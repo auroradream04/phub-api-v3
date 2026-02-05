@@ -56,37 +56,33 @@ function rewritePlayUrl(value: string, proxyBase: string): string {
 }
 
 /**
- * Recursively process JSON, but ONLY rewrite vod_play_url and vod_down_url fields
- * Everything else passes through unchanged
+ * Rewrite URL fields in JSON response
+ * Copies all fields as-is but rewrites vod_play_url and vod_down_url
  */
-function rewriteUrlsInJson(obj: unknown, proxyBase: string): unknown {
-  if (obj === null || obj === undefined) {
-    return obj
-  }
+function rewriteUrlsInJson(jsonData: Record<string, unknown>, proxyBase: string): Record<string, unknown> {
+  // Copy everything from the original response
+  const result = { ...jsonData }
 
-  if (Array.isArray(obj)) {
-    return obj.map(item => rewriteUrlsInJson(item, proxyBase))
-  }
-
-  if (typeof obj === 'object') {
-    const result: Record<string, unknown> = {}
-    for (const [key, value] of Object.entries(obj)) {
-      // ONLY rewrite vod_play_url and vod_down_url
-      if (VIDEO_URL_FIELDS.has(key) && typeof value === 'string') {
-        result[key] = rewritePlayUrl(value, proxyBase)
-      } else if (typeof value === 'object' && value !== null) {
-        // Recurse into nested objects/arrays to find video items
-        result[key] = rewriteUrlsInJson(value, proxyBase)
-      } else {
-        // Pass through everything else unchanged
-        result[key] = value
+  // If there's a list, map through it and rewrite URL fields
+  if (Array.isArray(result.list)) {
+    result.list = result.list.map(item => {
+      if (typeof item === 'object' && item !== null) {
+        const videoItem = item as Record<string, unknown>
+        return {
+          ...videoItem,
+          ...(videoItem.vod_play_url && typeof videoItem.vod_play_url === 'string' && {
+            vod_play_url: rewritePlayUrl(videoItem.vod_play_url, proxyBase),
+          }),
+          ...(videoItem.vod_down_url && typeof videoItem.vod_down_url === 'string' && {
+            vod_down_url: rewritePlayUrl(videoItem.vod_down_url, proxyBase),
+          }),
+        }
       }
-    }
-    return result
+      return item
+    })
   }
 
-  // Primitives (string, number, boolean) pass through unchanged
-  return obj
+  return result
 }
 
 /**
