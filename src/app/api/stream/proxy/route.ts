@@ -162,12 +162,12 @@ export async function GET(request: NextRequest) {
     const settings = await getSiteSettings(
       ['proxy_segment_mode', 'proxy_ads_enabled'],
       {
-        'proxy_segment_mode': 'cors',
+        'proxy_segment_mode': 'full',
         'proxy_ads_enabled': 'true',
       }
     )
 
-    const segmentProxyMode: SegmentProxyMode = mode || (settings['proxy_segment_mode'] as SegmentProxyMode) || 'cors'
+    const segmentProxyMode: SegmentProxyMode = mode || (settings['proxy_segment_mode'] as SegmentProxyMode) || 'full'
     const adsEnabled = adsParam !== 'false' && settings['proxy_ads_enabled'] !== 'false'
 
     console.log(`[Stream Proxy] Fetching m3u8 from: ${decodedUrl}`)
