@@ -43,8 +43,8 @@ function rewritePlayUrl(value: string, proxyBase: string): string {
   const urlPattern = /([^$#\s]*\$)?(https?:\/\/[^#\s"'<>]+)/g
 
   return value.replace(urlPattern, (match, prefix, url) => {
-    const encodedUrl = encodeURIComponent(url)
-    const proxyUrl = `${proxyBase}?url=${encodedUrl}`
+    // Don't encode - pass URL as-is since we do raw URL extraction
+    const proxyUrl = `${proxyBase}?url=${url}`
     return prefix ? `${prefix}${proxyUrl}` : proxyUrl
   })
 }

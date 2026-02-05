@@ -70,6 +70,7 @@ export async function GET(request: NextRequest) {
     const url = request.nextUrl.searchParams.get('url')
     const mode = request.nextUrl.searchParams.get('mode') as SegmentProxyMode | null
     const adsParam = request.nextUrl.searchParams.get('ads')
+    const rawParam = request.nextUrl.searchParams.get('raw') === '1'
 
     if (!url) {
       return NextResponse.json(
@@ -102,7 +103,7 @@ export async function GET(request: NextRequest) {
       console.log(`[Stream Proxy] Cache hit for ${decodedUrl}`)
       return new Response(cachedM3u8, {
         headers: {
-          'Content-Type': 'application/vnd.apple.mpegurl',
+          'Content-Type': rawParam ? 'text/plain; charset=utf-8' : 'application/vnd.apple.mpegurl',
           'Cache-Control': 'public, max-age=600',
           'Access-Control-Allow-Origin': '*',
         },
@@ -215,7 +216,7 @@ export async function GET(request: NextRequest) {
 
     return new Response(processed.content, {
       headers: {
-        'Content-Type': 'application/vnd.apple.mpegurl',
+        'Content-Type': rawParam ? 'text/plain; charset=utf-8' : 'application/vnd.apple.mpegurl',
         'Cache-Control': 'public, max-age=600',
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, OPTIONS',
